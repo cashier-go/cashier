@@ -54,7 +54,7 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 - `provider` : string. Name of the oauth provider. At present the only valid value is "google".
 - `oauth_client_id` : string. Oauth Client ID.
 - `oauth_client_secret` : string. Oauth secret.
-- `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. Currently hardcoded to `"/auth/callback"` in the source.
+- `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
 - `google_opts` : object. Additional options for the `google` provider.
 - `google_opts: { domain }` : string. Only allow users from this Google Apps domain. This is optional but leaving it unset will allow anyone with a Google account to obtain ssh certificates so don't do that.
 
