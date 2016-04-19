@@ -112,7 +112,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 }
 
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	a.authsession = a.authprovider.StartSession(hex.EncodeToString(random(32)))
+	a.authsession = a.authprovider.StartSession(newState(32))
 	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
 	return http.StatusFound, nil
 }
@@ -170,12 +170,12 @@ func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func random(length int) []byte {
-	k := make([]byte, length)
+func newState() string {
+	k := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, k); err != nil {
-		return nil
+		return "unexpectedstring"
 	}
-	return k
+	return hex.EncodeToString(k)
 }
 
 func main() {
