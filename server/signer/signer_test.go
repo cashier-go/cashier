@@ -21,24 +21,6 @@ var (
 	}
 )
 
-func TestSign(t *testing.T) {
-	s := &lib.SignRequest{
-		Key:        string(testdata.Pub),
-		Principal:  "gopher1",
-		ValidUntil: time.Now().Add(1 * time.Hour),
-	}
-	ret, err := signer.Sign(s)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	c, _, _, _, err := ssh.ParseAuthorizedKey([]byte(ret))
-	cert, ok := c.(*ssh.Certificate)
-	if !ok {
-		t.Fatalf("Expected type *ssh.Certificate, got %v (%T)", cert, cert)
-	}
-}
-
 func TestCert(t *testing.T) {
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
