@@ -33,7 +33,7 @@ The user can now ssh to the production machine.
 # Usage
 Cashier comes in two parts, a [client](client) and a [server](server).
 The client is configured using command-line flags.
-The server is configured using a JSON configuration file - [exampleconfig.json](example).
+The server is configured using a JSON configuration file - [example](exampleconfig.json).
 
 For the server you _need_ the following:
 - A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca`. At this time Cashier supports RSA and ECDSA keys
@@ -62,7 +62,7 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 - `signing_key`: string. Path to the signing ssh private key you created earlier.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
 - `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests.
-- `permissions`: array of string. Actions the certificate can perform. See the [http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1](`-O` option to `ssh-keygen(1)`) for a complete list.
+- `permissions`: array of string. Actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list.
 
 Note: Cashier does not implement signing host keys at this time.
 
