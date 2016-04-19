@@ -61,7 +61,7 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 ### ssh
 - `signing_key`: string. Path to the signing ssh private key you created earlier.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
-- `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests.
+- `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests. Must be a valid Go [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) string.
 - `permissions`: array of string. Actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list.
 
 Note: Cashier does not implement signing host keys at this time.
