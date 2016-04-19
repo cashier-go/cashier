@@ -23,7 +23,7 @@ type Config struct {
 	domain string
 }
 
-func New(c config.Auth) auth.Provider {
+func New(c *config.Auth) auth.Provider {
 	return &Config{
 		config: &oauth2.Config{
 			ClientID:     c.OauthClientID,
