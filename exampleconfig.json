@@ -1,5 +1,6 @@
 {
   "server": {
+    "use_tls": true,
     "tls_key": "server.key",
     "tls_cert": "server.crt",
     "port": 443,
@@ -17,8 +18,8 @@
   },
   "ssh": {
     "signing_key": "signing_key",
-    "additional_principals": ["ec2-user"],
+    "additional_principals": ["ec2-user", "ubuntu"],
     "max_age": "720h",
-    "permissions": ["permit-pty"]
+    "permissions": ["permit-pty", "permit-X11-forwarding", "permit-agent-forwarding", "permit-port-forwarding", "permit-user-rc"]
   }
 }
