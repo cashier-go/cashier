@@ -36,7 +36,7 @@ The client is configured using command-line flags.
 The server is configured using a JSON configuration file - [example](exampleconfig.json).
 
 For the server you _need_ the following:
-- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca`. At this time Cashier supports RSA and ECDSA keys
+- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA and ECDSA keys.
 - Google OAuth credentials which you can generate at the [Google Developers Console](https://console.developers.google.com). You also need to set the callback URL here.
 
 
@@ -63,6 +63,13 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
 - `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests. Must be a valid Go [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) string.
 - `permissions`: array of string. Actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list.
+
+## Configuring ssh
+The client needs no special configuration, just a running ssh-agent.
+The ssh server needs to trust the public part of the CA signing key. Add something like the following to your sshd_config:
+```
+TrustedUserCAKeys /etc/ssh/ca.pub
+```
 
 Note: Cashier does not implement signing host keys at this time.
 
