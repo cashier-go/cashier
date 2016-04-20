@@ -11,6 +11,11 @@ Unlike ssh keys, certificates can contain additional information:
 - When the certificate expires
 - Permissions 
 
+Other benefits of certificates:
+-  Unlike keys certificates don't need to be distributed to every machine - the sshd just needs to trust the key that signed the certificate.
+- This also works for host keys - machines can get new (signed) host certs which clients can authenticate. No more blindly typing "yes".
+- Certificates can be revoked.
+
 See also the `CERTIFICATES` [section](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1#CERTIFICATES) of `ssh-keygen(1)`
 
 ## How it works:
@@ -28,7 +33,7 @@ The CA verifies the token and signs the public key with the signing key and retu
 
 The command on the user's machine receives the certificate and loads it and the previously generated private key into the ssh agent.
 
-The user can now ssh to the production machine.
+The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the keychain.
 
 # Usage
 Cashier comes in two parts, a [client](client) and a [server](server).
@@ -36,7 +41,7 @@ The client is configured using command-line flags.
 The server is configured using a JSON configuration file - [example](exampleconfig.json).
 
 For the server you _need_ the following:
-- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA and ECDSA keys.
+- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA and ECDSA keys. *Important* This key should be kept safe - _ANY_ ssh key signed with this key will be able to access your machines.
 - Google OAuth credentials which you can generate at the [Google Developers Console](https://console.developers.google.com). You also need to set the callback URL here.
 
 
