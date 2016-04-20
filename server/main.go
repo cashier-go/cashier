@@ -99,7 +99,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	signed, err := a.sshKeySigner.Sign(req)
+	signed, err := a.sshKeySigner.SignUserKey(req)
 	a.authprovider.Revoke(token)
 	if err != nil {
 		return http.StatusInternalServerError, err

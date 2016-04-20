@@ -18,7 +18,7 @@ type KeySigner struct {
 	permissions map[string]string
 }
 
-func (s *KeySigner) Sign(req *lib.SignRequest) (string, error) {
+func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
 	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(req.Key))
 	if err != nil {
 		return "", err
