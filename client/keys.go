@@ -10,14 +10,17 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const (
-	rsaKey   = "rsa"
-	ecdsaKey = "ecdsa"
+type key interface{}
+type keyfunc func(int) (key, ssh.PublicKey, error)
+
+var (
+	keytypes = map[string]keyfunc{
+		"rsa":   generateRSAKey,
+		"ecdsa": generateECDSAKey,
+	}
 )
 
-type key interface{}
-
-func generateRSAKey(bits int) (*rsa.PrivateKey, ssh.PublicKey, error) {
+func generateRSAKey(bits int) (key, ssh.PublicKey, error) {
 	k, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
 		return nil, nil, err
@@ -29,7 +32,7 @@ func generateRSAKey(bits int) (*rsa.PrivateKey, ssh.PublicKey, error) {
 	return k, pub, nil
 }
 
-func generateECDSAKey(bits int) (*ecdsa.PrivateKey, ssh.PublicKey, error) {
+func generateECDSAKey(bits int) (key, ssh.PublicKey, error) {
 	var curve elliptic.Curve
 	switch bits {
 	case 256:
@@ -53,12 +56,13 @@ func generateECDSAKey(bits int) (*ecdsa.PrivateKey, ssh.PublicKey, error) {
 }
 
 func generateKey(keytype string, bits int) (key, ssh.PublicKey, error) {
-	switch keytype {
-	case rsaKey:
-		return generateRSAKey(bits)
-	case ecdsaKey:
-		return generateECDSAKey(bits)
-	default:
-		return nil, nil, fmt.Errorf("Unsupported key type %s. Valid choices are [%s, %s]", keytype, rsaKey, ecdsaKey)
+	f, ok := keytypes[keytype]
+	if !ok {
+		var valid []string
+		for k, _ := range keytypes {
+			valid = append(valid, k)
+		}
+		return nil, nil, fmt.Errorf("Unsupported key type %s. Valid choices are %s", keytype, valid)
 	}
+	return f(bits)
 }
