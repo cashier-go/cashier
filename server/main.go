@@ -30,6 +30,7 @@ var (
 	cfg = flag.String("config_file", "config.json", "Path to configuration file.")
 )
 
+// appContext contains local context - cookiestore, authprovider, authsession, templates etc.
 type appContext struct {
 	cookiestore   *sessions.CookieStore
 	authprovider  auth.Provider
@@ -39,6 +40,7 @@ type appContext struct {
 	jwtSigningKey []byte
 }
 
+// getAuthCookie retrieves a the cookie from the request and validates it.
 func (a *appContext) getAuthCookie(r *http.Request) *oauth2.Token {
 	session, _ := a.cookiestore.Get(r, "tok")
 	t, ok := session.Values["token"]
@@ -55,6 +57,7 @@ func (a *appContext) getAuthCookie(r *http.Request) *oauth2.Token {
 	return &tok
 }
 
+// setAuthCookie marshals the auth token and stores it as a cookie.
 func (a *appContext) setAuthCookie(w http.ResponseWriter, r *http.Request, t *oauth2.Token) {
 	session, _ := a.cookiestore.Get(r, "tok")
 	val, _ := json.Marshal(t)
@@ -62,6 +65,7 @@ func (a *appContext) setAuthCookie(w http.ResponseWriter, r *http.Request, t *oa
 	session.Save(r, w)
 }
 
+// parseKey retrieves and unmarshals the signing request.
 func parseKey(r *http.Request) (*lib.SignRequest, error) {
 	var s lib.SignRequest
 	body, err := ioutil.ReadAll(r.Body)
@@ -73,7 +77,11 @@ func parseKey(r *http.Request) (*lib.SignRequest, error) {
 	}
 	return &s, nil
 }
+
+// signHandler handles the "/sign" path.
+// It unmarshals the client token to an oauth token, validates it and signs the provided public ssh key.
 func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+	// Retrieve the client token and verify it.
 	jwtoken, err := jwt.ParseFromRequest(r, func(t *jwt.Token) (interface{}, error) {
 		return a.jwtSigningKey, nil
 	})
@@ -93,14 +101,15 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if !ok {
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
-	// finally sign the pubkey and issue the cert.
+
+	// Sign the pubkey and issue the cert.
 	req, err := parseKey(r)
 	req.Principal = a.authprovider.Username(token)
+	a.authprovider.Revoke(token) // We don't need this anymore.
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 	signed, err := a.sshKeySigner.SignUserKey(req)
-	a.authprovider.Revoke(token)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -111,12 +120,14 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	return http.StatusOK, nil
 }
 
+// loginHandler starts the authentication process with the provider.
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	a.authsession = a.authprovider.StartSession(newState(32))
 	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
 	return http.StatusFound, nil
 }
 
+// callbackHandler handles retrieving the access token from the auth provider and saves it for later use.
 func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	if r.FormValue("state") != a.authsession.State {
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
@@ -130,6 +141,7 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 	return http.StatusFound, nil
 }
 
+// rootHandler starts the auth process. If the client is authenticated it renders the token to the user.
 func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	tok := a.getAuthCookie(r)
 	if !tok.Valid() {
@@ -150,11 +162,13 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	return http.StatusOK, nil
 }
 
+// appHandler is a handler which uses appContext to manage state.
 type appHandler struct {
 	*appContext
 	h func(*appContext, http.ResponseWriter, *http.Request) (int, error)
 }
 
+// ServeHTTP handles the request and writes responses.
 func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status, err := ah.h(ah.appContext, w, r)
 	if err != nil {
@@ -170,6 +184,7 @@ func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// newState generates a state identifier for the oauth process.
 func newState() string {
 	k := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, k); err != nil {
