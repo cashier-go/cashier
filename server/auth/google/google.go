@@ -18,11 +18,14 @@ const (
 	name      = "google"
 )
 
+// Config is an implementation of `auth.Provider` for authenticating using a
+// Google account.
 type Config struct {
 	config *oauth2.Config
 	domain string
 }
 
+// New creates a new Google provider from a configuration.
 func New(c *config.Auth) auth.Provider {
 	return &Config{
 		config: &oauth2.Config{
@@ -36,14 +39,17 @@ func New(c *config.Auth) auth.Provider {
 	}
 }
 
+// A new oauth2 http client.
 func (c *Config) newClient(token *oauth2.Token) *http.Client {
 	return c.config.Client(oauth2.NoContext, token)
 }
 
+// Name returns the name of the provider.
 func (c *Config) Name() string {
 	return name
 }
 
+// Valid validates the oauth token.
 func (c *Config) Valid(token *oauth2.Token) bool {
 	if !token.Valid() {
 		return false
@@ -70,12 +76,14 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	return true
 }
 
+// Revoke disables the access token.
 func (c *Config) Revoke(token *oauth2.Token) error {
 	h := c.newClient(token)
 	_, err := h.Get(fmt.Sprintf(revokeURL, token.AccessToken))
 	return err
 }
 
+// StartSession retrieves an authentication endpoint from Google.
 func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{
 		AuthURL: c.config.AuthCodeURL(state, oauth2.SetAuthURLParam("hd", c.domain)),
@@ -83,10 +91,12 @@ func (c *Config) StartSession(state string) *auth.Session {
 	}
 }
 
+// Exchange authorizes the session and returns an access token.
 func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 	return c.config.Exchange(oauth2.NoContext, code)
 }
 
+// Username retrieves the username portion of the user's email address.
 func (c *Config) Username(token *oauth2.Token) string {
 	svc, err := googleapi.New(c.newClient(token))
 	if err != nil {

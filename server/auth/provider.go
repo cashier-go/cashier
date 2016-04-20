@@ -2,6 +2,7 @@ package auth
 
 import "golang.org/x/oauth2"
 
+// Provider is an abstraction of different auth methods.
 type Provider interface {
 	Name() string
 	StartSession(string) *Session
@@ -11,12 +12,15 @@ type Provider interface {
 	Revoke(*oauth2.Token) error
 }
 
+// Session stores authentication state.
 type Session struct {
 	AuthURL string
 	Token   *oauth2.Token
 	State   string
 }
 
+// Authorize obtains data from the provider and retains an access token that
+// can be stored for later access.
 func (s *Session) Authorize(provider Provider, code string) error {
 	t, err := provider.Exchange(code)
 	if err != nil {

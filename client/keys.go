@@ -59,7 +59,7 @@ func generateKey(keytype string, bits int) (key, ssh.PublicKey, error) {
 	f, ok := keytypes[keytype]
 	if !ok {
 		var valid []string
-		for k, _ := range keytypes {
+		for k := range keytypes {
 			valid = append(valid, k)
 		}
 		return nil, nil, fmt.Errorf("Unsupported key type %s. Valid choices are %s", keytype, valid)

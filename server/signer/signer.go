@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// KeySigner does the work of signing a ssh public key with the CA key.
 type KeySigner struct {
 	ca          ssh.Signer
 	validity    time.Duration
@@ -18,6 +19,7 @@ type KeySigner struct {
 	permissions map[string]string
 }
 
+// SignUserKey returns a signed ssh certificate.
 func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
 	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(req.Key))
 	if err != nil {
@@ -63,7 +65,8 @@ func makeperms(perms []string) map[string]string {
 	}
 }
 
-func NewSigner(conf config.SSH) (*KeySigner, error) {
+// New creates a new KeySigner from the supplied configuration.
+func New(conf config.SSH) (*KeySigner, error) {
 	data, err := ioutil.ReadFile(conf.SigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read CA key %s: %v", conf.SigningKey, err)

@@ -184,7 +184,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	signer, err := signer.NewSigner(config.SSH)
+	signer, err := signer.New(config.SSH)
 	if err != nil {
 		log.Fatal(err)
 	}
