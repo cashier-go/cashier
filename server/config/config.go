@@ -31,7 +31,7 @@ type Auth struct {
 // SSH holds the configuration specific to signing ssh keys.
 type SSH struct {
 	SigningKey  string   `mapstructure:"signing_key"`
-	Principals  []string `mapstructure:"principals"`
+	Principals  []string `mapstructure:"additional_principals"`
 	MaxAge      string   `mapstructure:"max_age"`
 	Permissions []string `mapstructure:"permissions"`
 }
