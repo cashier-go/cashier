@@ -44,8 +44,8 @@ func newGoogle() auth.Provider {
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
 		OauthCallbackURL:  oauthCallbackURL,
-		GoogleOpts:        make(map[string]interface{}),
+		ProviderOpts:      make(map[string]interface{}),
 	}
-	c.GoogleOpts["domain"] = domain
+	c.ProviderOpts["domain"] = domain
 	return New(c)
 }

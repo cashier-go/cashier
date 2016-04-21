@@ -24,16 +24,16 @@ type Auth struct {
 	OauthClientSecret string                 `mapstructure:"oauth_client_secret"`
 	OauthCallbackURL  string                 `mapstructure:"oauth_callback_url"`
 	Provider          string                 `mapstructure:"provider"`
-	GoogleOpts        map[string]interface{} `mapstructure:"google_opts"`
+	ProviderOpts      map[string]interface{} `mapstructure:"provider_opts"`
 	JWTSigningKey     string                 `mapstructure:"jwt_signing_key"`
 }
 
 // SSH holds the configuration specific to signing ssh keys.
 type SSH struct {
-	SigningKey  string   `mapstructure:"signing_key"`
-	Principals  []string `mapstructure:"additional_principals"`
-	MaxAge      string   `mapstructure:"max_age"`
-	Permissions []string `mapstructure:"permissions"`
+	SigningKey           string   `mapstructure:"signing_key"`
+	AdditionalPrincipals []string `mapstructure:"additional_principals"`
+	MaxAge               string   `mapstructure:"max_age"`
+	Permissions          []string `mapstructure:"permissions"`
 }
 
 // ReadConfig parses a JSON configuration file into a Config struct.

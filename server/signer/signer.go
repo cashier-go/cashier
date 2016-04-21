@@ -82,7 +82,7 @@ func New(conf config.SSH) (*KeySigner, error) {
 	return &KeySigner{
 		ca:          key,
 		validity:    validity,
-		principals:  conf.Principals,
+		principals:  conf.AdditionalPrincipals,
 		permissions: makeperms(conf.Permissions),
 	}, nil
 }
