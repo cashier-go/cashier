@@ -27,7 +27,7 @@ func TestCert(t *testing.T) {
 		Principal:  "gopher1",
 		ValidUntil: time.Now().Add(1 * time.Hour),
 	}
-	ret, err := signer.Sign(r)
+	ret, err := signer.SignUserKey(r)
 	if err != nil {
 		t.Fatal(err)
 	}

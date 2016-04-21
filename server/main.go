@@ -122,7 +122,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 
 // loginHandler starts the authentication process with the provider.
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	a.authsession = a.authprovider.StartSession(newState(32))
+	a.authsession = a.authprovider.StartSession(newState())
 	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
 	return http.StatusFound, nil
 }
@@ -203,7 +203,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	authprovider := google.New(config.Auth)
+	authprovider := google.New(&config.Auth)
 	ctx := &appContext{
 		cookiestore:   sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
 		authprovider:  authprovider,
