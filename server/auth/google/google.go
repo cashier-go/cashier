@@ -35,7 +35,7 @@ func New(c *config.Auth) auth.Provider {
 			Endpoint:     google.Endpoint,
 			Scopes:       []string{googleapi.UserinfoEmailScope, googleapi.UserinfoProfileScope},
 		},
-		domain: c.ProviderOpts["domain"].(string),
+		domain: c.ProviderOpts["domain"],
 	}
 }
 

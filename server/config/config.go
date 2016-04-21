@@ -20,12 +20,12 @@ type Server struct {
 
 // Auth holds the configuration specific to the OAuth provider.
 type Auth struct {
-	OauthClientID     string                 `mapstructure:"oauth_client_id"`
-	OauthClientSecret string                 `mapstructure:"oauth_client_secret"`
-	OauthCallbackURL  string                 `mapstructure:"oauth_callback_url"`
-	Provider          string                 `mapstructure:"provider"`
-	ProviderOpts      map[string]interface{} `mapstructure:"provider_opts"`
-	JWTSigningKey     string                 `mapstructure:"jwt_signing_key"`
+	OauthClientID     string            `mapstructure:"oauth_client_id"`
+	OauthClientSecret string            `mapstructure:"oauth_client_secret"`
+	OauthCallbackURL  string            `mapstructure:"oauth_callback_url"`
+	Provider          string            `mapstructure:"provider"`
+	ProviderOpts      map[string]string `mapstructure:"provider_opts"`
+	JWTSigningKey     string            `mapstructure:"jwt_signing_key"`
 }
 
 // SSH holds the configuration specific to signing ssh keys.
