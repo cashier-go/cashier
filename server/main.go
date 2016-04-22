@@ -40,7 +40,7 @@ type appContext struct {
 	jwtSigningKey []byte
 }
 
-// getAuthCookie retrieves a the cookie from the request and validates it.
+// getAuthCookie retrieves a cookie from the request and validates it.
 func (a *appContext) getAuthCookie(r *http.Request) *oauth2.Token {
 	session, _ := a.cookiestore.Get(r, "tok")
 	t, ok := session.Values["token"]
