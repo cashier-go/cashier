@@ -60,9 +60,7 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 - `oauth_client_id` : string. Oauth Client ID.
 - `oauth_client_secret` : string. Oauth secret.
 - `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
-
 - `provider_opts` : object. Additional options for the provider.
-- `provider_opts: { domain }` : string. Applies to "google" provider. Only allow users from this Google Apps domain. This is optional but leaving it unset will allow anyone with a Google account to obtain ssh certificates so don't do that.
 
 #### Provider-specific options
 
@@ -75,17 +73,15 @@ Example:
 "auth": {
   "provider": "google",
   "provider_opts" : {
-    "domain": "example.com",
-    "organization": ""
+    "domain": "example.com"
   }
 }
 ```
 
-| Provider |       Option | Notes                                                                                                                                  |   |   |
-|---------:|-------------:|----------------------------------------------------------------------------------------------------------------------------------------|---|---|
-| Google   |       domain | If this is unset then any gmail user can obtain a token.                                                                               |   |   |
-| Github   | organization | If this is unset then any GitHub user can obtain a token. The oauth client and secrets should be issued by the specified organization. |   |   |
-|          |              |                                                                                                                                        |   |   |
+| Provider |       Option | Notes                                                                                                                                  |
+|---------:|-------------:|----------------------------------------------------------------------------------------------------------------------------------------|
+| Google   |       domain | If this is unset then any gmail user can obtain a token.                                                                               |
+| Github   | organization | If this is unset then any GitHub user can obtain a token. The oauth client and secrets should be issued by the specified organization. |
 
 Supported options:
 
