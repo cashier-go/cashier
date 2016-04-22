@@ -46,11 +46,11 @@ func send(s []byte, token string) (*lib.SignResponse, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Bad response from server: %s", resp.Status)
-	}
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Bad response from server: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
