@@ -21,6 +21,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth"
+	"github.com/nsheridan/cashier/server/auth/github"
 	"github.com/nsheridan/cashier/server/auth/google"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/signer"
@@ -51,7 +52,7 @@ func (a *appContext) getAuthCookie(r *http.Request) *oauth2.Token {
 	if err := json.Unmarshal(t.([]byte), &tok); err != nil {
 		return nil
 	}
-	if !a.authprovider.Valid(&tok) {
+	if !tok.Valid() {
 		return nil
 	}
 	return &tok
@@ -136,6 +137,12 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 	if err := a.authsession.Authorize(a.authprovider, code); err != nil {
 		return http.StatusInternalServerError, err
 	}
+	// Github tokens don't have an expiry. Set one so that the session expires
+	// after a period.
+	if a.authsession.Token.Expiry.Unix() <= 0 {
+		a.authsession.Token.Expiry = time.Now().Add(1 * time.Hour)
+	}
+	fmt.Println(a.authsession.Token)
 	a.setAuthCookie(w, r, a.authsession.Token)
 	http.Redirect(w, r, "/", http.StatusFound)
 	return http.StatusFound, nil
@@ -147,6 +154,9 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if !tok.Valid() {
 		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 		return http.StatusSeeOther, nil
+	}
+	if !a.authprovider.Valid(tok) {
+		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 	j := jwt.New(jwt.SigningMethodHS256)
 	j.Claims["token"] = tok.AccessToken
@@ -203,7 +213,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	authprovider := google.New(&config.Auth)
+
+	var authprovider auth.Provider
+	switch config.Auth.Provider {
+	case "google":
+		authprovider = google.New(&config.Auth)
+	case "github":
+		authprovider = github.New(&config.Auth)
+	default:
+		log.Fatalln("Unknown provider %s", config.Auth.Provider)
+	}
+
 	ctx := &appContext{
 		cookiestore:   sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
 		authprovider:  authprovider,
