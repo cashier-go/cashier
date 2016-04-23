@@ -1,6 +1,10 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"io"
+
+	"github.com/spf13/viper"
+)
 
 // Config holds the values from the json config file.
 type Config struct {
@@ -37,11 +41,11 @@ type SSH struct {
 }
 
 // ReadConfig parses a JSON configuration file into a Config struct.
-func ReadConfig(filename string) (*Config, error) {
+func ReadConfig(r io.Reader) (*Config, error) {
 	config := &Config{}
 	v := viper.New()
-	v.SetConfigFile(filename)
-	if err := v.ReadInConfig(); err != nil {
+	v.SetConfigType("json")
+	if err := v.ReadConfig(r); err != nil {
 		return nil, err
 	}
 	if err := v.Unmarshal(config); err != nil {

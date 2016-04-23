@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -203,9 +204,18 @@ func newState() string {
 	return hex.EncodeToString(k)
 }
 
+func readConfig(filename string) (*config.Config, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return config.ReadConfig(f)
+}
+
 func main() {
 	flag.Parse()
-	config, err := config.ReadConfig(*cfg)
+	config, err := readConfig(*cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
