@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	// revokeURL = "https://accounts.google.com/o/oauth2/revoke?token=%s"
 	name = "github"
 )
 
@@ -66,7 +65,9 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	return member
 }
 
-// Revoke disables the access token.
+// GitHub doesn't seem to allow token revocation - tokens are indefinite and
+// there are no refresh options etc. Returns nil to satisfy the Provider
+// interface.
 func (c *Config) Revoke(token *oauth2.Token) error {
 	return nil
 }
