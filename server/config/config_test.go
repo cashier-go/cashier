@@ -58,3 +58,18 @@ func TestSSHConfig(t *testing.T) {
 	}
 	a.Equal(d.Hours(), float64(720))
 }
+
+func TestDatabaseConfig(t *testing.T) {
+	a := assert.New(t)
+	c, err := ReadConfig(bytes.NewBuffer(testdata.Database))
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := c.Database
+	a.IsType(d, Database{})
+	a.Equal(d.User, "user")
+	a.Equal(d.Password, "password")
+	a.Equal(d.Host, "localhost")
+	a.Equal(d.DbType, "mongo")
+	a.Equal(d.DB, "dbname")
+}

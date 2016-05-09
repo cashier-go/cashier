@@ -8,9 +8,10 @@ import (
 
 // Config holds the values from the json config file.
 type Config struct {
-	Server Server `mapstructure:"server"`
-	Auth   Auth   `mapstructure:"auth"`
-	SSH    SSH    `mapstructure:"ssh"`
+	Server   Server   `mapstructure:"server"`
+	Auth     Auth     `mapstructure:"auth"`
+	SSH      SSH      `mapstructure:"ssh"`
+	Database Database `mapstructure:"database"`
 }
 
 // Server holds the configuration specific to the web server and sessions.
@@ -20,6 +21,15 @@ type Server struct {
 	TLSCert      string `mapstructure:"tls_cert"`
 	Port         int    `mapstructure:"port"`
 	CookieSecret string `mapstructure:"cookie_secret"`
+}
+
+// Database holds the configuration specific to database functions.
+type Database struct {
+	DbType   string `mapstructure:"dbtype"`
+	Host     string `mapstructure:"host"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DB       string `mapstructure:"db"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.
