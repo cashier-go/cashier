@@ -138,7 +138,6 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 	if a.authsession.Token.Expiry.Unix() <= 0 {
 		a.authsession.Token.Expiry = time.Now().Add(1 * time.Hour)
 	}
-	fmt.Println(a.authsession.Token)
 	a.setAuthCookie(w, r, a.authsession.Token)
 	http.Redirect(w, r, "/", http.StatusFound)
 	return http.StatusFound, nil
