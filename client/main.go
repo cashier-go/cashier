@@ -21,7 +21,7 @@ var (
 	url      = flag.String("url", "http://localhost:10000/sign", "Signing URL")
 	keybits  = flag.Int("bits", 4096, "Key size")
 	validity = flag.Duration("validity", time.Hour*24, "Key validity")
-	keytype  = flag.String("key_type", "rsa", "Type of private key to generate - rsa or ecdsa")
+	keytype  = flag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
 )
 
 func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {

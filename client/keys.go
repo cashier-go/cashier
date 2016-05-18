@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -15,10 +16,23 @@ type keyfunc func(int) (key, ssh.PublicKey, error)
 
 var (
 	keytypes = map[string]keyfunc{
-		"rsa":   generateRSAKey,
-		"ecdsa": generateECDSAKey,
+		"rsa":     generateRSAKey,
+		"ecdsa":   generateECDSAKey,
+		"ed25519": generateED25519Key,
 	}
 )
+
+func generateED25519Key(bits int) (key, ssh.PublicKey, error) {
+	p, k, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	pub, err := ssh.NewPublicKey(p)
+	if err != nil {
+		return nil, nil, err
+	}
+	return k, pub, nil
+}
 
 func generateRSAKey(bits int) (key, ssh.PublicKey, error) {
 	k, err := rsa.GenerateKey(rand.Reader, bits)
