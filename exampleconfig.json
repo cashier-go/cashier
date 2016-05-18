@@ -6,6 +6,13 @@
     "port": 443,
     "cookie_secret": "supersecret"
   },
+  "database": {
+    "host": "localhost",
+    "user": "user",
+    "password": "supersecret",
+    "database": "dbname",
+    "dbtype": "mysql"
+  },
   "auth": {
     "provider": "google",
     "oauth_client_id": "nnnnnnnnnnnnnnnn.apps.googleusercontent.com",
@@ -13,8 +20,7 @@
     "oauth_callback_url": "https://sshca.example.com/auth/callback",
     "google_opts": {
       "domain": "example.com"
-    },
-    "jwt_signing_key": "supersecret"
+    }
   },
   "ssh": {
     "signing_key": "signing_key",

@@ -37,7 +37,6 @@ func TestAuthConfig(t *testing.T) {
 	a.Equal(auth.OauthClientID, "client_id")
 	a.Equal(auth.OauthClientSecret, "secret")
 	a.Equal(auth.OauthCallbackURL, "https://sshca.example.com/auth/callback")
-	a.Equal(auth.JWTSigningKey, "supersecret")
 }
 
 func TestSSHConfig(t *testing.T) {

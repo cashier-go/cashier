@@ -18,8 +18,7 @@ var AuthConfig = []byte(`{
 		"oauth_callback_url": "https://sshca.example.com/auth/callback",
 		"provider_opts": {
 			"domain": "example.com"
-		},
-		"jwt_signing_key": "supersecret"
+		}
 	}
 }`)
 

@@ -13,11 +13,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/nsheridan/cashier/lib"
@@ -34,12 +34,11 @@ var (
 
 // appContext contains local context - cookiestore, authprovider, authsession, templates etc.
 type appContext struct {
-	cookiestore   *sessions.CookieStore
-	authprovider  auth.Provider
-	authsession   *auth.Session
-	views         *template.Template
-	sshKeySigner  *signer.KeySigner
-	jwtSigningKey []byte
+	cookiestore  *sessions.CookieStore
+	authprovider auth.Provider
+	authsession  *auth.Session
+	views        *template.Template
+	sshKeySigner *signer.KeySigner
 }
 
 // getAuthCookie retrieves a cookie from the request and validates it.
@@ -83,21 +82,17 @@ func parseKey(r *http.Request) (*lib.SignRequest, error) {
 // signHandler handles the "/sign" path.
 // It unmarshals the client token to an oauth token, validates it and signs the provided public ssh key.
 func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	// Retrieve the client token and verify it.
-	jwtoken, err := jwt.ParseFromRequest(r, func(t *jwt.Token) (interface{}, error) {
-		return a.jwtSigningKey, nil
-	})
-	if err != nil {
+	var t string
+	if ah := r.Header.Get("Authorization"); ah != "" {
+		if len(ah) > 6 && strings.ToUpper(ah[0:7]) == "BEARER " {
+			t = ah[7:]
+		}
+	}
+	if t == "" {
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
-	if !jwtoken.Valid {
-		log.Printf("Token %v not valid", jwtoken)
-		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
-	}
-	expiry := int64(jwtoken.Claims["exp"].(float64))
 	token := &oauth2.Token{
-		AccessToken: jwtoken.Claims["token"].(string),
-		Expiry:      time.Unix(expiry, 0),
+		AccessToken: t,
 	}
 	ok := a.authprovider.Valid(token)
 	if !ok {
@@ -156,16 +151,9 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 		return http.StatusSeeOther, nil
 	}
-	j := jwt.New(jwt.SigningMethodHS256)
-	j.Claims["token"] = tok.AccessToken
-	j.Claims["exp"] = tok.Expiry.Unix()
-	t, err := j.SignedString(a.jwtSigningKey)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
 	page := struct {
 		Token string
-	}{t}
+	}{tok.AccessToken}
 	a.views.ExecuteTemplate(w, "token.html", page)
 	return http.StatusOK, nil
 }
@@ -232,11 +220,10 @@ func main() {
 	}
 
 	ctx := &appContext{
-		cookiestore:   sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
-		authprovider:  authprovider,
-		views:         template.Must(template.ParseGlob("templates/*")),
-		sshKeySigner:  signer,
-		jwtSigningKey: []byte(config.Auth.JWTSigningKey),
+		cookiestore:  sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
+		authprovider: authprovider,
+		views:        template.Must(template.ParseGlob("templates/*")),
+		sshKeySigner: signer,
 	}
 	ctx.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,
