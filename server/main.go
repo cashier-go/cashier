@@ -152,12 +152,9 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 // rootHandler starts the auth process. If the client is authenticated it renders the token to the user.
 func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	tok := a.getAuthCookie(r)
-	if !tok.Valid() {
+	if !tok.Valid() || !a.authprovider.Valid(tok) {
 		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 		return http.StatusSeeOther, nil
-	}
-	if !a.authprovider.Valid(tok) {
-		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 	j := jwt.New(jwt.SigningMethodHS256)
 	j.Claims["token"] = tok.AccessToken
