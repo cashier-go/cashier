@@ -41,7 +41,7 @@ The client is configured using command-line flags.
 The server is configured using a JSON configuration file - [example](exampleconfig.json).
 
 For the server you need the following:
-- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA and ECDSA keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
+- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
 - Google OAuth credentials which you can generate at the [Google Developers Console](https://console.developers.google.com). You also need to set the callback URL here.
 
 
