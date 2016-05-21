@@ -1,9 +1,12 @@
 package signer
 
 import (
+	"crypto/md5"
 	"crypto/rand"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/nsheridan/cashier/lib"
@@ -25,16 +28,16 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	expires := time.Now().Add(s.validity)
+	expires := time.Now().UTC().Add(s.validity)
 	if req.ValidUntil.After(expires) {
 		req.ValidUntil = expires
 	}
 	cert := &ssh.Certificate{
 		CertType:    ssh.UserCert,
 		Key:         pubkey,
-		KeyId:       req.Principal,
+		KeyId:       fmt.Sprintf("%s_%d", req.Principal, time.Now().UTC().Unix()),
 		ValidBefore: uint64(req.ValidUntil.Unix()),
-		ValidAfter:  uint64(time.Now().Add(-5 * time.Minute).Unix()),
+		ValidAfter:  uint64(time.Now().UTC().Add(-5 * time.Minute).Unix()),
 	}
 	cert.ValidPrincipals = append(cert.ValidPrincipals, req.Principal)
 	cert.ValidPrincipals = append(cert.ValidPrincipals, s.principals...)
@@ -45,6 +48,7 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
 	marshaled := ssh.MarshalAuthorizedKey(cert)
 	// Remove the trailing newline.
 	marshaled = marshaled[:len(marshaled)-1]
+	log.Printf("Issued cert %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, fingerprint(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
 	return string(marshaled), nil
 }
 
@@ -85,4 +89,11 @@ func New(conf config.SSH) (*KeySigner, error) {
 		principals:  conf.AdditionalPrincipals,
 		permissions: makeperms(conf.Permissions),
 	}, nil
+}
+
+func fingerprint(pubkey ssh.PublicKey) string {
+	md5String := md5.New()
+	md5String.Write(pubkey.Marshal())
+	fp := fmt.Sprintf("% x", md5String.Sum(nil))
+	return strings.Replace(fp, " ", ":", -1)
 }
