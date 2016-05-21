@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/nsheridan/cashier/lib"
+	"github.com/pkg/browser"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
 
 var (
-	url      = flag.String("url", "http://localhost:10000/sign", "Signing URL")
-	keybits  = flag.Int("bits", 4096, "Key size")
+	ca       = flag.String("ca", "http://localhost:10000", "CA server")
+	keybits  = flag.Int("bits", 4096, "Key size. Ignored for ed25519 keys")
 	validity = flag.Duration("validity", time.Hour*24, "Key validity")
 	keytype  = flag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
 )
@@ -37,7 +38,7 @@ func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
 }
 
 func send(s []byte, token string) (*lib.SignResponse, error) {
-	req, err := http.NewRequest("POST", *url, bytes.NewReader(s))
+	req, err := http.NewRequest("POST", *ca+"/sign", bytes.NewReader(s))
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +96,10 @@ func sign(pub ssh.PublicKey, token string) (*ssh.Certificate, error) {
 func main() {
 	flag.Parse()
 
+	fmt.Printf("Your browser has been opened to visit %s\n", *ca)
+	if err := browser.OpenURL(*ca); err != nil {
+		fmt.Println("Error launching web browser. Go to the link in your web browser")
+	}
 	priv, pub, err := generateKey(*keytype, *keybits)
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)

@@ -48,7 +48,7 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
 	marshaled := ssh.MarshalAuthorizedKey(cert)
 	// Remove the trailing newline.
 	marshaled = marshaled[:len(marshaled)-1]
-	log.Printf("Issued cert %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, fingerprint(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
+	log.Printf("Issued cert id: %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, fingerprint(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
 	return string(marshaled), nil
 }
 
