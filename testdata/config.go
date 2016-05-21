@@ -30,13 +30,3 @@ var SSHConfig = []byte(`{
 		"permissions": ["permit-pty", "permit-X11-forwarding", "permit-port-forwarding", "permit-user-rc"]
 	}
 }`)
-
-var Database = []byte(`{
-	"database": {
-		"host": "localhost",
-		"user": "user",
-		"password": "password",
-		"db": "dbname",
-		"dbtype": "mongo"
-	}
-}`)
