@@ -33,7 +33,7 @@ The CA verifies the token and signs the public key with the signing key and retu
 
 The command on the user's machine receives the certificate and loads it and the previously generated private key into the ssh agent.
 
-The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the keychain.
+The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the agent.
 
 # Usage
 Cashier comes in two parts, a [client](client) and a [server](server).

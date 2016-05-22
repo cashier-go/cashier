@@ -20,7 +20,7 @@ import (
 
 var (
 	ca       = flag.String("ca", "http://localhost:10000", "CA server")
-	keybits  = flag.Int("bits", 4096, "Key size. Ignored for ed25519 keys")
+	keybits  = flag.Int("bits", 2048, "Key size. Ignored for ed25519 keys")
 	validity = flag.Duration("validity", time.Hour*24, "Key validity")
 	keytype  = flag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
 )
@@ -100,6 +100,7 @@ func main() {
 	if err := browser.OpenURL(*ca); err != nil {
 		fmt.Println("Error launching web browser. Go to the link in your web browser")
 	}
+	fmt.Println("Generating new key pair")
 	priv, pub, err := generateKey(*keytype, *keybits)
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
