@@ -112,6 +112,7 @@ The ssh server needs to trust the public part of the CA signing key. Add somethi
 ```
 TrustedUserCAKeys /etc/ssh/ca.pub
 ```
+where `/etc/ssh/ca.pub` contains the public part of your signing key.
 
 ## Future Work
 
