@@ -6,13 +6,6 @@
     "port": 443,
     "cookie_secret": "supersecret"
   },
-  "database": {
-    "host": "localhost",
-    "user": "user",
-    "password": "supersecret",
-    "database": "dbname",
-    "dbtype": "mysql"
-  },
   "auth": {
     "provider": "google",
     "oauth_client_id": "nnnnnnnnnnnnnnnn.apps.googleusercontent.com",
