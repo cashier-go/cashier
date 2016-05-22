@@ -36,7 +36,7 @@ The command on the user's machine receives the certificate and loads it and the 
 The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the agent.
 
 # Usage
-Cashier comes in two parts, a [client](client) and a [server](server).
+Cashier comes in two parts, a [cli](cmd/cashier) and a [server](cmd/cashierd).
 The client is configured using command-line flags.
 The server is configured using a JSON configuration file - [example](exampleconfig.json).
 
@@ -44,6 +44,14 @@ For the server you need the following:
 - A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
 - Google OAuth credentials which you can generate at the [Google Developers Console](https://console.developers.google.com). You also need to set the callback URL here.
 
+# Quick start
+## Installation using Go tools
+1. Use the Go tools to install cashier. The binaries `cashierd` and `cashier` will be installed in your $GOPATH.
+```
+go get github.com/cashier/cmd/...
+```
+2. Create a signing key with `ssh-keygen` and a [config.json](exampleconfig.json)
+3. Run the cashier server with `cashierd` and the cli with `cashier`.
 
 # Configuration
 Configuration is divided into three sections: `server`, `auth`, and `ssh`.
