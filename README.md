@@ -53,6 +53,13 @@ go get github.com/cashier/cmd/...
 2. Create a signing key with `ssh-keygen` and a [config.json](exampleconfig.json)
 3. Run the cashier server with `cashierd` and the cli with `cashier`.
 
+## Using docker
+1. Create a signing key with `ssh-keygen` and a [config.json](exampleconfig.json)
+2. Run
+```
+docker run -it --rm -p 10000:10000 --name cashier -v $(pwd):/cashier nsheridan/cashier
+```
+
 # Configuration
 Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 

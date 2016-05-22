@@ -20,6 +20,7 @@ type Server struct {
 	TLSCert      string `mapstructure:"tls_cert"`
 	Port         int    `mapstructure:"port"`
 	CookieSecret string `mapstructure:"cookie_secret"`
+	TemplateDir  string `mapstructure:"template_dir"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.

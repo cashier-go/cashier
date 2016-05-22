@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -221,7 +222,7 @@ func main() {
 	ctx := &appContext{
 		cookiestore:  sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
 		authprovider: authprovider,
-		views:        template.Must(template.ParseGlob("templates/*")),
+		views:        template.Must(template.ParseGlob(path.Join(config.Server.TemplateDir, "*"))),
 		sshKeySigner: signer,
 	}
 	ctx.cookiestore.Options = &sessions.Options{
