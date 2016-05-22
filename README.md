@@ -60,6 +60,15 @@ go get github.com/cashier/cmd/...
 docker run -it --rm -p 10000:10000 --name cashier -v $(pwd):/cashier nsheridan/cashier
 ```
 
+# Requirements
+## Server
+Go 1.5+. May work with earlier versions.
+
+## Client
+OpenSSH 5.6 or newer.
+A working SSH agent.
+I have only tested this on Linux & OSX.
+
 # Configuration
 Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 
@@ -69,6 +78,7 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 - `tls_cert` : string. Path to the TLS cert.
 - `port` : int. Port to listen on.
 - `cookie_secret`: string. Authentication key for the session cookie.
+- `template_dir`: string. Path to html template directory. At present only 'token.html' is required.
 
 ### auth
 - `provider` : string. Name of the oauth provider. At present the only valid value is "google".
@@ -117,5 +127,3 @@ where `/etc/ssh/ca.pub` contains the public part of your signing key.
 ## Future Work
 
 - Host certificates - only user certificates are supported at present.
-- Record issued certs.
-- Cert revocation - depends on recording issued certs.
