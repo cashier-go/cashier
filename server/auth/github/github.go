@@ -1,6 +1,7 @@
 package github
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -23,7 +24,10 @@ type Config struct {
 }
 
 // New creates a new Github provider from a configuration.
-func New(c *config.Auth) auth.Provider {
+func New(c *config.Auth) (auth.Provider, error) {
+	if c.ProviderOpts["organization"] == "" {
+		return nil, errors.New("github_opts organization must not be empty")
+	}
 	return &Config{
 		config: &oauth2.Config{
 			ClientID:     c.OauthClientID,
@@ -36,7 +40,7 @@ func New(c *config.Auth) auth.Provider {
 			},
 		},
 		organization: c.ProviderOpts["organization"],
-	}
+	}, nil
 }
 
 // A new oauth2 http client.
@@ -53,9 +57,6 @@ func (c *Config) Name() string {
 func (c *Config) Valid(token *oauth2.Token) bool {
 	if !token.Valid() {
 		return false
-	}
-	if c.organization == "" {
-		return true
 	}
 	client := githubapi.NewClient(c.newClient(token))
 	member, _, err := client.Organizations.IsMember(c.organization, c.Username(token))
