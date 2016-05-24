@@ -19,7 +19,7 @@ var (
 func TestNew(t *testing.T) {
 	a := assert.New(t)
 
-	p := newGoogle()
+	p, _ := newGoogle()
 	g := p.(*Config)
 	a.Equal(g.config.ClientID, oauthClientID)
 	a.Equal(g.config.ClientSecret, oauthClientSecret)
@@ -27,10 +27,22 @@ func TestNew(t *testing.T) {
 	a.Equal(g.domain, domain)
 }
 
+func TestNewWithoutDomain(t *testing.T) {
+	a := assert.New(t)
+
+	domain = ""
+
+	_, err := newGoogle()
+	a.EqualError(err, "google_opts domain must not be empty")
+
+	domain = "example.com"
+}
+
 func TestStartSession(t *testing.T) {
 	a := assert.New(t)
 
-	p := newGoogle()
+	p, err := newGoogle()
+	a.NoError(err)
 	s := p.StartSession("test_state")
 	a.Equal(s.State, "test_state")
 	a.Contains(s.AuthURL, "accounts.google.com/o/oauth2/auth")
@@ -39,13 +51,12 @@ func TestStartSession(t *testing.T) {
 	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
 }
 
-func newGoogle() auth.Provider {
+func newGoogle() (auth.Provider, error) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
 		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts:      map[string]string{"domain": domain},
 	}
-	c.ProviderOpts["domain"] = domain
 	return New(c)
 }

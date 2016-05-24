@@ -212,11 +212,15 @@ func main() {
 	var authprovider auth.Provider
 	switch config.Auth.Provider {
 	case "google":
-		authprovider = google.New(&config.Auth)
+		authprovider, err = google.New(&config.Auth)
 	case "github":
-		authprovider = github.New(&config.Auth)
+		authprovider, err = github.New(&config.Auth)
 	default:
 		log.Fatalln("Unknown provider %s", config.Auth.Provider)
+	}
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	ctx := &appContext{

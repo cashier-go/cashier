@@ -1,6 +1,7 @@
 package google
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -26,7 +27,11 @@ type Config struct {
 }
 
 // New creates a new Google provider from a configuration.
-func New(c *config.Auth) auth.Provider {
+func New(c *config.Auth) (auth.Provider, error) {
+	if c.ProviderOpts["domain"] == "" {
+		return nil, errors.New("google_opts domain must not be empty")
+	}
+
 	return &Config{
 		config: &oauth2.Config{
 			ClientID:     c.OauthClientID,
@@ -36,7 +41,7 @@ func New(c *config.Auth) auth.Provider {
 			Scopes:       []string{googleapi.UserinfoEmailScope, googleapi.UserinfoProfileScope},
 		},
 		domain: c.ProviderOpts["domain"],
-	}
+	}, nil
 }
 
 // A new oauth2 http client.

@@ -19,7 +19,7 @@ var (
 func TestNew(t *testing.T) {
 	a := assert.New(t)
 
-	p := newGithub()
+	p, _ := newGithub()
 	g := p.(*Config)
 	a.Equal(g.config.ClientID, oauthClientID)
 	a.Equal(g.config.ClientSecret, oauthClientSecret)
@@ -27,10 +27,20 @@ func TestNew(t *testing.T) {
 	a.Equal(g.organization, organization)
 }
 
+func TestNewEmptyOrganization(t *testing.T) {
+	organization = ""
+	a := assert.New(t)
+
+	_, err := newGithub()
+	a.EqualError(err, "github_opts organization must not be empty")
+
+	organization = "exampleorg"
+}
+
 func TestStartSession(t *testing.T) {
 	a := assert.New(t)
 
-	p := newGithub()
+	p, _ := newGithub()
 	s := p.StartSession("test_state")
 	a.Equal(s.State, "test_state")
 	a.Contains(s.AuthURL, "github.com/login/oauth/authorize")
@@ -38,7 +48,7 @@ func TestStartSession(t *testing.T) {
 	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
 }
 
-func newGithub() auth.Provider {
+func newGithub() (auth.Provider, error) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
