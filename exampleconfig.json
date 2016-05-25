@@ -12,7 +12,7 @@
     "oauth_client_id": "nnnnnnnnnnnnnnnn.apps.googleusercontent.com",
     "oauth_client_secret": "yyyyyyyyyyyyyyyyyyyyyy",
     "oauth_callback_url": "https://sshca.example.com/auth/callback",
-    "google_opts": {
+    "provider_opts": {
       "domain": "example.com"
     }
   },
