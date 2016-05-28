@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -37,7 +38,11 @@ func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
 	return nil
 }
 
-func send(s []byte, token, ca string) (*lib.SignResponse, error) {
+func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignResponse, error) {
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: !ValidateTLSCertificate},
+	}
+	client := &http.Client{Transport: transport}
 	req, err := http.NewRequest("POST", ca+"/sign", bytes.NewReader(s))
 	if err != nil {
 		return nil, err
@@ -45,7 +50,6 @@ func send(s []byte, token, ca string) (*lib.SignResponse, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -79,7 +83,7 @@ func sign(pub ssh.PublicKey, token string, conf *config) (*ssh.Certificate, erro
 	if err != nil {
 		return nil, err
 	}
-	resp, err := send(s, token, conf.CA)
+	resp, err := send(s, token, conf.CA, conf.ValidateTLSCertificate)
 	if err != nil {
 		return nil, err
 	}
