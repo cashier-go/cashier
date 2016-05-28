@@ -58,7 +58,7 @@ func TestSignGood(t *testing.T) {
 		fmt.Fprintln(w, string(j))
 	}))
 	defer ts.Close()
-	_, err := send([]byte(`{}`), "token", ts.URL)
+	_, err := send([]byte(`{}`), "token", ts.URL, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestSignBad(t *testing.T) {
 		fmt.Fprintln(w, string(j))
 	}))
 	defer ts.Close()
-	_, err := send([]byte(`{}`), "token", ts.URL)
+	_, err := send([]byte(`{}`), "token", ts.URL, true)
 	if err != nil {
 		t.Fatal(err)
 	}
