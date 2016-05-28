@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -13,10 +14,10 @@ type config struct {
 }
 
 func setDefaults() {
-	viper.SetDefault("ca", "http://localhost:10000")
-	viper.SetDefault("key_type", "rsa")
-	viper.SetDefault("key_size", 2048)
-	viper.SetDefault("validity", "24h")
+	viper.BindPFlag("ca", pflag.Lookup("ca"))
+	viper.BindPFlag("key_type", pflag.Lookup("key_type"))
+	viper.BindPFlag("key_size", pflag.Lookup("key_size"))
+	viper.BindPFlag("validity", pflag.Lookup("validity"))
 	viper.SetDefault("validateTLSCertificate", true)
 }
 

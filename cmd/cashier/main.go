@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -17,13 +16,18 @@ import (
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/pkg/browser"
+	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
 
 var (
-	u, _ = user.Current()
-	cfg  = flag.String("config", path.Join(u.HomeDir, ".cashier.cfg"), "Path to config file")
+	u, _     = user.Current()
+	cfg      = pflag.String("config", path.Join(u.HomeDir, ".cashier.conf"), "Path to config file")
+	ca       = pflag.String("ca", "http://localhost:10000", "CA server")
+	keysize  = pflag.Int("key_size", 2048, "Key size. Ignored for ed25519 keys")
+	validity = pflag.Duration("validity", time.Hour*24, "Key validity")
+	keytype  = pflag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
 )
 
 func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
@@ -102,7 +106,8 @@ func sign(pub ssh.PublicKey, token string, conf *config) (*ssh.Certificate, erro
 }
 
 func main() {
-	flag.Parse()
+	pflag.Parse()
+
 	c, err := readConfig(*cfg)
 	if err != nil {
 		log.Fatalf("Error parsing config file: %v\n", err)

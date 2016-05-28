@@ -37,7 +37,7 @@ The user can now ssh to the production machine, and continue to ssh to any machi
 
 # Usage
 Cashier comes in two parts, a [cli](cmd/cashier) and a [server](cmd/cashierd).
-The client is configured using a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.cfg).
+The client is configured using either a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.cfg) - or command-line flags.
 The server is configured using a JSON configuration file - [example](example-server.json).
 
 For the server you need the following:
