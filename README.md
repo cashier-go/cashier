@@ -62,7 +62,7 @@ docker run -it --rm -p 10000:10000 --name cashier -v $(pwd):/cashier nsheridan/c
 
 # Requirements
 ## Server
-Go 1.5+. May work with earlier versions.
+Go 1.5 (with `GO15VENDOREXPERIMENT` set) or later. May work with earlier versions.
 
 ## Client
 OpenSSH 5.6 or newer.
