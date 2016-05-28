@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"golang.org/x/oauth2"
 
@@ -132,11 +131,6 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 	code := r.FormValue("code")
 	if err := a.authsession.Authorize(a.authprovider, code); err != nil {
 		return http.StatusInternalServerError, err
-	}
-	// Github tokens don't have an expiry. Set one so that the session expires
-	// after a period.
-	if a.authsession.Token.Expiry.Unix() <= 0 {
-		a.authsession.Token.Expiry = time.Now().Add(1 * time.Hour)
 	}
 	a.setAuthCookie(w, r, a.authsession.Token)
 	http.Redirect(w, r, "/", http.StatusFound)
