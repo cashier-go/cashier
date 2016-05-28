@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/nsheridan/cashier/server/auth/google"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/signer"
+	"github.com/nsheridan/cashier/templates"
 )
 
 var (
@@ -38,7 +38,6 @@ type appContext struct {
 	cookiestore  *sessions.CookieStore
 	authprovider auth.Provider
 	authsession  *auth.Session
-	views        *template.Template
 	sshKeySigner *signer.KeySigner
 }
 
@@ -154,7 +153,9 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	page := struct {
 		Token string
 	}{tok.AccessToken}
-	a.views.ExecuteTemplate(w, "token.html", page)
+
+	tmpl := template.Must(template.New("token.html").Parse(templates.Token))
+	tmpl.Execute(w, page)
 	return http.StatusOK, nil
 }
 
@@ -226,7 +227,6 @@ func main() {
 	ctx := &appContext{
 		cookiestore:  sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
 		authprovider: authprovider,
-		views:        template.Must(template.ParseGlob(path.Join(config.Server.TemplateDir, "*"))),
 		sshKeySigner: signer,
 	}
 	ctx.cookiestore.Options = &sessions.Options{

@@ -1,4 +1,6 @@
-<html>
+package templates
+
+const Token = `<html>
   <head>
     <title>YOUR TOKEN!</title>
     <style>
@@ -43,4 +45,4 @@
       The token will expire in &lt; 1 hour.
     </h2>
   </body>
-</html>
+</html>`
