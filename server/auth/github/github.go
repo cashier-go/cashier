@@ -3,6 +3,7 @@ package github
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
@@ -83,7 +84,16 @@ func (c *Config) StartSession(state string) *auth.Session {
 
 // Exchange authorizes the session and returns an access token.
 func (c *Config) Exchange(code string) (*oauth2.Token, error) {
-	return c.config.Exchange(oauth2.NoContext, code)
+	t, err := c.config.Exchange(oauth2.NoContext, code)
+	if err != nil {
+		return nil, err
+	}
+	// Github tokens don't have an expiry. Set one so that the session expires
+	// after a period.
+	if t.Expiry.Unix() <= 0 {
+		t.Expiry = time.Now().Add(1 * time.Hour)
+	}
+	return t, nil
 }
 
 // Username retrieves the username portion of the user's email address.
