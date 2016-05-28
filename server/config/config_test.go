@@ -22,7 +22,6 @@ func TestServerConfig(t *testing.T) {
 	a.Equal(server.TLSCert, "server.crt")
 	a.Equal(server.Port, 443)
 	a.Equal(server.CookieSecret, "supersecret")
-	a.Equal(server.TemplateDir, "templates")
 }
 
 func TestAuthConfig(t *testing.T) {

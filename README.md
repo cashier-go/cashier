@@ -78,7 +78,6 @@ Configuration is divided into three sections: `server`, `auth`, and `ssh`.
 - `tls_cert` : string. Path to the TLS cert.
 - `port` : int. Port to listen on.
 - `cookie_secret`: string. Authentication key for the session cookie.
-- `template_dir`: string. Path to html template directory. At present only 'token.html' is required.
 
 ### auth
 - `provider` : string. Name of the oauth provider. At present the only valid value is "google".

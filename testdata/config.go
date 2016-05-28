@@ -6,8 +6,7 @@ var ServerConfig = []byte(`{
 		"tls_key": "server.key",
 		"tls_cert": "server.crt",
 		"port": 443,
-		"cookie_secret": "supersecret",
-		"template_dir": "templates"
+		"cookie_secret": "supersecret"
 	}
 }`)
 
