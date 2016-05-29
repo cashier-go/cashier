@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	cfg = flag.String("config_file", "config.json", "Path to configuration file.")
+	cfg = flag.String("config_file", "cashierd.conf", "Path to configuration file.")
 )
 
 // appContext contains local context - cookiestore, authprovider, authsession, templates etc.
