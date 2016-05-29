@@ -37,8 +37,8 @@ The user can now ssh to the production machine, and continue to ssh to any machi
 
 # Usage
 Cashier comes in two parts, a [cli](cmd/cashier) and a [server](cmd/cashierd).
-The client is configured using either a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.cfg) - or command-line flags.
-The server is configured using a JSON configuration file - [example](example-server.json).
+The client is configured using either a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.conf) - or command-line flags.
+The server is configured using a HCL configuration file - [example](example-server.conf).
 
 For the server you need the following:
 - A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
@@ -50,11 +50,11 @@ For the server you need the following:
 ```
 go get github.com/cashier/cmd/...
 ```
-2. Create a signing key with `ssh-keygen` and a [config.json](example-server.json)
+2. Create a signing key with `ssh-keygen` and a [cashierd.conf](example-server.conf)
 3. Run the cashier server with `cashierd` and the cli with `cashier`.
 
 ## Using docker
-1. Create a signing key with `ssh-keygen` and a [config.json](example-server.json)
+1. Create a signing key with `ssh-keygen` and a [cashierd.conf](example-server.conf)
 2. Run
 ```
 docker run -it --rm -p 10000:10000 --name cashier -v $(pwd):/cashier nsheridan/cashier
