@@ -58,8 +58,7 @@ func TestSignGood(t *testing.T) {
 		fmt.Fprintln(w, string(j))
 	}))
 	defer ts.Close()
-	*ca = ts.URL
-	_, err := send([]byte(`{}`), "token")
+	_, err := send([]byte(`{}`), "token", ts.URL, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +66,11 @@ func TestSignGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cert, err := sign(k, "token")
+	c := &config{
+		CA:       ts.URL,
+		Validity: "24h",
+	}
+	cert, err := sign(k, "token", c)
 	if cert == nil && err != nil {
 		t.Fatal(err)
 	}
@@ -83,8 +86,7 @@ func TestSignBad(t *testing.T) {
 		fmt.Fprintln(w, string(j))
 	}))
 	defer ts.Close()
-	*ca = ts.URL
-	_, err := send([]byte(`{}`), "token")
+	_, err := send([]byte(`{}`), "token", ts.URL, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +94,11 @@ func TestSignBad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cert, err := sign(k, "token")
+	c := &config{
+		CA:       ts.URL,
+		Validity: "24h",
+	}
+	cert, err := sign(k, "token", c)
 	if cert != nil && err == nil {
 		t.Fatal(err)
 	}
