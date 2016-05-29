@@ -1,5 +1,16 @@
 language: go
 
+env:
+  - GO15VENDOREXPERIMENT=1
+
 go:
+  - 1.5.4
   - 1.6.2
   - tip
+
+sudo: false
+script:
+  - go build -v ./...
+  - go test -v ./...
+  - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
+  - go list ./... |grep -v vendor/ |xargs go vet
