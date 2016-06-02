@@ -73,9 +73,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	if err != nil {
 		return false
 	}
-	switch {
-	case ti.Audience != c.config.ClientID:
-	case ui.Hd != c.domain:
+	if ti.Audience != c.config.ClientID || ui.Hd != c.domain {
 		return false
 	}
 	return true
