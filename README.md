@@ -70,7 +70,7 @@ A working SSH agent.
 I have only tested this on Linux & OSX.
 
 # Configuration
-Configuration is divided into three sections: `server`, `auth`, and `ssh`.
+Configuration is divided into different sections: `server`, `auth`, `ssh`, and `aws`.
 
 ### server
 - `use_tls` : boolean. If set `tls_key` and `tls_cert` are required.
@@ -110,10 +110,19 @@ Example:
 Supported options:
 
 ### ssh
-- `signing_key`: string. Path to the signing ssh private key you created earlier.
+- `signing_key`: string. Path to the signing ssh private key you created earlier. This can be a S3 or GCS path using `/s3/<bucket>/<path/to/key>` or `/gcs/<bucket>/<path/to/key>` as appropriate. For S3 you should add an [aws](#aws) config as needed.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
 - `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests. Must be a valid Go [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) string.
 - `permissions`: array of string. Actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list.
+
+### aws
+AWS configuration is only needed for accessing signing keys stored on S3, and isn't required even then.
+The S3 client can be configured using any of [the usual AWS-SDK means](https://github.com/aws/aws-sdk-go/wiki/configuring-sdk) - environment variables, IAM roles etc.
+It's strongly recommended that signing keys stored on S3 be locked down to specific IAM roles and encrypted using KMS.
+
+- `region`: string. AWS region the bucket resides in, e.g. `us-east-1`.
+- `access_key`: string. AWS Access Key ID.
+- `secret_key`: string. AWS Secret Key.
 
 ## Configuring ssh
 The client needs no special configuration, just a running ssh-agent.
