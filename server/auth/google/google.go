@@ -90,7 +90,6 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{
 		AuthURL: c.config.AuthCodeURL(state, oauth2.SetAuthURLParam("hd", c.domain)),
-		State:   state,
 	}
 }
 

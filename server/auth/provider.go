@@ -16,7 +16,6 @@ type Provider interface {
 type Session struct {
 	AuthURL string
 	Token   *oauth2.Token
-	State   string
 }
 
 // Authorize obtains data from the provider and retains an access token that
