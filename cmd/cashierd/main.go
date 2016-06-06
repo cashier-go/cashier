@@ -24,6 +24,7 @@ import (
 	"github.com/nsheridan/cashier/server/auth/github"
 	"github.com/nsheridan/cashier/server/auth/google"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/nsheridan/cashier/server/fs"
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/templates"
 )
@@ -218,6 +219,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fs.Register(&config.AWS)
 	signer, err := signer.New(config.SSH)
 	if err != nil {
 		log.Fatal(err)

@@ -13,6 +13,7 @@ type Config struct {
 	Server `mapstructure:"server"`
 	Auth   `mapstructure:"auth"`
 	SSH    `mapstructure:"ssh"`
+	AWS    `mapstructure:"aws"`
 }
 
 // unmarshalled holds the raw config.
@@ -20,6 +21,7 @@ type unmarshalled struct {
 	Server []Server `mapstructure:"server"`
 	Auth   []Auth   `mapstructure:"auth"`
 	SSH    []SSH    `mapstructure:"ssh"`
+	AWS    []AWS    `mapstructure:"aws"`
 }
 
 // Server holds the configuration specific to the web server and sessions.
@@ -48,6 +50,14 @@ type SSH struct {
 	Permissions          []string `mapstructure:"permissions"`
 }
 
+// AWS holds Amazon AWS configuration.
+// AWS can also be configured using SDK methods.
+type AWS struct {
+	Region    string `mapstructure:"region"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+}
+
 func verifyConfig(u *unmarshalled) error {
 	var err error
 	if len(u.SSH) == 0 {
@@ -58,6 +68,10 @@ func verifyConfig(u *unmarshalled) error {
 	}
 	if len(u.Server) == 0 {
 		err = multierror.Append(errors.New("missing server config block"))
+	}
+	if len(u.AWS) == 0 {
+		// AWS config is optional
+		u.AWS = append(u.AWS, AWS{})
 	}
 	return err
 }
@@ -80,5 +94,6 @@ func ReadConfig(r io.Reader) (*Config, error) {
 		Server: u.Server[0],
 		Auth:   u.Auth[0],
 		SSH:    u.SSH[0],
+		AWS:    u.AWS[0],
 	}, nil
 }
