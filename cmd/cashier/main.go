@@ -31,10 +31,12 @@ var (
 )
 
 func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
+	lifetime := time.Unix(int64(cert.ValidBefore), 0).Sub(time.Now()).Seconds()
 	pubcert := agent.AddedKey{
-		PrivateKey:  key,
-		Certificate: cert,
-		Comment:     cert.KeyId,
+		PrivateKey:   key,
+		Certificate:  cert,
+		Comment:      cert.KeyId,
+		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(pubcert); err != nil {
 		return fmt.Errorf("error importing certificate: %s", err)
