@@ -204,10 +204,10 @@
 			"revisionTime": "2016-05-16T23:05:56Z"
 		},
 		{
-			"checksumSHA1": "SEz1b89e679TV/nkIHlu49H5wTM=",
+			"checksumSHA1": "EcKMEjHXZnW85PGnmiVGLknf8HU=",
 			"path": "golang.org/x/crypto/ssh/agent",
-			"revision": "5bcd134fee4dd1475da17714aac19c0aa0142e2f",
-			"revisionTime": "2016-05-16T23:05:56Z"
+			"revision": "89d9e62992539701a49a19c52ebb33e84cbbe80f",
+			"revisionTime": "2016-06-03T20:06:38Z"
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
