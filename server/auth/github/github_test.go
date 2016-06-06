@@ -42,7 +42,6 @@ func TestStartSession(t *testing.T) {
 
 	p, _ := newGithub()
 	s := p.StartSession("test_state")
-	a.Equal(s.State, "test_state")
 	a.Contains(s.AuthURL, "github.com/login/oauth/authorize")
 	a.Contains(s.AuthURL, "state=test_state")
 	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))

@@ -40,9 +40,9 @@ type appContext struct {
 	sshKeySigner *signer.KeySigner
 }
 
-// getAuthCookie retrieves a cookie from the request and validates it.
-func (a *appContext) getAuthCookie(r *http.Request) *oauth2.Token {
-	session, _ := a.cookiestore.Get(r, "tok")
+// getAuthTokenCookie retrieves a cookie from the request.
+func (a *appContext) getAuthTokenCookie(r *http.Request) *oauth2.Token {
+	session, _ := a.cookiestore.Get(r, "session")
 	t, ok := session.Values["token"]
 	if !ok {
 		return nil
@@ -57,11 +57,28 @@ func (a *appContext) getAuthCookie(r *http.Request) *oauth2.Token {
 	return &tok
 }
 
-// setAuthCookie marshals the auth token and stores it as a cookie.
-func (a *appContext) setAuthCookie(w http.ResponseWriter, r *http.Request, t *oauth2.Token) {
-	session, _ := a.cookiestore.Get(r, "tok")
+// setAuthTokenCookie marshals the auth token and stores it as a cookie.
+func (a *appContext) setAuthTokenCookie(w http.ResponseWriter, r *http.Request, t *oauth2.Token) {
+	session, _ := a.cookiestore.Get(r, "session")
 	val, _ := json.Marshal(t)
 	session.Values["token"] = val
+	session.Save(r, w)
+}
+
+// getAuthStateCookie retrieves the oauth csrf state value from the client request.
+func (a *appContext) getAuthStateCookie(r *http.Request) string {
+	session, _ := a.cookiestore.Get(r, "session")
+	state, ok := session.Values["state"]
+	if !ok {
+		return ""
+	}
+	return state.(string)
+}
+
+// setAuthStateCookie saves the oauth csrf state value.
+func (a *appContext) setAuthStateCookie(w http.ResponseWriter, r *http.Request, state string) {
+	session, _ := a.cookiestore.Get(r, "session")
+	session.Values["state"] = state
 	session.Save(r, w)
 }
 
@@ -118,28 +135,30 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 
 // loginHandler starts the authentication process with the provider.
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	a.authsession = a.authprovider.StartSession(newState())
+	state := newState()
+	a.setAuthStateCookie(w, r, state)
+	a.authsession = a.authprovider.StartSession(state)
 	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
 	return http.StatusFound, nil
 }
 
 // callbackHandler handles retrieving the access token from the auth provider and saves it for later use.
 func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	if r.FormValue("state") != a.authsession.State {
+	if r.FormValue("state") != a.getAuthStateCookie(r) {
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 	code := r.FormValue("code")
 	if err := a.authsession.Authorize(a.authprovider, code); err != nil {
 		return http.StatusInternalServerError, err
 	}
-	a.setAuthCookie(w, r, a.authsession.Token)
+	a.setAuthTokenCookie(w, r, a.authsession.Token)
 	http.Redirect(w, r, "/", http.StatusFound)
 	return http.StatusFound, nil
 }
 
 // rootHandler starts the auth process. If the client is authenticated it renders the token to the user.
 func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	tok := a.getAuthCookie(r)
+	tok := a.getAuthTokenCookie(r)
 	if !tok.Valid() || !a.authprovider.Valid(tok) {
 		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 		return http.StatusSeeOther, nil
