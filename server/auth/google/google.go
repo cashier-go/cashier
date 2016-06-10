@@ -22,14 +22,19 @@ const (
 // Config is an implementation of `auth.Provider` for authenticating using a
 // Google account.
 type Config struct {
-	config *oauth2.Config
-	domain string
+	config    *oauth2.Config
+	domain    string
+	whitelist map[string]bool
 }
 
 // New creates a new Google provider from a configuration.
 func New(c *config.Auth) (auth.Provider, error) {
-	if c.ProviderOpts["domain"] == "" {
-		return nil, errors.New("google_opts domain must not be empty")
+	uw := make(map[string]bool)
+	for _, u := range c.UsersWhitelist {
+		uw[u] = true
+	}
+	if c.ProviderOpts["domain"] == "" && len(uw) == 0 {
+		return nil, errors.New("google_opts domain and the users whitelist must not be both empty")
 	}
 
 	return &Config{
@@ -40,7 +45,8 @@ func New(c *config.Auth) (auth.Provider, error) {
 			Endpoint:     google.Endpoint,
 			Scopes:       []string{googleapi.UserinfoEmailScope, googleapi.UserinfoProfileScope},
 		},
-		domain: c.ProviderOpts["domain"],
+		domain:    c.ProviderOpts["domain"],
+		whitelist: uw,
 	}, nil
 }
 
@@ -56,6 +62,9 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(token *oauth2.Token) bool {
+	if len(c.whitelist) == 0 && !c.whitelist[c.Username(token)] {
+		return false
+	}
 	if !token.Valid() {
 		return false
 	}

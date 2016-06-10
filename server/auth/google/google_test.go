@@ -33,7 +33,7 @@ func TestNewWithoutDomain(t *testing.T) {
 	domain = ""
 
 	_, err := newGoogle()
-	a.EqualError(err, "google_opts domain must not be empty")
+	a.EqualError(err, "google_opts domain and the users whitelist must not be both empty")
 
 	domain = "example.com"
 }
