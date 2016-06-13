@@ -19,6 +19,7 @@ import (
 	"github.com/nsheridan/cashier/server/config"
 )
 
+// Register the /s3/ filesystem as a well-known filesystem.
 func Register(config *config.AWS) {
 	ac := &aws.Config{}
 	// If region is unset the SDK will attempt to read the region from the environment.

@@ -67,9 +67,9 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	return member
 }
 
-// GitHub doesn't seem to allow token revocation - tokens are indefinite and
-// there are no refresh options etc. Returns nil to satisfy the Provider
-// interface.
+// Revoke is a no-op revoke method. GitHub doesn't seem to allow token
+// revocation - tokens are indefinite and there are no refresh options etc.
+// Returns nil to satisfy the Provider interface.
 func (c *Config) Revoke(token *oauth2.Token) error {
 	return nil
 }

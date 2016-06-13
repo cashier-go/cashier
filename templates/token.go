@@ -1,5 +1,6 @@
 package templates
 
+// Token is the page users see when authenticated.
 const Token = `<html>
   <head>
     <title>YOUR TOKEN!</title>

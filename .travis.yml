@@ -8,9 +8,13 @@ go:
   - 1.6.2
   - tip
 
+before_install:
+  - go get -v github.com/golang/lint/golint
+
 sudo: false
 script:
   - go build -v ./...
   - go list ./... |grep -v vendor/ |xargs go test
   - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
   - go list ./... |grep -v vendor/ |xargs go vet
+  - go list ./... |grep -v vendor/ |xargs -L1 golint
