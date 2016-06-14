@@ -86,7 +86,7 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 - `oauth_client_secret` : string. Oauth secret.
 - `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
 - `provider_opts` : object. Additional options for the provider.
-- `users_whitelist` : array of strings. Optional list of whitelisted usernames. If missing, all users of your current domain/organization are allowed to authenticate against cashierd.
+- `users_whitelist` : array of strings. Optional list of whitelisted usernames. If missing, all users of your current domain/organization are allowed to authenticate against cashierd. For Google auth a user is an email address. For GitHub auth a user is a GitHub username.
 
 #### Provider-specific options
 

@@ -62,7 +62,7 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(token *oauth2.Token) bool {
-	if len(c.whitelist) == 0 && !c.whitelist[c.Username(token)] {
+	if len(c.whitelist) > 0 && !c.whitelist[c.Email(token)] {
 		return false
 	}
 	if !token.Valid() {
@@ -78,11 +78,14 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	if err != nil {
 		return false
 	}
+	if ti.Audience != c.config.ClientID {
+		return false
+	}
 	ui, err := svc.Userinfo.Get().Do()
 	if err != nil {
 		return false
 	}
-	if ti.Audience != c.config.ClientID || ui.Hd != c.domain {
+	if c.domain != "" && ui.Hd != c.domain {
 		return false
 	}
 	return true
@@ -107,8 +110,8 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 	return c.config.Exchange(oauth2.NoContext, code)
 }
 
-// Username retrieves the username portion of the user's email address.
-func (c *Config) Username(token *oauth2.Token) string {
+// Email retrieves the email address of the user.
+func (c *Config) Email(token *oauth2.Token) string {
 	svc, err := googleapi.New(c.newClient(token))
 	if err != nil {
 		return ""
@@ -117,5 +120,10 @@ func (c *Config) Username(token *oauth2.Token) string {
 	if err != nil {
 		return ""
 	}
-	return strings.Split(ui.Email, "@")[0]
+	return ui.Email
+}
+
+// Username retrieves the username portion of the user's email address.
+func (c *Config) Username(token *oauth2.Token) string {
+	return strings.Split(c.Email(token), "@")[0]
 }
