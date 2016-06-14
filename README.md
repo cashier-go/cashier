@@ -48,7 +48,8 @@ For the server you need the following:
 ## Installation using Go tools
 1. Use the Go tools to install cashier. The binaries `cashierd` and `cashier` will be installed in your $GOPATH.
 ```
-go get github.com/nsheridan/cashier/cmd/...
+go get -u github.com/nsheridan/cashier/cmd/cashier
+go get -u github.com/nsheridan/cashier/cmd/cashierd
 ```
 2. Create a signing key with `ssh-keygen` and a [cashierd.conf](example-server.conf)
 3. Run the cashier server with `cashierd` and the cli with `cashier`.
@@ -85,6 +86,7 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 - `oauth_client_secret` : string. Oauth secret.
 - `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
 - `provider_opts` : object. Additional options for the provider.
+- `users_whitelist` : array of strings. Optional list of whitelisted usernames. If missing, all users of your current domain/organization are allowed to authenticate against cashierd.
 
 #### Provider-specific options
 

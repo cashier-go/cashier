@@ -22,12 +22,17 @@ const (
 type Config struct {
 	config       *oauth2.Config
 	organization string
+	whitelist    map[string]bool
 }
 
 // New creates a new Github provider from a configuration.
 func New(c *config.Auth) (auth.Provider, error) {
-	if c.ProviderOpts["organization"] == "" {
-		return nil, errors.New("github_opts organization must not be empty")
+	uw := make(map[string]bool)
+	for _, u := range c.UsersWhitelist {
+		uw[u] = true
+	}
+	if c.ProviderOpts["organization"] == "" && len(uw) == 0 {
+		return nil, errors.New("github_opts organization and the users whitelist must not be both empty")
 	}
 	return &Config{
 		config: &oauth2.Config{
@@ -41,6 +46,7 @@ func New(c *config.Auth) (auth.Provider, error) {
 			},
 		},
 		organization: c.ProviderOpts["organization"],
+		whitelist:    uw,
 	}, nil
 }
 
@@ -56,6 +62,9 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(token *oauth2.Token) bool {
+	if len(c.whitelist) == 0 && !c.whitelist[c.Username(token)] {
+		return false
+	}
 	if !token.Valid() {
 		return false
 	}

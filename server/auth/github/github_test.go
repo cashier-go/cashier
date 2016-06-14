@@ -32,7 +32,7 @@ func TestNewEmptyOrganization(t *testing.T) {
 	a := assert.New(t)
 
 	_, err := newGithub()
-	a.EqualError(err, "github_opts organization must not be empty")
+	a.EqualError(err, "github_opts organization and the users whitelist must not be both empty")
 
 	organization = "exampleorg"
 }

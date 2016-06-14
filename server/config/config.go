@@ -40,6 +40,7 @@ type Auth struct {
 	OauthCallbackURL  string            `mapstructure:"oauth_callback_url"`
 	Provider          string            `mapstructure:"provider"`
 	ProviderOpts      map[string]string `mapstructure:"provider_opts"`
+	UsersWhitelist    []string          `mapstructure:"users_whitelist"`
 }
 
 // SSH holds the configuration specific to signing ssh keys.
