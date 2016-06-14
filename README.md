@@ -9,7 +9,7 @@ Unlike ssh keys, certificates can contain additional information:
 - Which user(s) may use the certificate
 - When the certificate is valid from
 - When the certificate expires
-- Permissions 
+- Permissions
 
 Other benefits of certificates:
 -  Unlike keys certificates don't need to be distributed to every machine - the sshd just needs to trust the key that signed the certificate.
@@ -96,10 +96,10 @@ Options are set in the `provider_opts` hash.
 Example:
 
 ```
-"auth": {
-  "provider": "google",
-  "provider_opts" : {
-    "domain": "example.com"
+auth = {
+  provider = "google"
+  provider_opts {
+    domain = "example.com"
   }
 }
 ```
