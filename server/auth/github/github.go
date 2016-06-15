@@ -62,11 +62,16 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(token *oauth2.Token) bool {
-	if len(c.whitelist) == 0 && !c.whitelist[c.Username(token)] {
+	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
 		return false
 	}
 	if !token.Valid() {
 		return false
+	}
+	if c.organization == "" {
+		// There's no organization and the token is valid. Can only reach here
+		// if there's a user whitelist set and the user is in the whitelist.
+		return true
 	}
 	client := githubapi.NewClient(c.newClient(token))
 	member, _, err := client.Organizations.IsMember(c.organization, c.Username(token))
