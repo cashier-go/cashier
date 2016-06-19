@@ -1,7 +1,9 @@
 language: go
+services:
+  - mysql
 
 env:
-  - GO15VENDOREXPERIMENT=1
+  - GO15VENDOREXPERIMENT=1 MYSQL_TEST_CONFIG="mysql:user:passwd:localhost"
 
 go:
   - 1.5.4
@@ -14,6 +16,9 @@ matrix:
 
 before_install:
   - go get -v github.com/golang/lint/golint
+
+before_script:
+  - go run ./cmd/dbinit/dbinit.go -db_user user -db_password passwd
 
 sudo: false
 script:

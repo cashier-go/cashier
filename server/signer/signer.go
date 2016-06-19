@@ -25,10 +25,10 @@ type KeySigner struct {
 }
 
 // SignUserKey returns a signed ssh certificate.
-func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
+func (s *KeySigner) SignUserKey(req *lib.SignRequest) (*ssh.Certificate, error) {
 	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(req.Key))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	expires := time.Now().UTC().Add(s.validity)
 	if req.ValidUntil.After(expires) {
@@ -45,13 +45,10 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest) (string, error) {
 	cert.ValidPrincipals = append(cert.ValidPrincipals, s.principals...)
 	cert.Extensions = s.permissions
 	if err := cert.SignCert(rand.Reader, s.ca); err != nil {
-		return "", err
+		return nil, err
 	}
-	marshaled := ssh.MarshalAuthorizedKey(cert)
-	// Remove the trailing newline.
-	marshaled = marshaled[:len(marshaled)-1]
 	log.Printf("Issued cert id: %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, fingerprint(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
-	return string(marshaled), nil
+	return cert, nil
 }
 
 func makeperms(perms []string) map[string]string {

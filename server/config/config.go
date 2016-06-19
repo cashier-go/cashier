@@ -32,6 +32,7 @@ type Server struct {
 	Port         int    `mapstructure:"port"`
 	CookieSecret string `mapstructure:"cookie_secret"`
 	HTTPLogFile  string `mapstructure:"http_logfile"`
+	Datastore    string `mapstructure:"datastore"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.

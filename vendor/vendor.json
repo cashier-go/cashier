@@ -17,6 +17,10 @@
 		{
 			"path": "context",
 			"revision": ""
+    },
+    {
+			"path": "appengine/cloudsql",
+			"revision": ""
 		},
 		{
 			"checksumSHA1": "UJTpOZ5IuuyoWFrS42uw/167mn0=",
@@ -199,6 +203,12 @@
 			"path": "github.com/go-ini/ini",
 			"revision": "64d2ab7f6ce73fb937302df5f551d7cfd54daf0a",
 			"revisionTime": "2016-06-28T20:50:29Z"
+		},
+		{
+			"checksumSHA1": "BIY45G2IVrTttD4Rlk9tHwiIOCM=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "3654d25ec346ee8ce71a68431025458d52a38ac0",
+			"revisionTime": "2016-06-02T00:10:21Z"
 		},
 		{
 			"checksumSHA1": "r2217M+60ykOkomU6p2mO4pLzug=",

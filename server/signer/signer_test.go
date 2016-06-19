@@ -27,14 +27,9 @@ func TestCert(t *testing.T) {
 		Principal:  "gopher1",
 		ValidUntil: time.Now().Add(1 * time.Hour),
 	}
-	ret, err := signer.SignUserKey(r)
+	cert, err := signer.SignUserKey(r)
 	if err != nil {
 		t.Fatal(err)
-	}
-	c, _, _, _, err := ssh.ParseAuthorizedKey([]byte(ret))
-	cert, ok := c.(*ssh.Certificate)
-	if !ok {
-		t.Fatalf("Expected type *ssh.Certificate, got %v (%T)", cert, cert)
 	}
 	if !bytes.Equal(cert.SignatureKey.Marshal(), signer.ca.PublicKey().Marshal()) {
 		t.Fatal("Cert signer and server signer don't match")

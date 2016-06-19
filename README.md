@@ -82,6 +82,29 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 - `port` : int. Port to listen on.
 - `cookie_secret`: string. Authentication key for the session cookie.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.
+- `datastore`: string. Datastore connection string. See [Datastore](#datastore).
+
+#### Datastore
+Datastores contain a record of issued certificates for audit and revocation purposes. The connection string is of the form `engine:username:password:host[:port]`.
+
+Currently two engines are supported: `mysql` and `mem`.
+
+`mem` is an in-memory database intended for testing and takes no additional config options.
+`mysql` is the MySQL database and the `username`, `password` and `host` arguments are required. `port` is assumed to be 3306 unless otherwise specified.
+
+If no datastore is specified the `mem` store is used.
+
+Examples:
+
+```
+server {
+  datastore = "mem"  # use the in-memory database.
+  datastore = "mysql:root::localhost"  # mysql running on localhost with the user 'root' and no password.
+  datastore = "mysql:cashier:aMaZiNgPaSsWoRd:mydbprovider.example.com:5150"  # mysql running on a remote host on port 5150
+}
+```
+
+Prior to using the MySQL datastore, you need to create the database and tables using the [dbinit tool](cmd/dbinit/dbinit.go).
 
 ### auth
 - `provider` : string. Name of the oauth provider. At present the only valid value is "google".
@@ -99,7 +122,7 @@ Options are set in the `provider_opts` hash.
 Example:
 
 ```
-auth = {
+auth {
   provider = "google"
   provider_opts {
     domain = "example.com"

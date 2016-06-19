@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -24,9 +25,11 @@ import (
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/auth/github"
 	"github.com/nsheridan/cashier/server/auth/google"
+	"github.com/nsheridan/cashier/server/certutil"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/fs"
 	"github.com/nsheridan/cashier/server/signer"
+	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/templates"
 )
 
@@ -34,12 +37,13 @@ var (
 	cfg = flag.String("config_file", "cashierd.conf", "Path to configuration file.")
 )
 
-// appContext contains local context - cookiestore, authprovider, authsession, templates etc.
+// appContext contains local context - cookiestore, authprovider, authsession etc.
 type appContext struct {
 	cookiestore  *sessions.CookieStore
 	authprovider auth.Provider
 	authsession  *auth.Session
 	sshKeySigner *signer.KeySigner
+	certstore    store.CertStorer
 }
 
 // getAuthTokenCookie retrieves a cookie from the request.
@@ -124,13 +128,16 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	signed, err := a.sshKeySigner.SignUserKey(req)
+	cert, err := a.sshKeySigner.SignUserKey(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
+	if err := a.certstore.SetCert(cert); err != nil {
+		log.Printf("Error recording cert: %v", err)
+	}
 	json.NewEncoder(w).Encode(&lib.SignResponse{
 		Status:   "ok",
-		Response: signed,
+		Response: certutil.GetPublicKey(cert),
 	})
 	return http.StatusOK, nil
 }
@@ -174,6 +181,38 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	return http.StatusOK, nil
 }
 
+func revokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+	var out bytes.Buffer
+	revoked, err := a.certstore.List()
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	for _, c := range revoked {
+		if c.Revoked {
+			out.WriteString(c.Raw)
+			out.WriteString("\n")
+		}
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write(out.Bytes())
+	return http.StatusOK, nil
+}
+
+func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+	if r.Method == "GET" {
+		return http.StatusMethodNotAllowed, errors.New(http.StatusText(http.StatusMethodNotAllowed))
+	}
+	r.ParseForm()
+	id := r.FormValue("cert_id")
+	if id == "" {
+		return http.StatusBadRequest, errors.New(http.StatusText(http.StatusBadRequest))
+	}
+	if err := a.certstore.Revoke(r.FormValue("cert_id")); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusOK, nil
+}
+
 // appHandler is a handler which uses appContext to manage state.
 type appHandler struct {
 	*appContext
@@ -184,14 +223,8 @@ type appHandler struct {
 func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status, err := ah.h(ah.appContext, w, r)
 	if err != nil {
-		switch status {
-		case http.StatusNotFound:
-			http.NotFound(w, r)
-		case http.StatusInternalServerError:
-			http.Error(w, http.StatusText(status), status)
-		default:
-			http.Error(w, http.StatusText(status), status)
-		}
+		log.Printf("HTTP %d: %q", status, err)
+		http.Error(w, err.Error(), status)
 	}
 }
 
@@ -211,6 +244,21 @@ func readConfig(filename string) (*config.Config, error) {
 	}
 	defer f.Close()
 	return config.ReadConfig(f)
+}
+
+func certStore(config string) (store.CertStorer, error) {
+	var cstore store.CertStorer
+	var err error
+	engine := strings.Split(config, ":")[0]
+	switch engine {
+	case "mysql":
+		cstore, err = store.NewMySQLStore(config)
+	case "mem":
+		cstore = store.NewMemoryStore()
+	default:
+		cstore = store.NewMemoryStore()
+	}
+	return cstore, err
 }
 
 func main() {
@@ -234,15 +282,19 @@ func main() {
 	default:
 		log.Fatalln("Unknown provider %s", config.Auth.Provider)
 	}
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	certstore, err := certStore(config.Server.Datastore)
+	if err != nil {
+		log.Fatal(err)
+	}
 	ctx := &appContext{
 		cookiestore:  sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
 		authprovider: authprovider,
 		sshKeySigner: signer,
+		certstore:    certstore,
 	}
 	ctx.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,
@@ -256,6 +308,8 @@ func main() {
 	r.Handle("/auth/login", appHandler{ctx, loginHandler})
 	r.Handle("/auth/callback", appHandler{ctx, callbackHandler})
 	r.Handle("/sign", appHandler{ctx, signHandler})
+	r.Handle("/revoked", appHandler{ctx, revokedCertsHandler})
+	r.Handle("/revoke", appHandler{ctx, revokeCertHandler})
 	logfile := os.Stderr
 	if config.Server.HTTPLogFile != "" {
 		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)
