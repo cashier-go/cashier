@@ -364,14 +364,14 @@
 		{
 			"checksumSHA1": "3dxfePz1LkJB7x0nIiTI88o/fFY=",
 			"path": "golang.org/x/crypto/ssh",
-			"revision": "5bcd134fee4dd1475da17714aac19c0aa0142e2f",
-			"revisionTime": "2016-05-16T23:05:56Z"
+			"revision": "811831de4c4dd03a0b8737233af3b36852386373",
+			"revisionTime": "2016-06-21T01:10:02Z"
 		},
 		{
-			"checksumSHA1": "EcKMEjHXZnW85PGnmiVGLknf8HU=",
+			"checksumSHA1": "pSECJ5r90CMX5V05qPZnJhi2zso=",
 			"path": "golang.org/x/crypto/ssh/agent",
-			"revision": "89d9e62992539701a49a19c52ebb33e84cbbe80f",
-			"revisionTime": "2016-06-03T20:06:38Z"
+			"revision": "811831de4c4dd03a0b8737233af3b36852386373",
+			"revisionTime": "2016-06-21T01:10:02Z"
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",

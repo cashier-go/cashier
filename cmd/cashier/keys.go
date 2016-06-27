@@ -31,7 +31,7 @@ func generateED25519Key(bits int) (key, ssh.PublicKey, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return k, pub, nil
+	return &k, pub, nil
 }
 
 func generateRSAKey(bits int) (key, ssh.PublicKey, error) {
