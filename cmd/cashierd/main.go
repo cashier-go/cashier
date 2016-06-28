@@ -17,6 +17,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/nsheridan/cashier/lib"
@@ -183,7 +184,6 @@ type appHandler struct {
 func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status, err := ah.h(ah.appContext, w, r)
 	if err != nil {
-		log.Printf("HTTP %d: %q", status, err)
 		switch status {
 		case http.StatusNotFound:
 			http.NotFound(w, r)
@@ -251,16 +251,17 @@ func main() {
 		HttpOnly: true,
 	}
 
-	m := mux.NewRouter()
-	m.Handle("/", appHandler{ctx, rootHandler})
-	m.Handle("/auth/login", appHandler{ctx, loginHandler})
-	m.Handle("/auth/callback", appHandler{ctx, callbackHandler})
-	m.Handle("/sign", appHandler{ctx, signHandler})
+	r := mux.NewRouter()
+	r.Handle("/", appHandler{ctx, rootHandler})
+	r.Handle("/auth/login", appHandler{ctx, loginHandler})
+	r.Handle("/auth/callback", appHandler{ctx, callbackHandler})
+	r.Handle("/sign", appHandler{ctx, signHandler})
+	h := handlers.LoggingHandler(os.Stdout, r)
 
 	fmt.Println("Starting server...")
 	l := fmt.Sprintf(":%d", config.Server.Port)
 	if config.Server.UseTLS {
-		log.Fatal(http.ListenAndServeTLS(l, config.Server.TLSCert, config.Server.TLSKey, m))
+		log.Fatal(http.ListenAndServeTLS(l, config.Server.TLSCert, config.Server.TLSKey, h))
 	}
-	log.Fatal(http.ListenAndServe(l, m))
+	log.Fatal(http.ListenAndServe(l, h))
 }
