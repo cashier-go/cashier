@@ -142,7 +142,6 @@
 		},
 		{
 			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
-			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "c5d7a69bf8a2c9c374798160849c071093e41dd1",
 			"revisionTime": "2016-04-18T22:58:27Z"
@@ -155,7 +154,6 @@
 		},
 		{
 			"checksumSHA1": "FCeEm2BWZV/n4oTy+SGd/k0Ab5c=",
-			"origin": "github.com/aws/aws-sdk-go/vendor/github.com/go-ini/ini",
 			"path": "github.com/go-ini/ini",
 			"revision": "1608a1f6ffe7f327007d2aca50ebf1d26c285ef2",
 			"revisionTime": "2016-06-03T16:17:08Z"
@@ -204,7 +202,6 @@
 		},
 		{
 			"checksumSHA1": "cdOCt0Yb+hdErz8NAQqayxPmRsY=",
-			"origin": "github.com/hashicorp/go-multierror/vendor/github.com/hashicorp/errwrap",
 			"path": "github.com/hashicorp/errwrap",
 			"revision": "d30f09973e19c1dfcd120b2d9c4f168e68d6b5d5",
 			"revisionTime": "2015-09-16T20:57:42Z"
@@ -271,7 +268,6 @@
 		},
 		{
 			"checksumSHA1": "0ZrwvB6KoGPj2PoDNSEJwxQ6Mog=",
-			"origin": "github.com/aws/aws-sdk-go/vendor/github.com/jmespath/go-jmespath",
 			"path": "github.com/jmespath/go-jmespath",
 			"revision": "1608a1f6ffe7f327007d2aca50ebf1d26c285ef2",
 			"revisionTime": "2016-06-03T16:17:08Z"
@@ -296,7 +292,6 @@
 		},
 		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
-			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "c5d7a69bf8a2c9c374798160849c071093e41dd1",
 			"revisionTime": "2016-04-18T22:58:27Z"
