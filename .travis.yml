@@ -6,7 +6,11 @@ env:
 go:
   - 1.5.4
   - 1.6.2
-# - tip
+  - tip
+
+matrix:
+  allow_failures:
+    - go: tip
 
 before_install:
   - go get -v github.com/golang/lint/golint
