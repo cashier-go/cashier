@@ -10,10 +10,10 @@ import (
 
 // Config holds the server configuration.
 type Config struct {
-	Server `mapstructure:"server"`
-	Auth   `mapstructure:"auth"`
-	SSH    `mapstructure:"ssh"`
-	AWS    `mapstructure:"aws"`
+	Server Server `mapstructure:"server"`
+	Auth   Auth   `mapstructure:"auth"`
+	SSH    SSH    `mapstructure:"ssh"`
+	AWS    AWS    `mapstructure:"aws"`
 }
 
 // unmarshalled holds the raw config.
@@ -31,6 +31,7 @@ type Server struct {
 	TLSCert      string `mapstructure:"tls_cert"`
 	Port         int    `mapstructure:"port"`
 	CookieSecret string `mapstructure:"cookie_secret"`
+	HTTPLogFile  string `mapstructure:"http_logfile"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.

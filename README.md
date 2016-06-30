@@ -81,6 +81,7 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 - `tls_cert` : string. Path to the TLS cert.
 - `port` : int. Port to listen on.
 - `cookie_secret`: string. Authentication key for the session cookie.
+- `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.
 
 ### auth
 - `provider` : string. Name of the oauth provider. At present the only valid value is "google".

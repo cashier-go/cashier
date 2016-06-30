@@ -256,7 +256,14 @@ func main() {
 	r.Handle("/auth/login", appHandler{ctx, loginHandler})
 	r.Handle("/auth/callback", appHandler{ctx, callbackHandler})
 	r.Handle("/sign", appHandler{ctx, signHandler})
-	h := handlers.LoggingHandler(os.Stdout, r)
+	logfile := os.Stderr
+	if config.Server.HTTPLogFile != "" {
+		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	h := handlers.LoggingHandler(logfile, r)
 
 	fmt.Println("Starting server...")
 	l := fmt.Sprintf(":%d", config.Server.Port)
