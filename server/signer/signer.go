@@ -69,7 +69,7 @@ func makeperms(perms []string) map[string]string {
 }
 
 // New creates a new KeySigner from the supplied configuration.
-func New(conf config.SSH) (*KeySigner, error) {
+func New(conf *config.SSH) (*KeySigner, error) {
 	data, err := wkfs.ReadFile(conf.SigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read CA key %s: %v", conf.SigningKey, err)

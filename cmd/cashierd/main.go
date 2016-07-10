@@ -123,11 +123,11 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 
 	// Sign the pubkey and issue the cert.
 	req, err := parseKey(r)
-	req.Principal = a.authprovider.Username(token)
-	a.authprovider.Revoke(token) // We don't need this anymore.
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
+	req.Principal = a.authprovider.Username(token)
+	a.authprovider.Revoke(token) // We don't need this anymore.
 	cert, err := a.sshKeySigner.SignUserKey(req)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -199,9 +199,6 @@ func revokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) 
 }
 
 func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	if r.Method == "GET" {
-		return http.StatusMethodNotAllowed, errors.New(http.StatusText(http.StatusMethodNotAllowed))
-	}
 	r.ParseForm()
 	id := r.FormValue("cert_id")
 	if id == "" {
@@ -268,7 +265,7 @@ func main() {
 		log.Fatal(err)
 	}
 	fs.Register(&config.AWS)
-	signer, err := signer.New(config.SSH)
+	signer, err := signer.New(&config.SSH)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -304,12 +301,12 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.Handle("/", appHandler{ctx, rootHandler})
-	r.Handle("/auth/login", appHandler{ctx, loginHandler})
-	r.Handle("/auth/callback", appHandler{ctx, callbackHandler})
-	r.Handle("/sign", appHandler{ctx, signHandler})
-	r.Handle("/revoked", appHandler{ctx, revokedCertsHandler})
-	r.Handle("/revoke", appHandler{ctx, revokeCertHandler})
+	r.Methods("GET").Path("/").Handler(appHandler{ctx, rootHandler})
+	r.Methods("GET").Path("/auth/login").Handler(appHandler{ctx, loginHandler})
+	r.Methods("GET").Path("/auth/callback").Handler(appHandler{ctx, callbackHandler})
+	r.Methods("POST").Path("/sign").Handler(appHandler{ctx, signHandler})
+	r.Methods("GET").Path("/revoked").Handler(appHandler{ctx, revokedCertsHandler})
+	r.Methods("POST").Path("/revoke").Handler(appHandler{ctx, revokeCertHandler})
 	logfile := os.Stderr
 	if config.Server.HTTPLogFile != "" {
 		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)
