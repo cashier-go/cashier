@@ -29,11 +29,12 @@ func parseConfig(config string) string {
 	}
 	_, user, passwd, host, port := s[0], s[1], s[2], s[3], s[4]
 	c := &mysql.Config{
-		User:   user,
-		Passwd: passwd,
-		Net:    "tcp",
-		Addr:   fmt.Sprintf("%s:%s", host, port),
-		DBName: "certs",
+		User:      user,
+		Passwd:    passwd,
+		Net:       "tcp",
+		Addr:      fmt.Sprintf("%s:%s", host, port),
+		DBName:    "certs",
+		ParseTime: true,
 	}
 	return c.FormatDSN()
 }
@@ -80,8 +81,8 @@ func scanCert(s rowScanner) (*CertRecord, error) {
 	var (
 		keyID      sql.NullString
 		principals sql.NullString
-		createdAt  sql.NullInt64
-		expires    sql.NullInt64
+		createdAt  mysql.NullTime
+		expires    mysql.NullTime
 		revoked    sql.NullBool
 		raw        sql.NullString
 	)
@@ -95,8 +96,8 @@ func scanCert(s rowScanner) (*CertRecord, error) {
 	return &CertRecord{
 		KeyID:      keyID.String,
 		Principals: p,
-		CreatedAt:  uint64(createdAt.Int64),
-		Expires:    uint64(expires.Int64),
+		CreatedAt:  createdAt.Time,
+		Expires:    expires.Time,
 		Revoked:    revoked.Bool,
 		Raw:        raw.String,
 	}, nil
@@ -143,7 +144,7 @@ func (db *mysqlDB) Revoke(id string) error {
 
 func (db *mysqlDB) GetRevoked() ([]*CertRecord, error) {
 	var recs []*CertRecord
-	rows, _ := db.revoked.Query(time.Now().UTC().Unix())
+	rows, _ := db.revoked.Query(time.Now().UTC())
 	defer rows.Close()
 	for rows.Next() {
 		cert, err := scanCert(rows)

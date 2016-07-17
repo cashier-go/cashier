@@ -58,7 +58,7 @@ func (ms *memoryStore) GetRevoked() ([]*CertRecord, error) {
 	var revoked []*CertRecord
 	all, _ := ms.List()
 	for _, r := range all {
-		if r.Revoked && uint64(time.Now().UTC().Unix()) <= r.Expires {
+		if r.Revoked && time.Now().UTC().Unix() <= r.Expires.UTC().Unix() {
 			revoked = append(revoked, r)
 		}
 	}

@@ -18,6 +18,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -86,6 +87,35 @@ func (a *appContext) setAuthStateCookie(w http.ResponseWriter, r *http.Request, 
 	session, _ := a.cookiestore.Get(r, "session")
 	session.Values["state"] = state
 	session.Save(r, w)
+}
+
+func (a *appContext) getCurrentURL(r *http.Request) string {
+	session, _ := a.cookiestore.Get(r, "session")
+	path, ok := session.Values["auth_url"]
+	if !ok {
+		return ""
+	}
+	return path.(string)
+}
+
+func (a *appContext) setCurrentURL(w http.ResponseWriter, r *http.Request) {
+	session, _ := a.cookiestore.Get(r, "session")
+	session.Values["auth_url"] = r.URL.Path
+	session.Save(r, w)
+}
+
+func (a *appContext) isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
+	tok := a.getAuthTokenCookie(r)
+	if !tok.Valid() || !a.authprovider.Valid(tok) {
+		return false
+	}
+	return true
+}
+
+func (a *appContext) login(w http.ResponseWriter, r *http.Request) (int, error) {
+	a.setCurrentURL(w, r)
+	http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+	return http.StatusSeeOther, nil
 }
 
 // parseKey retrieves and unmarshals the signing request.
@@ -161,17 +191,16 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 		return http.StatusInternalServerError, err
 	}
 	a.setAuthTokenCookie(w, r, a.authsession.Token)
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, a.getCurrentURL(r), http.StatusFound)
 	return http.StatusFound, nil
 }
 
 // rootHandler starts the auth process. If the client is authenticated it renders the token to the user.
 func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	tok := a.getAuthTokenCookie(r)
-	if !tok.Valid() || !a.authprovider.Valid(tok) {
-		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
-		return http.StatusSeeOther, nil
+	if !a.isLoggedIn(w, r) {
+		return a.login(w, r)
 	}
+	tok := a.getAuthTokenCookie(r)
 	page := struct {
 		Token string
 	}{tok.AccessToken}
@@ -181,33 +210,54 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	return http.StatusOK, nil
 }
 
-func revokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+func listRevokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	var out bytes.Buffer
-	revoked, err := a.certstore.List()
+	revoked, err := a.certstore.GetRevoked()
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 	for _, c := range revoked {
-		if c.Revoked {
-			out.WriteString(c.Raw)
-			out.WriteString("\n")
-		}
+		out.WriteString(c.Raw)
+		out.WriteString("\n")
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write(out.Bytes())
 	return http.StatusOK, nil
 }
 
-func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	r.ParseForm()
-	id := r.FormValue("cert_id")
-	if id == "" {
-		return http.StatusBadRequest, errors.New(http.StatusText(http.StatusBadRequest))
+func listAllCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+	if !a.isLoggedIn(w, r) {
+		return a.login(w, r)
 	}
-	if err := a.certstore.Revoke(r.FormValue("cert_id")); err != nil {
+	certs, err := a.certstore.List()
+	if err != nil {
 		return http.StatusInternalServerError, err
 	}
+	page := struct {
+		Certs []*store.CertRecord
+		CSRF  template.HTML
+	}{
+		Certs: certs,
+		CSRF:  csrf.TemplateField(r),
+	}
+
+	tmpl := template.Must(template.New("certs.html").Parse(templates.Certs))
+	tmpl.Execute(w, page)
 	return http.StatusOK, nil
+}
+
+func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+	if !a.isLoggedIn(w, r) {
+		return a.login(w, r)
+	}
+	r.ParseForm()
+	for _, id := range r.Form["cert_id"] {
+		if err := a.certstore.Revoke(id); err != nil {
+			return http.StatusInternalServerError, err
+		}
+	}
+	http.Redirect(w, r, "/admin/certs", http.StatusSeeOther)
+	return http.StatusSeeOther, nil
 }
 
 // appHandler is a handler which uses appContext to manage state.
@@ -300,13 +350,15 @@ func main() {
 		HttpOnly: true,
 	}
 
+	CSRF := csrf.Protect([]byte(config.Server.CSRFSecret), csrf.Secure(config.Server.UseTLS))
 	r := mux.NewRouter()
 	r.Methods("GET").Path("/").Handler(appHandler{ctx, rootHandler})
 	r.Methods("GET").Path("/auth/login").Handler(appHandler{ctx, loginHandler})
 	r.Methods("GET").Path("/auth/callback").Handler(appHandler{ctx, callbackHandler})
 	r.Methods("POST").Path("/sign").Handler(appHandler{ctx, signHandler})
-	r.Methods("GET").Path("/revoked").Handler(appHandler{ctx, revokedCertsHandler})
-	r.Methods("POST").Path("/revoke").Handler(appHandler{ctx, revokeCertHandler})
+	r.Methods("GET").Path("/revoked").Handler(appHandler{ctx, listRevokedCertsHandler})
+	r.Methods("POST").Path("/admin/revoke").Handler(CSRF(appHandler{ctx, revokeCertHandler}))
+	r.Methods("GET").Path("/admin/certs").Handler(CSRF(appHandler{ctx, listAllCertsHandler}))
 	logfile := os.Stderr
 	if config.Server.HTTPLogFile != "" {
 		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)

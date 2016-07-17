@@ -31,8 +31,8 @@ func TestParseCertificate(t *testing.T) {
 
 	a.Equal(c.KeyId, rec.KeyID)
 	a.Equal(c.ValidPrincipals, rec.Principals)
-	a.Equal(c.ValidBefore, rec.Expires)
-	a.Equal(c.ValidAfter, rec.CreatedAt)
+	a.Equal(c.ValidBefore, uint64(rec.Expires.Unix()))
+	a.Equal(c.ValidAfter, uint64(rec.CreatedAt.Unix()))
 }
 
 func testStore(t *testing.T, db CertStorer) {
@@ -42,7 +42,7 @@ func testStore(t *testing.T, db CertStorer) {
 	for _, id := range ids {
 		r := &CertRecord{
 			KeyID:   id,
-			Expires: uint64(time.Now().UTC().Unix()) - 10,
+			Expires: time.Now().UTC().Add(time.Second * -10),
 		}
 		if err := db.SetRecord(r); err != nil {
 			t.Error(err)

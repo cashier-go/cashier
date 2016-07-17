@@ -213,6 +213,12 @@
 			"revisionTime": "2016-05-25T20:33:19Z"
 		},
 		{
+			"checksumSHA1": "ahJb/rIOtBflDbJmW/SWcb8Cu74=",
+			"path": "github.com/gorilla/csrf",
+			"revision": "4642ecf016ef548770875073f867ea02b4385f69",
+			"revisionTime": "2016-06-12T20:50:39Z"
+		},
+		{
 			"checksumSHA1": "flNRZk3oyHmsux8UsGbj7ziYtUo=",
 			"path": "github.com/gorilla/handlers",
 			"revision": "66e6c6f01d8da976ee113437745ca029c2b585a6",
@@ -326,6 +332,12 @@
 			"path": "github.com/pkg/browser",
 			"revision": "9302be274faad99162b9d48ec97b24306872ebb0",
 			"revisionTime": "2016-01-18T05:35:52Z"
+		},
+		{
+			"checksumSHA1": "GcaTbmmzSGqTb2X6qnNtmDyew1Q=",
+			"path": "github.com/pkg/errors",
+			"revision": "a2d6902c6d2a2f194eb3fb474981ab7867c81505",
+			"revisionTime": "2016-06-27T22:23:52Z"
 		},
 		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",

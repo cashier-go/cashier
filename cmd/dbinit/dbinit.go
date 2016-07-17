@@ -26,8 +26,8 @@ func main() {
 		`CREATE TABLE IF NOT EXISTS issued_certs (
 			key_id VARCHAR(255) NOT NULL,
 			principals VARCHAR(255) NULL,
-			created_at INT(11) NULL,
-			expires_at INT(11) NULL,
+			created_at DATETIME NULL,
+			expires_at DATETIME NULL,
 			revoked BOOLEAN DEFAULT NULL,
 			raw_key TEXT NULL,
 			PRIMARY KEY (key_id)
