@@ -19,7 +19,7 @@ Google API                     | Status       | Package
 [Datastore][cloud-datastore]   | beta         | [`google.golang.org/cloud/datastore`][cloud-datastore-ref]
 [Storage][cloud-storage]       | beta         | [`google.golang.org/cloud/storage`][cloud-storage-ref]
 [Pub/Sub][cloud-pubsub]        | experimental | [`google.golang.org/cloud/pubsub`][cloud-pubsub-ref]
-[BigTable][cloud-bigtable]     | stable       | [`google.golang.org/cloud/bigtable`][cloud-bigtable-ref]
+[Bigtable][cloud-bigtable]     | stable       | [`google.golang.org/cloud/bigtable`][cloud-bigtable-ref]
 [BigQuery][cloud-bigquery]     | experimental | [`google.golang.org/cloud/bigquery`][cloud-bigquery-ref]
 [Logging][cloud-logging]       | experimental | [`google.golang.org/cloud/logging`][cloud-logging-ref]
 
@@ -36,6 +36,17 @@ Google API                     | Status       | Package
 
 Documentation and examples are available at
 https://godoc.org/google.golang.org/cloud
+
+Visit or join the
+[google-api-go-announce group](https://groups.google.com/forum/#!forum/google-api-go-announce)
+for updates on these packages.
+
+## Go Versions Supported
+
+We support the two most recent major versions of Go. If Google App Engine uses
+an older version, we support that as well. You can see which versions are
+currently supported by looking at the lines following `go:` in
+[`.travis.yml`](.travis.yml).
 
 ## Authorization
 
