@@ -100,3 +100,15 @@ func TestMySQLStore(t *testing.T) {
 	}
 	testStore(t, db)
 }
+
+func TestMongoStore(t *testing.T) {
+	config := os.Getenv("MONGO_TEST_CONFIG")
+	if config == "" {
+		t.Skip("No MONGO_TEST_CONFIG environment variable")
+	}
+	db, err := NewMongoStore(config)
+	if err != nil {
+		t.Error(err)
+	}
+	testStore(t, db)
+}

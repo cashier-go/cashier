@@ -298,6 +298,8 @@ func certStore(config string) (store.CertStorer, error) {
 	switch engine {
 	case "mysql":
 		cstore, err = store.NewMySQLStore(config)
+	case "mongo":
+		cstore, err = store.NewMongoStore(config)
 	case "mem":
 		cstore = store.NewMemoryStore()
 	default:

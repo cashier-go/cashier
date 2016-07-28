@@ -1,9 +1,10 @@
 language: go
 services:
   - mysql
+  - mongodb
 
 env:
-  - GO15VENDOREXPERIMENT=1 MYSQL_TEST_CONFIG="mysql:user:passwd:localhost"
+  - GO15VENDOREXPERIMENT=1 MYSQL_TEST_CONFIG="mysql:user:passwd:localhost" MONGO_TEST_CONFIG="mongo:user:passwd:localhost"
 
 go:
   - 1.5.4
@@ -19,6 +20,7 @@ before_install:
 
 before_script:
   - go run ./cmd/dbinit/dbinit.go -db_user user -db_password passwd
+  - go run ./cmd/dbinit/dbinit.go -db_type mongo -admin_user '' -db_user user -db_password passwd
 
 sudo: false
 script:

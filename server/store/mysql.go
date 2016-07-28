@@ -22,7 +22,7 @@ type mysqlDB struct {
 	revoked *sql.Stmt
 }
 
-func parseConfig(config string) string {
+func parseMySQLConfig(config string) string {
 	s := strings.Split(config, ":")
 	if len(s) == 4 {
 		s = append(s, "3306")
@@ -41,7 +41,7 @@ func parseConfig(config string) string {
 
 // NewMySQLStore returns a MySQL CertStorer.
 func NewMySQLStore(config string) (CertStorer, error) {
-	conn, err := sql.Open("mysql", parseConfig(config))
+	conn, err := sql.Open("mysql", parseMySQLConfig(config))
 	if err != nil {
 		return nil, fmt.Errorf("mysql: could not get a connection: %v", err)
 	}

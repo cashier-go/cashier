@@ -7,6 +7,8 @@ import (
 	"log"
 	"strings"
 
+	mgo "gopkg.in/mgo.v2"
+
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -14,16 +16,19 @@ var (
 	host        = flag.String("host", "localhost", "host[:port]")
 	adminUser   = flag.String("admin_user", "root", "Admin user")
 	adminPasswd = flag.String("admin_password", "", "Admin password")
-	dbUser      = flag.String("db_user", "root", "Database user")
-	dbPasswd    = flag.String("db_password", "", "Admin password")
+	dbUser      = flag.String("db_user", "user", "Database user")
+	dbPasswd    = flag.String("db_password", "passwd", "Admin password")
+	dbType      = flag.String("db_type", "mysql", "Database engine (\"mysql\" or \"mongo\")")
+
+	certsDB     = "certs"
+	issuedTable = "issued_certs"
 )
 
-func main() {
-	flag.Parse()
+func initMySQL() {
 	var createTableStmt = []string{
-		`CREATE DATABASE IF NOT EXISTS certs DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`,
-		`USE certs;`,
-		`CREATE TABLE IF NOT EXISTS issued_certs (
+		`CREATE DATABASE IF NOT EXISTS ` + certsDB + ` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`,
+		`USE ` + certsDB + `;`,
+		`CREATE TABLE IF NOT EXISTS ` + issuedTable + ` (
 			key_id VARCHAR(255) NOT NULL,
 			principals VARCHAR(255) NULL,
 			created_at DATETIME NULL,
@@ -57,5 +62,46 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error running setup: %v", err)
 		}
+	}
+}
+
+func initMongo() {
+	di := &mgo.DialInfo{
+		Addrs:    strings.Split(*host, ","),
+		Username: *adminUser,
+		Password: *adminPasswd,
+	}
+	session, err := mgo.DialWithInfo(di)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer session.Close()
+	d := session.DB(certsDB)
+	if err := d.UpsertUser(&mgo.User{
+		Username: *dbUser,
+		Password: *dbPasswd,
+		Roles:    []mgo.Role{mgo.RoleReadWrite},
+	}); err != nil {
+		log.Fatalln(err)
+	}
+	c := d.C(issuedTable)
+	i := mgo.Index{
+		Key:    []string{"keyid"},
+		Unique: true,
+	}
+	if err != c.EnsureIndex(i) {
+		log.Fatalln(err)
+	}
+}
+
+func main() {
+	flag.Parse()
+	switch *dbType {
+	case "mysql":
+		initMySQL()
+	case "mongo":
+		initMongo()
+	default:
+		log.Fatalf("Invalid database type")
 	}
 }

@@ -719,6 +719,30 @@
 			"revisionTime": "2016-07-14T22:09:51Z"
 		},
 		{
+			"checksumSHA1": "o+ZqT87RLprKCGKMboo5vCxdAvA=",
+			"path": "gopkg.in/mgo.v2",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
+			"checksumSHA1": "zTjQOFGy4XTv4L33Kd2FhrV+mbM=",
+			"path": "gopkg.in/mgo.v2/bson",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
+			"checksumSHA1": "CkCDTsyN2Lbj1cL8+oaYKoPpI9w=",
+			"path": "gopkg.in/mgo.v2/internal/sasl",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
+			"checksumSHA1": "+1WDRPaOphSCmRMxVPIPBV4aubc=",
+			"path": "gopkg.in/mgo.v2/internal/scram",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
 			"checksumSHA1": "yV+2de12Q/t09hBGYGKEOFr1/zc=",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "e4d366fc3c7938e2958e662b4258c7a89e1f0e3e",
