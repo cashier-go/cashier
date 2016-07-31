@@ -1,6 +1,6 @@
 package templates
 
-// Token is the page users see when authenticated.
+// Certs lists all unexpired issued certificates.
 const Certs = `<html>
   <head>
     <title>Certs</title>

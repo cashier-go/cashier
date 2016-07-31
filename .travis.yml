@@ -26,4 +26,4 @@ script:
   - go list ./... |grep -v vendor/ |xargs go test
   - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
   - go list ./... |grep -v vendor/ |xargs go vet
-  - go list ./... |grep -v vendor/ |xargs -L1 golint
+  - go list ./... |grep -v vendor/ |xargs -L1 golint -set_exit_status

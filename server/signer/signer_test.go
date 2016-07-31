@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/nsheridan/cashier/lib"
+	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/testdata"
+	"github.com/stripe/krl"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -47,5 +49,34 @@ func TestCert(t *testing.T) {
 	}
 	if cert.ValidBefore != uint64(r.ValidUntil.Unix()) {
 		t.Fatalf("Invalid validity, expected %d, got %d", r.ValidUntil, cert.ValidBefore)
+	}
+}
+
+func TestRevocationList(t *testing.T) {
+	r := &lib.SignRequest{
+		Key:        string(testdata.Pub),
+		Principal:  "revoked",
+		ValidUntil: time.Now().Add(1 * time.Hour),
+	}
+	cert1, _ := signer.SignUserKey(r)
+	r.Principal = "ok"
+	cert2, _ := signer.SignUserKey(r)
+	var rec []*store.CertRecord
+	rec = append(rec, &store.CertRecord{
+		KeyID: cert1.KeyId,
+	})
+	rl, err := signer.GenerateRevocationList(rec)
+	if err != nil {
+		t.Error(err)
+	}
+	k, err := krl.ParseKRL(rl)
+	if err != nil {
+		t.Error(err)
+	}
+	if !k.IsRevoked(cert1) {
+		t.Errorf("expected cert %s to be revoked", cert1.KeyId)
+	}
+	if k.IsRevoked(cert2) {
+		t.Errorf("cert %s should not be revoked", cert2.KeyId)
 	}
 }

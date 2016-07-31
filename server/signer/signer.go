@@ -13,6 +13,8 @@ import (
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/nsheridan/cashier/server/store"
+	"github.com/stripe/krl"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -49,6 +51,22 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest) (*ssh.Certificate, error) 
 	}
 	log.Printf("Issued cert id: %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, fingerprint(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
 	return cert, nil
+}
+
+// GenerateRevocationList returns an SSH key revocation list (KRL).
+func (s *KeySigner) GenerateRevocationList(certs []*store.CertRecord) ([]byte, error) {
+	revoked := &krl.KRLCertificateSection{
+		CA: s.ca.PublicKey(),
+	}
+	ids := krl.KRLCertificateKeyID{}
+	for _, c := range certs {
+		ids = append(ids, c.KeyID)
+	}
+	revoked.Sections = append(revoked.Sections, &ids)
+	k := &krl.KRL{
+		Sections: []krl.KRLSection{revoked},
+	}
+	return k.Marshal(rand.Reader)
 }
 
 func makeperms(perms []string) map[string]string {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -211,17 +210,16 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 }
 
 func listRevokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	var out bytes.Buffer
 	revoked, err := a.certstore.GetRevoked()
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	for _, c := range revoked {
-		out.WriteString(c.Raw)
-		out.WriteString("\n")
+	rl, err := a.sshKeySigner.GenerateRevocationList(revoked)
+	if err != nil {
+		return http.StatusInternalServerError, err
 	}
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write(out.Bytes())
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(rl)
 	return http.StatusOK, nil
 }
 

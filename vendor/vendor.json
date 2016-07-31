@@ -377,6 +377,12 @@
 			"revisionTime": "2016-06-15T09:26:46Z"
 		},
 		{
+			"checksumSHA1": "Mqb+Cn1S2ZN/nOfn8FDaAiXTdhU=",
+			"path": "github.com/stripe/krl",
+			"revision": "fd565ec6f8e236d6b63b953f3aecb2f2cca80605",
+			"revisionTime": "2016-07-21T22:16:07Z"
+		},
+		{
 			"checksumSHA1": "BS9oue0y6JjMzz3spKlMTVmxZxo=",
 			"path": "go4.org/wkfs",
 			"revision": "85455cb60c902182109ca27131042a41bc4cb85d",
