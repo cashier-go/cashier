@@ -32,6 +32,7 @@ func parseMongoConfig(config string) *mgo.DialInfo {
 	return d
 }
 
+// NewMongoStore returns a MongoDB CertStorer.
 func NewMongoStore(config string) (CertStorer, error) {
 	session, err := mgo.DialWithInfo(parseMongoConfig(config))
 	if err != nil {
