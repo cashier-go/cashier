@@ -23,6 +23,7 @@ import (
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/testdata"
+	"github.com/stripe/krl"
 )
 
 func newContext(t *testing.T) *appContext {
@@ -96,9 +97,9 @@ func TestRootHandlerNoSession(t *testing.T) {
 }
 
 func TestSignRevoke(t *testing.T) {
-	t.Skip()
 	s, _ := json.Marshal(&lib.SignRequest{
-		Key: string(testdata.Pub),
+		Key:        string(testdata.Pub),
+		ValidUntil: time.Now().UTC().Add(1 * time.Hour),
 	})
 	req, _ := http.NewRequest("POST", "/sign", bytes.NewReader(s))
 	resp := httptest.NewRecorder()
@@ -130,11 +131,17 @@ func TestSignRevoke(t *testing.T) {
 	// Revoke the cert and verify
 	req, _ = http.NewRequest("POST", "/revoke", nil)
 	req.Form = url.Values{"cert_id": []string{cert.KeyId}}
+	tok := &oauth2.Token{
+		AccessToken: "authenticated",
+		Expiry:      time.Now().Add(1 * time.Hour),
+	}
+	ctx.setAuthTokenCookie(resp, req, tok)
 	revokeCertHandler(ctx, resp, req)
 	req, _ = http.NewRequest("GET", "/revoked", nil)
 	listRevokedCertsHandler(ctx, resp, req)
 	revoked, _ := ioutil.ReadAll(resp.Body)
-	if string(revoked[:len(revoked)-1]) != r.Response {
-		t.Error("omg")
+	rl, _ := krl.ParseKRL(revoked)
+	if !rl.IsRevoked(cert) {
+		t.Errorf("cert %s was not revoked", cert.KeyId)
 	}
 }
