@@ -19,6 +19,7 @@ var (
 	dbUser      = flag.String("db_user", "user", "Database user")
 	dbPasswd    = flag.String("db_password", "passwd", "Admin password")
 	dbType      = flag.String("db_type", "mysql", "Database engine (\"mysql\" or \"mongo\")")
+	authDB      = flag.String("authdb", "admin", "Admin database (mongo)")
 
 	certsDB     = "certs"
 	issuedTable = "issued_certs"
@@ -70,6 +71,7 @@ func initMongo() {
 		Addrs:    strings.Split(*host, ","),
 		Username: *adminUser,
 		Password: *adminPasswd,
+		Database: *authDB,
 	}
 	session, err := mgo.DialWithInfo(di)
 	if err != nil {
