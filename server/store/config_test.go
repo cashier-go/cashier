@@ -11,15 +11,15 @@ import (
 func TestMySQLConfig(t *testing.T) {
 	var tests = []struct {
 		in  string
-		out string
+		out []string
 	}{
-		{"mysql:user:passwd:localhost", "user:passwd@tcp(localhost:3306)/certs?parseTime=true"},
-		{"mysql:user:passwd:localhost:13306", "user:passwd@tcp(localhost:13306)/certs?parseTime=true"},
-		{"mysql:root::localhost", "root@tcp(localhost:3306)/certs?parseTime=true"},
+		{"mysql:user:passwd:localhost", []string{"mysql", "user:passwd@tcp(localhost:3306)/certs?parseTime=true"}},
+		{"mysql:user:passwd:localhost:13306", []string{"mysql", "user:passwd@tcp(localhost:13306)/certs?parseTime=true"}},
+		{"mysql:root::localhost", []string{"mysql", "root@tcp(localhost:3306)/certs?parseTime=true"}},
 	}
 	for _, tt := range tests {
-		result := parseMySQLConfig(tt.in)
-		if result != tt.out {
+		result := parse(tt.in)
+		if !reflect.DeepEqual(result, tt.out) {
 			t.Errorf("want %s, got %s", tt.out, result)
 		}
 	}

@@ -3,7 +3,10 @@ package store
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -94,7 +97,7 @@ func TestMySQLStore(t *testing.T) {
 	if config == "" {
 		t.Skip("No MYSQL_TEST_CONFIG environment variable")
 	}
-	db, err := NewMySQLStore(config)
+	db, err := NewSQLStore(config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -107,6 +110,24 @@ func TestMongoStore(t *testing.T) {
 		t.Skip("No MONGO_TEST_CONFIG environment variable")
 	}
 	db, err := NewMongoStore(config)
+	if err != nil {
+		t.Error(err)
+	}
+	testStore(t, db)
+}
+
+func TestSQLiteStore(t *testing.T) {
+	f, err := ioutil.TempFile("", "sqlite_test_db")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.Remove(f.Name())
+	// This is so jank.
+	args := []string{"run", "../../cmd/dbinit/dbinit.go", "-db_type", "sqlite", "-db_path", f.Name()}
+	if err := exec.Command("go", args...).Run(); err != nil {
+		t.Error(err)
+	}
+	db, err := NewSQLStore(fmt.Sprintf("sqlite:%s", f.Name()))
 	if err != nil {
 		t.Error(err)
 	}

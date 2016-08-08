@@ -10,6 +10,7 @@ import (
 	mgo "gopkg.in/mgo.v2"
 
 	"github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -18,18 +19,13 @@ var (
 	adminPasswd = flag.String("admin_password", "", "Admin password")
 	dbUser      = flag.String("db_user", "user", "Database user")
 	dbPasswd    = flag.String("db_password", "passwd", "Admin password")
-	dbType      = flag.String("db_type", "mysql", "Database engine (\"mysql\" or \"mongo\")")
+	dbType      = flag.String("db_type", "mysql", "Database engine (\"mysql\", \"sqlite\" or \"mongo\")")
+	sqliteDB    = flag.String("db_path", "cashier.db", "Path to SQLite database")
 	authDB      = flag.String("authdb", "admin", "Admin database (mongo)")
 
 	certsDB     = "certs"
 	issuedTable = "issued_certs"
-)
-
-func initMySQL() {
-	var createTableStmt = []string{
-		`CREATE DATABASE IF NOT EXISTS ` + certsDB + ` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`,
-		`USE ` + certsDB + `;`,
-		`CREATE TABLE IF NOT EXISTS ` + issuedTable + ` (
+	createTable = `CREATE TABLE IF NOT EXISTS ` + issuedTable + ` (
 			key_id VARCHAR(255) NOT NULL,
 			principals VARCHAR(255) NULL,
 			created_at DATETIME NULL,
@@ -37,7 +33,26 @@ func initMySQL() {
 			revoked BOOLEAN DEFAULT NULL,
 			raw_key TEXT NULL,
 			PRIMARY KEY (key_id)
-		);`,
+		);`
+)
+
+func initSQLite() {
+	db, err := sql.Open("sqlite3", *sqliteDB)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	if _, err = db.Exec(createTable); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initMySQL() {
+	var createTableStmt = []string{
+		`CREATE DATABASE IF NOT EXISTS ` + certsDB + ` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';`,
+		`USE ` + certsDB + `;`,
+		createTable,
 		`GRANT ALL PRIVILEGES ON certs.* TO '` + *dbUser + `'@'%' IDENTIFIED BY '` + *dbPasswd + `';`,
 	}
 
@@ -103,6 +118,8 @@ func main() {
 		initMySQL()
 	case "mongo":
 		initMongo()
+	case "sqlite":
+		initSQLite()
 	default:
 		log.Fatalf("Invalid database type")
 	}

@@ -297,8 +297,8 @@ func certStore(config string) (store.CertStorer, error) {
 	var err error
 	engine := strings.Split(config, ":")[0]
 	switch engine {
-	case "mysql":
-		cstore, err = store.NewMySQLStore(config)
+	case "mysql", "sqlite":
+		cstore, err = store.NewSQLStore(config)
 	case "mongo":
 		cstore, err = store.NewMongoStore(config)
 	case "mem":
