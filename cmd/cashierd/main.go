@@ -360,7 +360,7 @@ func main() {
 	r.Methods("GET").Path("/revoked").Handler(appHandler{ctx, listRevokedCertsHandler})
 	r.Methods("POST").Path("/admin/revoke").Handler(CSRF(appHandler{ctx, revokeCertHandler}))
 	r.Methods("GET").Path("/admin/certs").Handler(CSRF(appHandler{ctx, listAllCertsHandler}))
-	r.PathPrefix("/").Handler(http.FileServer(static.FS(true)))
+	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
 	logfile := os.Stderr
 	if config.Server.HTTPLogFile != "" {
 		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)
