@@ -20,7 +20,7 @@ var (
 	dbUser      = flag.String("db_user", "user", "Database user")
 	dbPasswd    = flag.String("db_password", "passwd", "Admin password")
 	dbType      = flag.String("db_type", "mysql", "Database engine (\"mysql\", \"sqlite\" or \"mongo\")")
-	sqliteDB    = flag.String("db_path", "cashier.db", "Path to SQLite database")
+	sqliteDB    = flag.String("db_path", "certs.db", "Path to SQLite database")
 	authDB      = flag.String("authdb", "admin", "Admin database (mongo)")
 
 	certsDB     = "certs"

@@ -87,11 +87,12 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 #### Datastore
 Datastores contain a record of issued certificates for audit and revocation purposes. The connection string is of the form `engine:username:password:host[:port]`.
 
-Supported database providers: `mysql`, `mongo` and `mem`.
+Supported database providers: `mysql`, `mongo`, `sqlite` and `mem`.
 
 `mem` is an in-memory database intended for testing and takes no additional config options.
 `mysql` is the MySQL database and accepts `username`, `password` and `host` arguments. Only `username` and `host` arguments are required. `port` is assumed to be 3306 unless otherwise specified.
 `mongo` is MongoDB and accepts `username`, `password` and `host` arguments. All arguments are optional and multiple hosts can be specified using comma-separated values: `mongo:dbuser:dbpasswd:host1,host2`.
+`sqlite` is the SQLite database and accepts a `path` argument.
 
 If no datastore is specified the `mem` store is used.
 
@@ -104,10 +105,11 @@ server {
   datastore = "mysql:cashier:PaSsWoRd:mydbprovider.example.com:5150"  # mysql running on a remote host on port 5150
   datastore = "mongo:cashier:PaSsWoRd:mydbprovider.example.com:27018"  # mongo running on a remote host on port 27018
   datastore = "mongo:cashier:PaSsWoRd:server1.example.com:27018,server2.example.com:27018"  # mongo running on multiple servers on port 27018
+  datastore = "sqlite:/data/certs.db"
 }
 ```
 
-Prior to using MySQL or MongoDB datastores you need to create the database and tables using the [dbinit tool](cmd/dbinit/dbinit.go).
+Prior to using MySQL, MongoDB or SQLite datastores you need to create the database and tables using the [dbinit tool](cmd/dbinit/dbinit.go).
 Note that dbinit has no support for replica sets.
 
 ### auth
