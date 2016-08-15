@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/user"
 	"path"
@@ -49,7 +50,12 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: !ValidateTLSCertificate},
 	}
 	client := &http.Client{Transport: transport}
-	req, err := http.NewRequest("POST", ca+"/sign", bytes.NewReader(s))
+	u, err := url.Parse(ca)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path.Join(u.Path, "/sign")
+	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(s))
 	if err != nil {
 		return nil, err
 	}
