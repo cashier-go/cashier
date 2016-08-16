@@ -40,8 +40,8 @@ func TestLoadCert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error reading from agent: %v", err)
 	}
-	if len(listedKeys) != 1 {
-		t.Fatalf("Expected 1 key, got %d", len(listedKeys))
+	if len(listedKeys) != 2 {
+		t.Fatalf("Expected 2 keys, got %d", len(listedKeys))
 	}
 	if !bytes.Equal(listedKeys[0].Marshal(), c.Marshal()) {
 		t.Fatal("Certs not equal")

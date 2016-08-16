@@ -42,6 +42,14 @@ func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
 	if err := a.Add(pubcert); err != nil {
 		return fmt.Errorf("error importing certificate: %s", err)
 	}
+	privkey := agent.AddedKey{
+		PrivateKey:   key,
+		Comment:      cert.KeyId,
+		LifetimeSecs: uint32(lifetime),
+	}
+	if err := a.Add(privkey); err != nil {
+		return fmt.Errorf("error importing key: %s", err)
+	}
 	return nil
 }
 
@@ -147,5 +155,5 @@ func main() {
 	if err := installCert(a, cert, priv); err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("Certificate added.")
+	fmt.Println("Credentials added.")
 }
