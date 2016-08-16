@@ -92,6 +92,7 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 - `use_tls` : boolean. If set `tls_key` and `tls_cert` are required.
 - `tls_key` : string. Path to the TLS key.
 - `tls_cert` : string. Path to the TLS cert.
+- `address` : string. IP address to listen on. If unset the server listens on all addresses.
 - `port` : int. Port to listen on.
 - `cookie_secret`: string. Authentication key for the session cookie.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.

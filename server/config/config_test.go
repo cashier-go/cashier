@@ -21,6 +21,7 @@ func TestServerConfig(t *testing.T) {
 	a.Equal(server.TLSKey, "server.key")
 	a.Equal(server.TLSCert, "server.crt")
 	a.Equal(server.Port, 443)
+	a.Equal(server.Addr, "127.0.0.1")
 	a.Equal(server.CookieSecret, "supersecret")
 }
 

@@ -371,7 +371,7 @@ func main() {
 	h := handlers.LoggingHandler(logfile, r)
 
 	fmt.Println("Starting server...")
-	l := fmt.Sprintf(":%d", config.Server.Port)
+	l := fmt.Sprintf("%s:%d", config.Server.Addr, config.Server.Port)
 	if config.Server.UseTLS {
 		log.Fatal(http.ListenAndServeTLS(l, config.Server.TLSCert, config.Server.TLSKey, h))
 	}

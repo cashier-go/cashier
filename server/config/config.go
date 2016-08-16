@@ -29,6 +29,7 @@ type Server struct {
 	UseTLS       bool   `mapstructure:"use_tls"`
 	TLSKey       string `mapstructure:"tls_key"`
 	TLSCert      string `mapstructure:"tls_cert"`
+	Addr         string `mapstructure:"address"`
 	Port         int    `mapstructure:"port"`
 	CookieSecret string `mapstructure:"cookie_secret"`
 	CSRFSecret   string `mapstructure:"csrf_secret"`

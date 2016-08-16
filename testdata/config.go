@@ -5,6 +5,7 @@ var ServerConfig = []byte(`
 		use_tls = true
 		tls_key = "server.key"
 		tls_cert = "server.crt"
+		address = "127.0.0.1"
 		port = 443
 		cookie_secret = "supersecret"
 	}
