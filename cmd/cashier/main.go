@@ -32,11 +32,13 @@ var (
 )
 
 func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
-	lifetime := time.Unix(int64(cert.ValidBefore), 0).Sub(time.Now()).Seconds()
+	t := time.Unix(int64(cert.ValidBefore), 0)
+	lifetime := t.Sub(time.Now()).Seconds()
+	comment := fmt.Sprintf("%s [Expires %s]", cert.KeyId, t)
 	pubcert := agent.AddedKey{
 		PrivateKey:   key,
 		Certificate:  cert,
-		Comment:      cert.KeyId,
+		Comment:      comment,
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(pubcert); err != nil {
@@ -44,7 +46,7 @@ func installCert(a agent.Agent, cert *ssh.Certificate, key key) error {
 	}
 	privkey := agent.AddedKey{
 		PrivateKey:   key,
-		Comment:      cert.KeyId,
+		Comment:      comment,
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(privkey); err != nil {

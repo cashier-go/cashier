@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/testdata"
@@ -22,6 +23,7 @@ func TestLoadCert(t *testing.T) {
 	key := priv.(*rsa.PrivateKey)
 	pub, _ := ssh.NewPublicKey(&key.PublicKey)
 	c := &ssh.Certificate{
+		KeyId:       "test_key_12345",
 		Key:         pub,
 		CertType:    ssh.UserCert,
 		ValidBefore: ssh.CertTimeInfinity,
@@ -45,6 +47,13 @@ func TestLoadCert(t *testing.T) {
 	}
 	if !bytes.Equal(listedKeys[0].Marshal(), c.Marshal()) {
 		t.Fatal("Certs not equal")
+	}
+	for _, k := range listedKeys {
+		exp := time.Unix(int64(c.ValidBefore), 0).String()
+		want := fmt.Sprintf("%s [Expires %s]", c.KeyId, exp)
+		if k.Comment != want {
+			t.Errorf("key comment:\nwanted:%s\ngot: %s", want, k.Comment)
+		}
 	}
 }
 
