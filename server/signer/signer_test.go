@@ -24,6 +24,7 @@ var (
 )
 
 func TestCert(t *testing.T) {
+	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
 		Principal:  "gopher1",
@@ -53,6 +54,7 @@ func TestCert(t *testing.T) {
 }
 
 func TestRevocationList(t *testing.T) {
+	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
 		Principal:  "revoked",

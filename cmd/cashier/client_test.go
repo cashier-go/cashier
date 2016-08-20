@@ -19,6 +19,7 @@ import (
 )
 
 func TestLoadCert(t *testing.T) {
+	t.Parallel()
 	priv, _ := ssh.ParseRawPrivateKey(testdata.Priv)
 	key := priv.(*rsa.PrivateKey)
 	pub, _ := ssh.NewPublicKey(&key.PublicKey)
@@ -58,6 +59,7 @@ func TestLoadCert(t *testing.T) {
 }
 
 func TestSignGood(t *testing.T) {
+	t.Parallel()
 	res := &lib.SignResponse{
 		Status:   "ok",
 		Response: string(testdata.Cert),
@@ -86,6 +88,7 @@ func TestSignGood(t *testing.T) {
 }
 
 func TestSignBad(t *testing.T) {
+	t.Parallel()
 	res := &lib.SignResponse{
 		Status:   "error",
 		Response: `{"response": "error"}`,

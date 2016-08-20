@@ -9,6 +9,7 @@ import (
 )
 
 func TestMySQLConfig(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		in  string
 		out []string
@@ -26,6 +27,7 @@ func TestMySQLConfig(t *testing.T) {
 }
 
 func TestMongoConfig(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		in  string
 		out *mgo.DialInfo

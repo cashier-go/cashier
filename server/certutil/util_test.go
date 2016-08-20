@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetPublicKey(t *testing.T) {
+	t.Parallel()
 	c, _, _, _, _ := ssh.ParseAuthorizedKey(testdata.Cert)
 	if GetPublicKey(c.(*ssh.Certificate)) != string(testdata.Cert) {
 		t.Fail()

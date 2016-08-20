@@ -17,6 +17,7 @@ import (
 )
 
 func TestParseCertificate(t *testing.T) {
+	t.Parallel()
 	a := assert.New(t)
 	now := uint64(time.Now().Unix())
 	r, _ := rsa.GenerateKey(rand.Reader, 1024)
@@ -88,11 +89,13 @@ func testStore(t *testing.T, db CertStorer) {
 }
 
 func TestMemoryStore(t *testing.T) {
+	t.Parallel()
 	db := NewMemoryStore()
 	testStore(t, db)
 }
 
 func TestMySQLStore(t *testing.T) {
+	t.Parallel()
 	config := os.Getenv("MYSQL_TEST_CONFIG")
 	if config == "" {
 		t.Skip("No MYSQL_TEST_CONFIG environment variable")
@@ -105,6 +108,7 @@ func TestMySQLStore(t *testing.T) {
 }
 
 func TestMongoStore(t *testing.T) {
+	t.Parallel()
 	config := os.Getenv("MONGO_TEST_CONFIG")
 	if config == "" {
 		t.Skip("No MONGO_TEST_CONFIG environment variable")
@@ -117,6 +121,7 @@ func TestMongoStore(t *testing.T) {
 }
 
 func TestSQLiteStore(t *testing.T) {
+	t.Parallel()
 	f, err := ioutil.TempFile("", "sqlite_test_db")
 	if err != nil {
 		t.Error(err)

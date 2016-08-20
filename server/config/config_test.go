@@ -10,6 +10,7 @@ import (
 )
 
 func TestServerConfig(t *testing.T) {
+	t.Parallel()
 	a := assert.New(t)
 	c, err := ReadConfig(bytes.NewBuffer(testdata.ServerConfig))
 	if err != nil {
@@ -26,6 +27,7 @@ func TestServerConfig(t *testing.T) {
 }
 
 func TestAuthConfig(t *testing.T) {
+	t.Parallel()
 	a := assert.New(t)
 	c, err := ReadConfig(bytes.NewBuffer(testdata.AuthConfig))
 	if err != nil {
@@ -41,6 +43,7 @@ func TestAuthConfig(t *testing.T) {
 }
 
 func TestSSHConfig(t *testing.T) {
+	t.Parallel()
 	a := assert.New(t)
 	c, err := ReadConfig(bytes.NewBuffer(testdata.SSHConfig))
 	if err != nil {
