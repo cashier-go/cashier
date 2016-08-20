@@ -32,24 +32,24 @@ func TestCert(t *testing.T) {
 	}
 	cert, err := signer.SignUserKey(r)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	if !bytes.Equal(cert.SignatureKey.Marshal(), signer.ca.PublicKey().Marshal()) {
-		t.Fatal("Cert signer and server signer don't match")
+		t.Error("Cert signer and server signer don't match")
 	}
 	var principals []string
 	principals = append(principals, r.Principal)
 	principals = append(principals, signer.principals...)
 	if !reflect.DeepEqual(cert.ValidPrincipals, principals) {
-		t.Fatalf("Expected %s, got %s", cert.ValidPrincipals, principals)
+		t.Errorf("Expected %s, got %s", cert.ValidPrincipals, principals)
 	}
 	k1, _, _, _, err := ssh.ParseAuthorizedKey([]byte(r.Key))
 	k2 := cert.Key
 	if !bytes.Equal(k1.Marshal(), k2.Marshal()) {
-		t.Fatal("Cert key doesn't match public key")
+		t.Error("Cert key doesn't match public key")
 	}
 	if cert.ValidBefore != uint64(r.ValidUntil.Unix()) {
-		t.Fatalf("Invalid validity, expected %d, got %d", r.ValidUntil, cert.ValidBefore)
+		t.Errorf("Invalid validity, expected %d, got %d", r.ValidUntil, cert.ValidBefore)
 	}
 }
 

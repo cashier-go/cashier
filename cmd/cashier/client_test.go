@@ -32,22 +32,22 @@ func TestLoadCert(t *testing.T) {
 	}
 	signer, err := ssh.NewSignerFromKey(key)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	c.SignCert(rand.Reader, signer)
 	a := agent.NewKeyring()
 	if err := installCert(a, c, key); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	listedKeys, err := a.List()
 	if err != nil {
-		t.Fatalf("Error reading from agent: %v", err)
+		t.Errorf("Error reading from agent: %v", err)
 	}
 	if len(listedKeys) != 2 {
-		t.Fatalf("Expected 2 keys, got %d", len(listedKeys))
+		t.Errorf("Expected 2 keys, got %d", len(listedKeys))
 	}
 	if !bytes.Equal(listedKeys[0].Marshal(), c.Marshal()) {
-		t.Fatal("Certs not equal")
+		t.Error("Certs not equal")
 	}
 	for _, k := range listedKeys {
 		exp := time.Unix(int64(c.ValidBefore), 0).String()
@@ -71,11 +71,11 @@ func TestSignGood(t *testing.T) {
 	defer ts.Close()
 	_, err := send([]byte(`{}`), "token", ts.URL, true)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	k, _, _, _, err := ssh.ParseAuthorizedKey(testdata.Pub)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	c := &config{
 		CA:       ts.URL,
@@ -83,7 +83,7 @@ func TestSignGood(t *testing.T) {
 	}
 	cert, err := sign(k, "token", c)
 	if cert == nil && err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
@@ -100,11 +100,11 @@ func TestSignBad(t *testing.T) {
 	defer ts.Close()
 	_, err := send([]byte(`{}`), "token", ts.URL, true)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	k, _, _, _, err := ssh.ParseAuthorizedKey(testdata.Pub)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	c := &config{
 		CA:       ts.URL,
@@ -112,6 +112,6 @@ func TestSignBad(t *testing.T) {
 	}
 	cert, err := sign(k, "token", c)
 	if cert != nil && err == nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }

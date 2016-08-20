@@ -14,7 +14,7 @@ func TestServerConfig(t *testing.T) {
 	a := assert.New(t)
 	c, err := ReadConfig(bytes.NewBuffer(testdata.ServerConfig))
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	server := c.Server
 	a.IsType(server, &Server{})
@@ -31,7 +31,7 @@ func TestAuthConfig(t *testing.T) {
 	a := assert.New(t)
 	c, err := ReadConfig(bytes.NewBuffer(testdata.AuthConfig))
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	auth := c.Auth
 	a.IsType(auth, &Auth{})
@@ -47,7 +47,7 @@ func TestSSHConfig(t *testing.T) {
 	a := assert.New(t)
 	c, err := ReadConfig(bytes.NewBuffer(testdata.SSHConfig))
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	ssh := c.SSH
 	a.IsType(ssh, &SSH{})
@@ -57,7 +57,7 @@ func TestSSHConfig(t *testing.T) {
 	a.Equal(ssh.MaxAge, "720h")
 	d, err := time.ParseDuration(ssh.MaxAge)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	a.Equal(d.Hours(), float64(720))
 }
