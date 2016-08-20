@@ -16,7 +16,7 @@ func TestServerConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	server := c.Server
-	a.IsType(server, Server{})
+	a.IsType(server, &Server{})
 	a.True(server.UseTLS)
 	a.Equal(server.TLSKey, "server.key")
 	a.Equal(server.TLSCert, "server.crt")
@@ -32,7 +32,7 @@ func TestAuthConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	auth := c.Auth
-	a.IsType(auth, Auth{})
+	a.IsType(auth, &Auth{})
 	a.Equal(auth.Provider, "google")
 	a.Equal(auth.ProviderOpts, map[string]string{"domain": "example.com"})
 	a.Equal(auth.OauthClientID, "client_id")
@@ -47,7 +47,7 @@ func TestSSHConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	ssh := c.SSH
-	a.IsType(ssh, SSH{})
+	a.IsType(ssh, &SSH{})
 	a.Equal(ssh.SigningKey, "signing_key")
 	a.Equal(ssh.AdditionalPrincipals, []string{"ec2-user", "ubuntu"})
 	a.Equal(ssh.Permissions, []string{"permit-pty", "permit-X11-forwarding", "permit-port-forwarding", "permit-user-rc"})

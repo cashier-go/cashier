@@ -10,10 +10,10 @@ import (
 
 // Config holds the server configuration.
 type Config struct {
-	Server Server `mapstructure:"server"`
-	Auth   Auth   `mapstructure:"auth"`
-	SSH    SSH    `mapstructure:"ssh"`
-	AWS    AWS    `mapstructure:"aws"`
+	Server *Server `mapstructure:"server"`
+	Auth   *Auth   `mapstructure:"auth"`
+	SSH    *SSH    `mapstructure:"ssh"`
+	AWS    *AWS    `mapstructure:"aws"`
 }
 
 // unmarshalled holds the raw config.
@@ -96,9 +96,9 @@ func ReadConfig(r io.Reader) (*Config, error) {
 		return nil, err
 	}
 	return &Config{
-		Server: u.Server[0],
-		Auth:   u.Auth[0],
-		SSH:    u.SSH[0],
-		AWS:    u.AWS[0],
+		Server: &u.Server[0],
+		Auth:   &u.Auth[0],
+		SSH:    &u.SSH[0],
+		AWS:    &u.AWS[0],
 	}, nil
 }

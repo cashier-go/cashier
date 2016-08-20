@@ -315,8 +315,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fs.Register(&config.AWS)
-	signer, err := signer.New(&config.SSH)
+	fs.Register(config.AWS)
+	signer, err := signer.New(config.SSH)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -324,9 +324,9 @@ func main() {
 	var authprovider auth.Provider
 	switch config.Auth.Provider {
 	case "google":
-		authprovider, err = google.New(&config.Auth)
+		authprovider, err = google.New(config.Auth)
 	case "github":
-		authprovider, err = github.New(&config.Auth)
+		authprovider, err = github.New(config.Auth)
 	default:
 		log.Fatalln("Unknown provider %s", config.Auth.Provider)
 	}
