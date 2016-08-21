@@ -95,6 +95,7 @@ Configuration is divided into different sections: `server`, `auth`, `ssh`, and `
 - `tls_cert` : string. Path to the TLS cert.
 - `address` : string. IP address to listen on. If unset the server listens on all addresses.
 - `port` : int. Port to listen on.
+- `user` : string. User to which the server drops privileges to.
 - `cookie_secret`: string. Authentication key for the session cookie.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.
 - `datastore`: string. Datastore connection string. See [Datastore](#datastore).
