@@ -20,6 +20,7 @@
 	- [Configuring SSH](#configuring-ssh)
 	- [Revoking certificates](#revoking-certificates)
 - [Future Work](#future-work)
+- [Contributing](#contributing)
 
 
 # Cashier
@@ -217,3 +218,7 @@ Remember that the `revoked_keys` file **must** exist and **must** be readable by
 # Future Work
 
 - Host certificates - only user certificates are supported at present.
+
+# Contributing
+Pull requests are welcome but forking Go repos can be a pain. [This is a good guide to forking and creating pull requests for Go projects](https://splice.com/blog/contributing-open-source-git-repositories-go/).  
+Dependencies are vendored with [govendor](https://github.com/kardianos/govendor).
