@@ -31,6 +31,7 @@ type Server struct {
 	TLSCert      string `mapstructure:"tls_cert"`
 	Addr         string `mapstructure:"address"`
 	Port         int    `mapstructure:"port"`
+	User         string `mapstructure:"user"`
 	CookieSecret string `mapstructure:"cookie_secret"`
 	CSRFSecret   string `mapstructure:"csrf_secret"`
 	HTTPLogFile  string `mapstructure:"http_logfile"`

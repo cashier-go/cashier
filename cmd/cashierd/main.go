@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -32,6 +34,7 @@ import (
 	"github.com/nsheridan/cashier/server/static"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
+	"github.com/sid77/drop"
 )
 
 var (
@@ -310,17 +313,50 @@ func certStore(config string) (store.CertStorer, error) {
 }
 
 func main() {
+	// Privileged section
 	flag.Parse()
 	config, err := readConfig(*cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fs.Register(config.AWS)
 	signer, err := signer.New(config.SSH)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	logfile := os.Stderr
+	if config.Server.HTTPLogFile != "" {
+		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0640)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.Server.Addr, config.Server.Port))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{}
+	if config.Server.UseTLS {
+		tlsConfig.Certificates = make([]tls.Certificate, 1)
+		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.Server.TLSCert, config.Server.TLSKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		l = tls.NewListener(l, tlsConfig)
+	}
+
+	if config.Server.User != "" {
+		log.Print("Dropping privileges...")
+		if err = drop.DropPrivileges(config.Server.User); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Unprivileged section
 	var authprovider auth.Provider
 	switch config.Auth.Provider {
 	case "google":
@@ -361,19 +397,11 @@ func main() {
 	r.Methods("POST").Path("/admin/revoke").Handler(CSRF(appHandler{ctx, revokeCertHandler}))
 	r.Methods("GET").Path("/admin/certs").Handler(CSRF(appHandler{ctx, listAllCertsHandler}))
 	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
-	logfile := os.Stderr
-	if config.Server.HTTPLogFile != "" {
-		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0660)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 	h := handlers.LoggingHandler(logfile, r)
 
-	fmt.Println("Starting server...")
-	l := fmt.Sprintf("%s:%d", config.Server.Addr, config.Server.Port)
-	if config.Server.UseTLS {
-		log.Fatal(http.ListenAndServeTLS(l, config.Server.TLSCert, config.Server.TLSKey, h))
+	log.Print("Starting server...")
+	s := &http.Server{
+		Handler: h,
 	}
-	log.Fatal(http.ListenAndServe(l, h))
+	log.Fatal(s.Serve(l))
 }
