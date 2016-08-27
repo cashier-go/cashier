@@ -32,13 +32,18 @@ const Token = `
 <body>
 	<div class="container">
 		<div class="page-header">
-			<h1>Access Token</h1>
+			<h2>Access Token</h2>
 		</div>
 		<div>
 			<textarea style="font-size: 15pt" class="u-full-width code" readonly spellcheck="false" onclick="this.focus();this.select();">{{.Token}}</textarea>
-			<h2>
+			<h3>
 				The token will expire in &lt; 1 hour.
-			</h2>
+			</h3>
+		</div>
+		<div>
+			<h4>
+				<a href="/admin/certs">Previously Issued Certificates</a>
+			</h4>
 		</div>
 	</div>
 </body>

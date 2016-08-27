@@ -16,7 +16,7 @@ const Certs = `
 <body>
 	<div class="container">
 		<div class="page-header">
-			<h1>Issued SSH Certificates</h1>
+			<h2>Issued SSH Certificates</h2>
 		</div>
 
 		<form action="/admin/revoke" method="post" id="form_revoke">
