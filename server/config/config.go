@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"io"
+	"os"
+	"strconv"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/viper"
@@ -82,6 +84,28 @@ func verifyConfig(u *unmarshalled) error {
 	return err
 }
 
+func setFromEnv(u *unmarshalled) {
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err == nil {
+		u.Server[0].Port = port
+	}
+	if os.Getenv("DATASTORE") != "" {
+		u.Server[0].Datastore = os.Getenv("DATASTORE")
+	}
+	if os.Getenv("OAUTH_CLIENT_ID") != "" {
+		u.Auth[0].OauthClientID = os.Getenv("OAUTH_CLIENT_ID")
+	}
+	if os.Getenv("OAUTH_CLIENT_SECRET") != "" {
+		u.Auth[0].OauthClientSecret = os.Getenv("OAUTH_CLIENT_SECRET")
+	}
+	if os.Getenv("CSRF_SECRET") != "" {
+		u.Server[0].CSRFSecret = os.Getenv("CSRF_SECRET")
+	}
+	if os.Getenv("COOKIE_SECRET") != "" {
+		u.Server[0].CookieSecret = os.Getenv("COOKIE_SECRET")
+	}
+}
+
 // ReadConfig parses a JSON configuration file into a Config struct.
 func ReadConfig(r io.Reader) (*Config, error) {
 	u := &unmarshalled{}
@@ -93,6 +117,7 @@ func ReadConfig(r io.Reader) (*Config, error) {
 	if err := v.Unmarshal(u); err != nil {
 		return nil, err
 	}
+	setFromEnv(u)
 	if err := verifyConfig(u); err != nil {
 		return nil, err
 	}

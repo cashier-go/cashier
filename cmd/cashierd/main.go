@@ -334,7 +334,8 @@ func main() {
 		}
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.Server.Addr, config.Server.Port))
+	laddr := fmt.Sprintf("%s:%d", config.Server.Addr, config.Server.Port)
+	l, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -399,7 +400,7 @@ func main() {
 	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
 	h := handlers.LoggingHandler(logfile, r)
 
-	log.Print("Starting server...")
+	log.Printf("Starting server on %s", laddr)
 	s := &http.Server{
 		Handler: h,
 	}
