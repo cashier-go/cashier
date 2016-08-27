@@ -353,6 +353,18 @@
 			"revisionTime": "2016-06-15T09:26:46Z"
 		},
 		{
+			"checksumSHA1": "7YOxIWN8N07u00fHPvixUpfRlsk=",
+			"path": "github.com/sid77/drop",
+			"revision": "d1b109804e16d93bdf43c2cf6cbfe388980c26ff",
+			"revisionTime": "2016-08-25T18:43:04Z"
+		},
+		{
+			"checksumSHA1": "12GwP9BOFNEwDMDZnqaEcPvdBOo=",
+			"path": "github.com/sid77/drop/syscall",
+			"revision": "d1b109804e16d93bdf43c2cf6cbfe388980c26ff",
+			"revisionTime": "2016-08-25T18:43:04Z"
+		},
+		{
 			"checksumSHA1": "E1899TNqCHhCtr6+joW4YEldRuE=",
 			"path": "github.com/spf13/cast",
 			"revision": "27b586b42e29bec072fe7379259cc719e1289da6",
