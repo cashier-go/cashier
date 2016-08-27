@@ -81,6 +81,12 @@ const (
 
 	// https://developer.github.com/changes/2016-04-21-oauth-authorizations-grants-api-preview/
 	mediaTypeOAuthGrantAuthorizationsPreview = "application/vnd.github.damage-preview+json"
+
+	// https://developer.github.com/changes/2016-07-06-github-pages-preiew-api/
+	mediaTypePagesPreview = "application/vnd.github.mister-fantastic-preview+json"
+
+	// https://developer.github.com/v3/repos/traffic/
+	mediaTypeTrafficPreview = "application/vnd.github.spiderman-preview+json"
 )
 
 // A Client manages communication with the GitHub API.
@@ -220,9 +226,12 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 		return nil, err
 	}
 
-	req.Header.Add("Accept", mediaTypeV3)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", mediaTypeV3)
 	if c.UserAgent != "" {
-		req.Header.Add("User-Agent", c.UserAgent)
+		req.Header.Set("User-Agent", c.UserAgent)
 	}
 	return req, nil
 }
@@ -243,12 +252,12 @@ func (c *Client) NewUploadRequest(urlStr string, reader io.Reader, size int64, m
 	}
 	req.ContentLength = size
 
-	if len(mediaType) == 0 {
+	if mediaType == "" {
 		mediaType = defaultMediaType
 	}
-	req.Header.Add("Content-Type", mediaType)
-	req.Header.Add("Accept", mediaTypeV3)
-	req.Header.Add("User-Agent", c.UserAgent)
+	req.Header.Set("Content-Type", mediaType)
+	req.Header.Set("Accept", mediaTypeV3)
+	req.Header.Set("User-Agent", c.UserAgent)
 	return req, nil
 }
 
@@ -408,7 +417,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 
 // checkRateLimitBeforeDo does not make any network calls, but uses existing knowledge from
 // current client state in order to quickly check if *RateLimitError can be immediately returned
-// from Client.Do, and if so, returns it so that Client.Do can skip making a network API call unneccessarily.
+// from Client.Do, and if so, returns it so that Client.Do can skip making a network API call unnecessarily.
 // Otherwise it returns nil, and Client.Do should proceed normally.
 func (c *Client) checkRateLimitBeforeDo(req *http.Request, rateLimitCategory rateLimitCategory) error {
 	c.rateMu.Lock()
@@ -632,6 +641,8 @@ func category(path string) rateLimitCategory {
 	}
 }
 
+// RateLimit returns the core rate limit for the current client.
+//
 // Deprecated: RateLimit is deprecated, use RateLimits instead.
 func (c *Client) RateLimit() (*Rate, *Response, error) {
 	limits, resp, err := c.RateLimits()
@@ -756,7 +767,7 @@ func (t *BasicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error
 	req = cloneRequest(req) // per RoundTrip contract
 	req.SetBasicAuth(t.Username, t.Password)
 	if t.OTP != "" {
-		req.Header.Add(headerOTP, t.OTP)
+		req.Header.Set(headerOTP, t.OTP)
 	}
 	return t.transport().RoundTrip(req)
 }

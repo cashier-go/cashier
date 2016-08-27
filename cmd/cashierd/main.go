@@ -351,7 +351,7 @@ func main() {
 
 	if config.Server.User != "" {
 		log.Print("Dropping privileges...")
-		if err = drop.DropPrivileges(config.Server.User); err != nil {
+		if err := drop.DropPrivileges(config.Server.User); err != nil {
 			log.Fatal(err)
 		}
 	}
