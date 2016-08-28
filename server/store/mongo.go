@@ -72,8 +72,8 @@ func (m *mongoDB) List() ([]*CertRecord, error) {
 		return nil, err
 	}
 	var result []*CertRecord
-	m.collection.Find(nil).All(&result)
-	return result, nil
+	err := m.collection.Find(bson.M{"expires": bson.M{"$gte": time.Now().UTC()}}).All(&result)
+	return result, err
 }
 
 func (m *mongoDB) Revoke(id string) error {

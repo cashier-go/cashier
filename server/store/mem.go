@@ -39,7 +39,9 @@ func (ms *memoryStore) List() ([]*CertRecord, error) {
 	ms.Lock()
 	defer ms.Unlock()
 	for _, value := range ms.certs {
-		records = append(records, value)
+		if value.Expires.After(time.Now().UTC()) {
+			records = append(records, value)
+		}
 	}
 	return records, nil
 }

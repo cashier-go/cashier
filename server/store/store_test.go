@@ -42,27 +42,21 @@ func TestParseCertificate(t *testing.T) {
 func testStore(t *testing.T, db CertStorer) {
 	defer db.Close()
 
-	ids := []string{"a", "b"}
-	for _, id := range ids {
-		r := &CertRecord{
-			KeyID:   id,
-			Expires: time.Now().UTC().Add(time.Second * -10),
-		}
-		if err := db.SetRecord(r); err != nil {
-			t.Error(err)
-		}
+	r := &CertRecord{
+		KeyID:   "a",
+		Expires: time.Now().UTC().Add(1 * time.Minute),
 	}
-	recs, err := db.List()
-	if err != nil {
+	if err := db.SetRecord(r); err != nil {
 		t.Error(err)
 	}
-	if len(recs) != len(ids) {
-		t.Errorf("Want %d records, got %d", len(ids), len(recs))
+	if _, err := db.List(); err != nil {
+		t.Error(err)
 	}
 
 	c, _, _, _, _ := ssh.ParseAuthorizedKey(testdata.Cert)
 	cert := c.(*ssh.Certificate)
 	cert.ValidBefore = uint64(time.Now().Add(1 * time.Hour).UTC().Unix())
+	cert.ValidAfter = uint64(time.Now().Add(-5 * time.Minute).UTC().Unix())
 	if err := db.SetCert(cert); err != nil {
 		t.Error(err)
 	}
@@ -73,9 +67,6 @@ func testStore(t *testing.T, db CertStorer) {
 	if err := db.Revoke("key"); err != nil {
 		t.Error(err)
 	}
-
-	// A revoked key shouldn't get returned if it's already expired
-	db.Revoke("a")
 
 	revoked, err := db.GetRevoked()
 	if err != nil {

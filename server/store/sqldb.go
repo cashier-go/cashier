@@ -66,7 +66,7 @@ func NewSQLStore(config string) (CertStorer, error) {
 	if db.get, err = conn.Prepare("SELECT * FROM issued_certs WHERE key_id = ?"); err != nil {
 		return nil, fmt.Errorf("sqldb: prepare get: %v", err)
 	}
-	if db.list, err = conn.Prepare("SELECT * FROM issued_certs"); err != nil {
+	if db.list, err = conn.Prepare("SELECT * FROM issued_certs WHERE ? <= expires_at"); err != nil {
 		return nil, fmt.Errorf("sqldb: prepare list: %v", err)
 	}
 	if db.revoke, err = conn.Prepare("UPDATE issued_certs SET revoked = 1 WHERE key_id = ?"); err != nil {
@@ -137,7 +137,7 @@ func (db *sqldb) List() ([]*CertRecord, error) {
 		return nil, err
 	}
 	var recs []*CertRecord
-	rows, _ := db.list.Query()
+	rows, _ := db.revoked.Query(time.Now().UTC())
 	defer rows.Close()
 	for rows.Next() {
 		cert, err := scanCert(rows)
