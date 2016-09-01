@@ -159,9 +159,9 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	req.Principal = a.authprovider.Username(token)
+	username := a.authprovider.Username(token)
 	a.authprovider.Revoke(token) // We don't need this anymore.
-	cert, err := a.sshKeySigner.SignUserKey(req)
+	cert, err := a.sshKeySigner.SignUserKey(req, username)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}

@@ -27,7 +27,7 @@ type KeySigner struct {
 }
 
 // SignUserKey returns a signed ssh certificate.
-func (s *KeySigner) SignUserKey(req *lib.SignRequest) (*ssh.Certificate, error) {
+func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Certificate, error) {
 	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(req.Key))
 	if err != nil {
 		return nil, err
@@ -39,11 +39,11 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest) (*ssh.Certificate, error) 
 	cert := &ssh.Certificate{
 		CertType:    ssh.UserCert,
 		Key:         pubkey,
-		KeyId:       fmt.Sprintf("%s_%d", req.Principal, time.Now().UTC().Unix()),
+		KeyId:       fmt.Sprintf("%s_%d", username, time.Now().UTC().Unix()),
 		ValidBefore: uint64(req.ValidUntil.Unix()),
 		ValidAfter:  uint64(time.Now().UTC().Add(-5 * time.Minute).Unix()),
 	}
-	cert.ValidPrincipals = append(cert.ValidPrincipals, req.Principal)
+	cert.ValidPrincipals = append(cert.ValidPrincipals, username)
 	cert.ValidPrincipals = append(cert.ValidPrincipals, s.principals...)
 	cert.Extensions = s.permissions
 	if err := cert.SignCert(rand.Reader, s.ca); err != nil {

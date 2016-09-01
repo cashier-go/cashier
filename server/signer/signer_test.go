@@ -27,10 +27,9 @@ func TestCert(t *testing.T) {
 	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
-		Principal:  "gopher1",
 		ValidUntil: time.Now().Add(1 * time.Hour),
 	}
-	cert, err := signer.SignUserKey(r)
+	cert, err := signer.SignUserKey(r, "gopher1")
 	if err != nil {
 		t.Error(err)
 	}
@@ -38,7 +37,7 @@ func TestCert(t *testing.T) {
 		t.Error("Cert signer and server signer don't match")
 	}
 	var principals []string
-	principals = append(principals, r.Principal)
+	principals = append(principals, "gopher1")
 	principals = append(principals, signer.principals...)
 	if !reflect.DeepEqual(cert.ValidPrincipals, principals) {
 		t.Errorf("Expected %s, got %s", cert.ValidPrincipals, principals)
@@ -57,12 +56,10 @@ func TestRevocationList(t *testing.T) {
 	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
-		Principal:  "revoked",
 		ValidUntil: time.Now().Add(1 * time.Hour),
 	}
-	cert1, _ := signer.SignUserKey(r)
-	r.Principal = "ok"
-	cert2, _ := signer.SignUserKey(r)
+	cert1, _ := signer.SignUserKey(r, "revoked")
+	cert2, _ := signer.SignUserKey(r, "ok")
 	var rec []*store.CertRecord
 	rec = append(rec, &store.CertRecord{
 		KeyID: cert1.KeyId,

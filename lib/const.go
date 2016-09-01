@@ -5,7 +5,6 @@ import "time"
 // SignRequest represents a signing request sent to the server.
 type SignRequest struct {
 	Key        string    `json:"key"`
-	Principal  string    `json:"principal"`
 	ValidUntil time.Time `json:"valid_until"`
 }
 
