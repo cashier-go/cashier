@@ -18,18 +18,19 @@ matrix:
 
 before_install:
   - go get -v github.com/golang/lint/golint
+  - go install ./cmd/dbinit
+
+install:
+  - go version
 
 before_script:
-  - go run ./cmd/dbinit/dbinit.go -db_user user -db_password passwd
-  - go run ./cmd/dbinit/dbinit.go -db_type mongo -admin_user '' -db_user user -db_password passwd
+  - dbinit -db_user user -db_password passwd
+  - dbinit -db_type mongo -admin_user '' -db_user user -db_password passwd
 
 sudo: false
 script:
-  - go build -v ./...
+  - go build -v ./cmd/cashier ./cmd/cashierd
   - go list ./... |grep -v vendor/ |xargs go test
   - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
   - go list ./... |grep -v vendor/ |xargs go vet
   - go list ./... |grep -v vendor/ |xargs -L1 golint -set_exit_status
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
