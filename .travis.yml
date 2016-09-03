@@ -30,7 +30,6 @@ script:
   - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
   - go list ./... |grep -v vendor/ |xargs go vet
   - go list ./... |grep -v vendor/ |xargs -L1 golint -set_exit_status
-  - ./cov.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
