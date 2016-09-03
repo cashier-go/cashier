@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"crypto/ecdsa"
@@ -11,8 +11,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type key interface{}
-type keyfunc func(int) (key, ssh.PublicKey, error)
+type Key interface{}
+type keyfunc func(int) (Key, ssh.PublicKey, error)
 
 var (
 	keytypes = map[string]keyfunc{
@@ -22,7 +22,7 @@ var (
 	}
 )
 
-func generateED25519Key(bits int) (key, ssh.PublicKey, error) {
+func generateED25519Key(bits int) (Key, ssh.PublicKey, error) {
 	p, k, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -34,7 +34,7 @@ func generateED25519Key(bits int) (key, ssh.PublicKey, error) {
 	return &k, pub, nil
 }
 
-func generateRSAKey(bits int) (key, ssh.PublicKey, error) {
+func generateRSAKey(bits int) (Key, ssh.PublicKey, error) {
 	k, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
 		return nil, nil, err
@@ -46,7 +46,7 @@ func generateRSAKey(bits int) (key, ssh.PublicKey, error) {
 	return k, pub, nil
 }
 
-func generateECDSAKey(bits int) (key, ssh.PublicKey, error) {
+func generateECDSAKey(bits int) (Key, ssh.PublicKey, error) {
 	var curve elliptic.Curve
 	switch bits {
 	case 256:
@@ -69,7 +69,7 @@ func generateECDSAKey(bits int) (key, ssh.PublicKey, error) {
 	return k, pub, nil
 }
 
-func generateKey(keytype string, bits int) (key, ssh.PublicKey, error) {
+func GenerateKey(keytype string, bits int) (Key, ssh.PublicKey, error) {
 	f, ok := keytypes[keytype]
 	if !ok {
 		var valid []string

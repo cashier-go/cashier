@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -36,7 +36,7 @@ func TestLoadCert(t *testing.T) {
 	}
 	c.SignCert(rand.Reader, signer)
 	a := agent.NewKeyring()
-	if err := installCert(a, c, key); err != nil {
+	if err := InstallCert(a, c, key); err != nil {
 		t.Error(err)
 	}
 	listedKeys, err := a.List()
@@ -77,11 +77,11 @@ func TestSignGood(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	c := &config{
+	c := &Config{
 		CA:       ts.URL,
 		Validity: "24h",
 	}
-	cert, err := sign(k, "token", c)
+	cert, err := Sign(k, "token", c)
 	if cert == nil && err != nil {
 		t.Error(err)
 	}
@@ -106,11 +106,11 @@ func TestSignBad(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	c := &config{
+	c := &Config{
 		CA:       ts.URL,
 		Validity: "24h",
 	}
-	cert, err := sign(k, "token", c)
+	cert, err := Sign(k, "token", c)
 	if cert != nil && err == nil {
 		t.Error(err)
 	}

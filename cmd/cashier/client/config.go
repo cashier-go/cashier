@@ -1,11 +1,11 @@
-package main
+package client
 
 import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
-type config struct {
+type Config struct {
 	CA                     string `mapstructure:"ca"`
 	Keytype                string `mapstructure:"key_type"`
 	Keysize                int    `mapstructure:"key_size"`
@@ -21,14 +21,14 @@ func setDefaults() {
 	viper.SetDefault("validateTLSCertificate", true)
 }
 
-func readConfig(path string) (*config, error) {
+func ReadConfig(path string) (*Config, error) {
 	setDefaults()
 	viper.SetConfigFile(path)
 	viper.SetConfigType("hcl")
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
-	c := &config{}
+	c := &Config{}
 	if err := viper.Unmarshal(c); err != nil {
 		return nil, err
 	}
