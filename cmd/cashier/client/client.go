@@ -78,12 +78,14 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 	return c, nil
 }
 
+// Sign sends the public key to the CA to be signed.
 func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, error) {
 	validity, err := time.ParseDuration(conf.Validity)
 	if err != nil {
 		return nil, err
 	}
 	marshaled := ssh.MarshalAuthorizedKey(pub)
+	// Remove the trailing newline.
 	marshaled = marshaled[:len(marshaled)-1]
 	s, err := json.Marshal(&lib.SignRequest{
 		Key:        string(marshaled),

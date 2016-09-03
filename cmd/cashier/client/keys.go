@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Key is a private key.
 type Key interface{}
 type keyfunc func(int) (Key, ssh.PublicKey, error)
 
@@ -69,6 +70,7 @@ func generateECDSAKey(bits int) (Key, ssh.PublicKey, error) {
 	return k, pub, nil
 }
 
+// GenerateKey generates a ssh key-pair according to the type and size specified.
 func GenerateKey(keytype string, bits int) (Key, ssh.PublicKey, error) {
 	f, ok := keytypes[keytype]
 	if !ok {

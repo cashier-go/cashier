@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config holds the client configuration.
 type Config struct {
 	CA                     string `mapstructure:"ca"`
 	Keytype                string `mapstructure:"key_type"`
@@ -21,6 +22,7 @@ func setDefaults() {
 	viper.SetDefault("validateTLSCertificate", true)
 }
 
+// ReadConfig reads the client configuration from a file into a Config struct.
 func ReadConfig(path string) (*Config, error) {
 	setDefaults()
 	viper.SetConfigFile(path)
