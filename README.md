@@ -156,7 +156,7 @@ auth {
 | Provider |       Option | Notes                                                                                                                                  |
 |---------:|-------------:|----------------------------------------------------------------------------------------------------------------------------------------|
 | Google   |       domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`.                                           |
-| Github   | organization | If this is unset then any GitHub user can obtain a token. The oauth client and secrets should be issued by the specified organization. |
+| Github   | organization | If this is unset then you must whitelist individual users using `users_whitelist`. The oauth client and secrets should be issued by the specified organization. |
 
 Supported options:
 
