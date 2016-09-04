@@ -46,17 +46,17 @@ See also the `CERTIFICATES` [section](http://man.openbsd.org/OpenBSD-current/man
 ## How it works
 The user wishes to ssh to a production machine.
 
-They visit the CA site (e.g. https://sshca.exampleorg.com) in a browser and authenticate.
+They run a command which opens the CA site (e.g. https://sshca.exampleorg.com) in a browser and they login.
 
-The site shows a page with a token which the user copies.
+The CA displays a token which the user copies.
 
-The user runs a local command which generates a new ssh key-pair in memory and requests the token from the user.
+The user provides the token to the client. The client generates a new ssh key-pair.
 
-The token is sent to the CA along with the ssh public key.
+The client sends the ssh public key to the CA along with the token.
 
 The CA verifies the token and signs the public key with the signing key and returns the signed certificate.
 
-The command on the user's machine receives the certificate and loads it and the previously generated private key into the ssh agent.
+The client receives the certificate and loads it and the private key into the ssh agent.
 
 The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the agent.
 
@@ -130,7 +130,7 @@ Prior to using MySQL, MongoDB or SQLite datastores you need to create the databa
 Note that dbinit has no support for replica sets.
 
 ## auth
-- `provider` : string. Name of the oauth provider. At present the only valid value is "google".
+- `provider` : string. Name of the oauth provider. Valid providers are "google" and "github".
 - `oauth_client_id` : string. Oauth Client ID.
 - `oauth_client_secret` : string. Oauth secret.
 - `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
@@ -155,7 +155,7 @@ auth {
 
 | Provider |       Option | Notes                                                                                                                                  |
 |---------:|-------------:|----------------------------------------------------------------------------------------------------------------------------------------|
-| Google   |       domain | If this is unset then any gmail user can obtain a token.                                                                               |
+| Google   |       domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`.                                           |
 | Github   | organization | If this is unset then any GitHub user can obtain a token. The oauth client and secrets should be issued by the specified organization. |
 
 Supported options:
