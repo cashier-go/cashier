@@ -67,12 +67,17 @@ func (m *mongoDB) SetRecord(record *CertRecord) error {
 	return m.collection.Insert(record)
 }
 
-func (m *mongoDB) List() ([]*CertRecord, error) {
+func (m *mongoDB) List(includeExpired bool) ([]*CertRecord, error) {
 	if err := m.session.Ping(); err != nil {
 		return nil, err
 	}
 	var result []*CertRecord
-	err := m.collection.Find(bson.M{"expires": bson.M{"$gte": time.Now().UTC()}}).All(&result)
+	var err error
+	if includeExpired {
+		err = m.collection.Find(nil).All(&result)
+	} else {
+		err = m.collection.Find(bson.M{"expires": bson.M{"$gte": time.Now().UTC()}}).All(&result)
+	}
 	return result, err
 }
 

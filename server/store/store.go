@@ -14,7 +14,7 @@ type CertStorer interface {
 	Get(id string) (*CertRecord, error)
 	SetCert(cert *ssh.Certificate) error
 	SetRecord(record *CertRecord) error
-	List() ([]*CertRecord, error)
+	List(includeExpired bool) ([]*CertRecord, error)
 	Revoke(id string) error
 	GetRevoked() ([]*CertRecord, error)
 	Close() error
@@ -22,12 +22,12 @@ type CertStorer interface {
 
 // A CertRecord is a representation of a ssh certificate used by a CertStorer.
 type CertRecord struct {
-	KeyID      string
-	Principals []string
-	CreatedAt  time.Time
-	Expires    time.Time
-	Revoked    bool
-	Raw        string
+	KeyID      string    `json:"key_id"`
+	Principals []string  `json:"principals"`
+	CreatedAt  time.Time `json:"created_at"`
+	Expires    time.Time `json:"expires"`
+	Revoked    bool      `json:"revoked"`
+	Raw        string    `json:"-"`
 }
 
 func parseTime(t uint64) time.Time {

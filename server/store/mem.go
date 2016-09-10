@@ -34,14 +34,16 @@ func (ms *memoryStore) SetRecord(record *CertRecord) error {
 	return nil
 }
 
-func (ms *memoryStore) List() ([]*CertRecord, error) {
+func (ms *memoryStore) List(includeExpired bool) ([]*CertRecord, error) {
 	var records []*CertRecord
 	ms.Lock()
 	defer ms.Unlock()
+
 	for _, value := range ms.certs {
-		if value.Expires.After(time.Now().UTC()) {
-			records = append(records, value)
+		if !includeExpired && value.Expires.After(time.Now().UTC()) {
+			continue
 		}
+		records = append(records, value)
 	}
 	return records, nil
 }
@@ -58,11 +60,9 @@ func (ms *memoryStore) Revoke(id string) error {
 
 func (ms *memoryStore) GetRevoked() ([]*CertRecord, error) {
 	var revoked []*CertRecord
-	all, _ := ms.List()
+	all, _ := ms.List(false)
 	for _, r := range all {
-		if r.Revoked && time.Now().UTC().Unix() <= r.Expires.UTC().Unix() {
-			revoked = append(revoked, r)
-		}
+		revoked = append(revoked, r)
 	}
 	return revoked, nil
 }

@@ -16,11 +16,12 @@ import (
 type sqldb struct {
 	conn *sql.DB
 
-	get     *sql.Stmt
-	set     *sql.Stmt
-	list    *sql.Stmt
-	revoke  *sql.Stmt
-	revoked *sql.Stmt
+	get         *sql.Stmt
+	set         *sql.Stmt
+	listAll     *sql.Stmt
+	listCurrent *sql.Stmt
+	revoke      *sql.Stmt
+	revoked     *sql.Stmt
 }
 
 func parse(config string) []string {
@@ -66,8 +67,11 @@ func NewSQLStore(config string) (CertStorer, error) {
 	if db.get, err = conn.Prepare("SELECT * FROM issued_certs WHERE key_id = ?"); err != nil {
 		return nil, fmt.Errorf("sqldb: prepare get: %v", err)
 	}
-	if db.list, err = conn.Prepare("SELECT * FROM issued_certs WHERE ? <= expires_at"); err != nil {
-		return nil, fmt.Errorf("sqldb: prepare list: %v", err)
+	if db.listAll, err = conn.Prepare("SELECT * FROM issued_certs"); err != nil {
+		return nil, fmt.Errorf("sqldb: prepare listAll: %v", err)
+	}
+	if db.listCurrent, err = conn.Prepare("SELECT * FROM issued_certs WHERE ? <= expires_at"); err != nil {
+		return nil, fmt.Errorf("sqldb: prepare listCurrent: %v", err)
 	}
 	if db.revoke, err = conn.Prepare("UPDATE issued_certs SET revoked = 1 WHERE key_id = ?"); err != nil {
 		return nil, fmt.Errorf("sqldb: prepare revoke: %v", err)
@@ -132,12 +136,17 @@ func (db *sqldb) SetRecord(rec *CertRecord) error {
 	return err
 }
 
-func (db *sqldb) List() ([]*CertRecord, error) {
+func (db *sqldb) List(includeExpired bool) ([]*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
 		return nil, err
 	}
 	var recs []*CertRecord
-	rows, _ := db.revoked.Query(time.Now().UTC())
+	var rows *sql.Rows
+	if includeExpired {
+		rows, _ = db.listAll.Query()
+	} else {
+		rows, _ = db.listCurrent.Query(time.Now().UTC())
+	}
 	defer rows.Close()
 	for rows.Next() {
 		cert, err := scanCert(rows)

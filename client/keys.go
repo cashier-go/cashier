@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
+	"strings"
 
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
@@ -78,7 +79,7 @@ func GenerateKey(keytype string, bits int) (Key, ssh.PublicKey, error) {
 		for k := range keytypes {
 			valid = append(valid, k)
 		}
-		return nil, nil, fmt.Errorf("Unsupported key type %s. Valid choices are %s", keytype, valid)
+		return nil, nil, fmt.Errorf("Unsupported key type %s. Valid choices are %s", keytype, strings.Join(valid, "|"))
 	}
 	return f(bits)
 }
