@@ -9,7 +9,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/nsheridan/cashier/cmd/cashier/client"
+	"github.com/nsheridan/cashier/client"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/agent"
