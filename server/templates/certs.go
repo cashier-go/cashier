@@ -13,7 +13,7 @@ const Certs = `
 	<link rel="stylesheet" href="/static/css/skeleton.css">
 	<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
 </head>
-<body>
+<body onload="loadCerts()">
 	<div class="container">
 		<div class="page-header">
 			<h2>Issued SSH Certificates</h2>
@@ -21,8 +21,9 @@ const Certs = `
 
 		<div id="issued">
 			<input class="u-full-width search" type="text" placeholder="Search" id="q" />
+			<button class="button-primary" id="toggle-certs" onclick="toggleExpired()">Show Expired</button>
 			<form action="/admin/revoke" method="post" id="form_revoke">
-			{{ .CSRF }}
+			{{ .csrfField }}
 			<table id="cert-table">
 				<thead>
 				<tr>
@@ -34,17 +35,15 @@ const Certs = `
 					<th>Revoke</th>
 				</tr>
 				</thead>
-				<tbody class="list">
-				{{range .Certs}}
-					<tr>
-					<td class="keyid">{{.KeyID}}</td>
-					<td>{{.CreatedAt}}</td>
-					<td>{{.Expires}}</td>
-					<td class="principals">{{.Principals}}</td>
-					<td>{{.Revoked}}</td>
-					<td>{{if not .Revoked}}<input style="margin:0;" type="checkbox" value="{{.KeyID}}" name="cert_id" id="cert_id" />{{end}}</td>
+				<tbody id="list" class="list">
+				<tr>
+					<td class="keyid"></td>
+					<td></td>
+					<td></td>
+					<td class="principals"></td>
+					<td></td>
+					<td></td>
 					</tr>
-				{{ end }}
 				</tbody>
 			</table>
 			</form>
@@ -59,5 +58,6 @@ var options = {
 }
 var issuedList = new List('issued', options);
 </script>
+<script src="/static/js/table.js"></script>
 </html>
 `

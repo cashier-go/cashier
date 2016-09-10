@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -231,20 +232,24 @@ func listAllCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) 
 	if !a.isLoggedIn(w, r) {
 		return a.login(w, r)
 	}
-	certs, err := a.certstore.List()
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	page := struct {
-		Certs []*store.CertRecord
-		CSRF  template.HTML
-	}{
-		Certs: certs,
-		CSRF:  csrf.TemplateField(r),
-	}
-
 	tmpl := template.Must(template.New("certs.html").Parse(templates.Certs))
-	tmpl.Execute(w, page)
+	tmpl.Execute(w, map[string]interface{}{
+		csrf.TemplateTag: csrf.TemplateField(r),
+	})
+	return http.StatusOK, nil
+}
+
+func listCertsJSONHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
+	if !a.isLoggedIn(w, r) {
+		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
+	}
+	includeExpired, _ := strconv.ParseBool(r.URL.Query().Get("all"))
+	certs, err := a.certstore.List(includeExpired)
+	j, err := json.Marshal(certs)
+	if err != nil {
+		return http.StatusInternalServerError, errors.New(http.StatusText(http.StatusInternalServerError))
+	}
+	w.Write(j)
 	return http.StatusOK, nil
 }
 
@@ -397,6 +402,7 @@ func main() {
 	r.Methods("GET").Path("/revoked").Handler(appHandler{ctx, listRevokedCertsHandler})
 	r.Methods("POST").Path("/admin/revoke").Handler(CSRF(appHandler{ctx, revokeCertHandler}))
 	r.Methods("GET").Path("/admin/certs").Handler(CSRF(appHandler{ctx, listAllCertsHandler}))
+	r.Methods("GET").Path("/admin/certs.json").Handler(appHandler{ctx, listCertsJSONHandler})
 	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
 	h := handlers.LoggingHandler(logfile, r)
 

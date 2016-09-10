@@ -49,7 +49,7 @@ func testStore(t *testing.T, db CertStorer) {
 	if err := db.SetRecord(r); err != nil {
 		t.Error(err)
 	}
-	if _, err := db.List(); err != nil {
+	if _, err := db.List(true); err != nil {
 		t.Error(err)
 	}
 

@@ -40,7 +40,7 @@ func (ms *memoryStore) List(includeExpired bool) ([]*CertRecord, error) {
 	defer ms.Unlock()
 
 	for _, value := range ms.certs {
-		if !includeExpired && value.Expires.After(time.Now().UTC()) {
+		if !includeExpired && value.Expires.Before(time.Now().UTC()) {
 			continue
 		}
 		records = append(records, value)
@@ -62,7 +62,9 @@ func (ms *memoryStore) GetRevoked() ([]*CertRecord, error) {
 	var revoked []*CertRecord
 	all, _ := ms.List(false)
 	for _, r := range all {
-		revoked = append(revoked, r)
+		if r.Revoked {
+			revoked = append(revoked, r)
+		}
 	}
 	return revoked, nil
 }
