@@ -22,7 +22,7 @@ func TestGenerateKeys(t *testing.T) {
 			t.Error(err)
 		}
 		if reflect.TypeOf(k).String() != tst.want {
-			t.Errorf("Wrong key type returned. Got %s, wanted %s", reflect.TypeOf(k).String(), tst.want)
+			t.Errorf("Wrong key type returned. Got %T, wanted %s", k, tst.want)
 		}
 	}
 }
