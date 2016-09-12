@@ -90,7 +90,7 @@ I have only tested this on Linux & OSX.
 Configuration is divided into different sections: `server`, `auth`, `ssh`, and `aws`.
 
 ## server
-- `use_tls` : boolean. If set `tls_key` and `tls_cert` are required.
+- `use_tls` : boolean. If this is set then `tls_key` and `tls_cert` are required.
 - `tls_key` : string. Path to the TLS key.
 - `tls_cert` : string. Path to the TLS cert.
 - `address` : string. IP address to listen on. If unset the server listens on all addresses.
@@ -111,7 +111,7 @@ Supported database providers: `mysql`, `mongo`, `sqlite` and `mem`.
 `mongo` is MongoDB and accepts `username`, `password` and `host` arguments. All arguments are optional and multiple hosts can be specified using comma-separated values: `mongo:dbuser:dbpasswd:host1,host2`.  
 `sqlite` is the SQLite database and accepts a `path` argument.
 
-If no datastore is specified the `mem` store is used.
+If no datastore is specified the `mem` store is used by default.
 
 Examples:
 
@@ -130,7 +130,7 @@ Prior to using MySQL, MongoDB or SQLite datastores you need to create the databa
 Note that dbinit has no support for replica sets.
 
 ## auth
-- `provider` : string. Name of the oauth provider. Valid providers are "google" and "github".
+- `provider` : string. Name of the oauth provider. Valid providers are currently "google" and "github".
 - `oauth_client_id` : string. Oauth Client ID.
 - `oauth_client_secret` : string. Oauth secret.
 - `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
@@ -181,7 +181,7 @@ The server is configured using a HCL configuration file - [example](example-serv
 
 For the server you need the following:
 - A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
-- Google OAuth credentials which you can generate at the [Google Developers Console](https://console.developers.google.com). You also need to set the callback URL here.
+- OAuth (Google or GitHub) credentials. You may also need to set the callback URL when creating these.
 
 ## Using cashier
 Once the server is up and running you'll need to configure your client.  
