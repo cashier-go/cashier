@@ -47,7 +47,7 @@ const Certs = `
 				</tbody>
 			</table>
 			</form>
-			<button class="button-primary" type="submit" form="form_revoke" value="Submit">Submit</button>
+			<button class="button-primary" type="submit" form="form_revoke" value="Revoke">Revoke</button>
 		</div>
 	</div>
 </body>
