@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -125,11 +124,7 @@ func (a *appContext) login(w http.ResponseWriter, r *http.Request) (int, error) 
 // parseKey retrieves and unmarshals the signing request.
 func parseKey(r *http.Request) (*lib.SignRequest, error) {
 	var s lib.SignRequest
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(body, &s); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 		return nil, err
 	}
 	return &s, nil

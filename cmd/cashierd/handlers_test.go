@@ -114,12 +114,8 @@ func TestSignRevoke(t *testing.T) {
 	if resp.Code != http.StatusOK {
 		t.Error("Unexpected response")
 	}
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Error(err)
-	}
 	r := &lib.SignResponse{}
-	if err := json.Unmarshal(b, r); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(r); err != nil {
 		t.Error(err)
 	}
 	if r.Status != "ok" {

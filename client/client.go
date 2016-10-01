@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -67,12 +66,8 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 		return nil, fmt.Errorf("Bad response from server: %s", resp.Status)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
 	c := &lib.SignResponse{}
-	if err := json.Unmarshal(body, c); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(c); err != nil {
 		return nil, err
 	}
 	return c, nil

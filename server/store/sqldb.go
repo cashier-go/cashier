@@ -132,7 +132,7 @@ func (db *sqldb) SetRecord(rec *CertRecord) error {
 	if err := db.conn.Ping(); err != nil {
 		return err
 	}
-	_, err = db.set.Exec(rec.KeyID, string(principals), rec.CreatedAt, rec.Expires, rec.Raw)
+	_, err = db.set.Exec(rec.KeyID, principals, rec.CreatedAt, rec.Expires, rec.Raw)
 	return err
 }
 
