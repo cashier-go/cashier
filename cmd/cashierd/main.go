@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go4.org/wkfs"
 	"golang.org/x/oauth2"
 
 	"github.com/gorilla/csrf"
@@ -312,6 +313,18 @@ func certStore(config string) (store.CertStorer, error) {
 	return cstore, err
 }
 
+func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
+	key, err := wkfs.ReadFile(keyFile)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	cert, err := wkfs.ReadFile(certFile)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	return tls.X509KeyPair(cert, key)
+}
+
 func main() {
 	// Privileged section
 	flag.Parse()
@@ -343,7 +356,7 @@ func main() {
 	tlsConfig := &tls.Config{}
 	if config.Server.UseTLS {
 		tlsConfig.Certificates = make([]tls.Certificate, 1)
-		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.Server.TLSCert, config.Server.TLSKey)
+		tlsConfig.Certificates[0], err = loadCerts(config.Server.TLSCert, config.Server.TLSKey)
 		if err != nil {
 			log.Fatal(err)
 		}
