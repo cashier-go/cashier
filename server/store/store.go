@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/nsheridan/cashier/server/certutil"
+	"github.com/nsheridan/cashier/server/util"
 )
 
 // CertStorer records issued certs in a persistent store for audit and
@@ -40,6 +40,6 @@ func parseCertificate(cert *ssh.Certificate) *CertRecord {
 		Principals: cert.ValidPrincipals,
 		CreatedAt:  parseTime(cert.ValidAfter),
 		Expires:    parseTime(cert.ValidBefore),
-		Raw:        certutil.GetPublicKey(cert),
+		Raw:        util.GetPublicKey(cert),
 	}
 }

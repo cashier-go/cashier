@@ -28,13 +28,14 @@ import (
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/auth/github"
 	"github.com/nsheridan/cashier/server/auth/google"
-	"github.com/nsheridan/cashier/server/certutil"
 	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/fs"
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/server/static"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
+	"github.com/nsheridan/cashier/server/util"
+	"github.com/nsheridan/cashier/server/wkfs/s3fs"
+	"github.com/nsheridan/cashier/server/wkfs/vaultfs"
 	"github.com/sid77/drop"
 )
 
@@ -167,7 +168,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	}
 	json.NewEncoder(w).Encode(&lib.SignResponse{
 		Status:   "ok",
-		Response: certutil.GetPublicKey(cert),
+		Response: util.GetPublicKey(cert),
 	})
 	return http.StatusOK, nil
 }
@@ -333,7 +334,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fs.Register(config.AWS)
+	// Register well-known filesystems.
+	s3fs.Register(config.AWS)
+	vaultfs.Register(config.Vault)
+
 	signer, err := signer.New(config.SSH)
 	if err != nil {
 		log.Fatal(err)
@@ -378,7 +382,7 @@ func main() {
 	case "github":
 		authprovider, err = github.New(config.Auth)
 	default:
-		log.Fatalln("Unknown provider %s", config.Auth.Provider)
+		log.Fatalf("Unknown provider %s\n", config.Auth.Provider)
 	}
 	if err != nil {
 		log.Fatal(err)

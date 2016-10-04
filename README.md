@@ -15,6 +15,7 @@
 		- [Provider-specific options](#provider-specific-options)
 	- [ssh](#ssh)
 	- [aws](#aws)
+	- [vault](#vault)
 - [Usage](#usage)
 	- [Using cashier](#using-cashier)
 	- [Configuring SSH](#configuring-ssh)
@@ -79,25 +80,34 @@ docker run -it --rm -p 10000:10000 --name cashier -v $(pwd):/cashier nsheridan/c
 
 # Requirements
 ## Server
-Go 1.6 or later. May work with earlier versions but not tested.
+Go 1.7 or later. May work with earlier versions.
 
 ## Client
-OpenSSH 5.6 or newer.  
-A working SSH agent.  
-I have only tested this on Linux & OSX.  
+- OpenSSH 5.6 or newer.
+- A working SSH agent.
+
+Note: I have only tested this on Linux & OSX.
 
 # Configuration
 Configuration is divided into different sections: `server`, `auth`, `ssh`, and `aws`.
 
+## A note on files:
+For any option that takes a file path as a parameter (e.g. SSH signing key, TLS key, TLS cert), the path can be one of:
+
+- A relative or absolute filesystem path e.g. `/data/ssh_signing_key`, `tls/server.key`.
+- An AWS S3 bucket + object path starting with `/s3/` e.g. `/s3/my-bucket/ssh_signing_key`. You should add an [aws](#aws) config as needed.
+- A Google GCS bucket + object path starting with `/gcs/` e.g. `/gcs/my-bucket/ssh_signing_key`.
+- A [Vault](https://www.vaultproject.io) path + key starting with `/vault/` e.g. `/vault/secret/cashier/ssh_signing_key`. You should add a [vault](#vault) config as needed.
+
 ## server
 - `use_tls` : boolean. If this is set then `tls_key` and `tls_cert` are required.
-- `tls_key` : string. Path to the TLS key.
-- `tls_cert` : string. Path to the TLS cert.
+- `tls_key` : string. Path to the TLS key. See the [note](#a-note-on-files) on files above.
+- `tls_cert` : string. Path to the TLS cert. See the [note](#a-note-on-files) on files above.
 - `address` : string. IP address to listen on. If unset the server listens on all addresses.
 - `port` : int. Port to listen on.
 - `user` : string. User to which the server drops privileges to.
-- `cookie_secret`: string. Authentication key for the session cookie.
-- `csrf_secret`: string. Authentication key for CSRF protection.
+- `cookie_secret`: string. Authentication key for the session cookie. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/cookie_secret`.
+- `csrf_secret`: string. Authentication key for CSRF protection. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/csrf_secret`.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.
 - `datastore`: string. Datastore connection string. See [Datastore](#datastore).
 
@@ -131,8 +141,8 @@ Note that dbinit has no support for replica sets.
 
 ## auth
 - `provider` : string. Name of the oauth provider. Valid providers are currently "google" and "github".
-- `oauth_client_id` : string. Oauth Client ID.
-- `oauth_client_secret` : string. Oauth secret.
+- `oauth_client_id` : string. Oauth Client ID. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/oauth_client_id`.
+- `oauth_client_secret` : string. Oauth secret. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/oauth_client_secret`.
 - `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
 - `provider_opts` : object. Additional options for the provider.
 - `users_whitelist` : array of strings. Optional list of whitelisted usernames. If missing, all users of your current domain/organization are allowed to authenticate against cashierd. For Google auth a user is an email address. For GitHub auth a user is a GitHub username.
@@ -153,27 +163,34 @@ auth {
 }
 ```
 
+Supported options:
+
+
 | Provider |       Option | Notes                                                                                                                                  |
 |---------:|-------------:|----------------------------------------------------------------------------------------------------------------------------------------|
 | Google   |       domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`.                                           |
 | Github   | organization | If this is unset then you must whitelist individual users using `users_whitelist`. The oauth client and secrets should be issued by the specified organization. |
 
-Supported options:
-
 ## ssh
-- `signing_key`: string. Path to the signing ssh private key you created earlier. This can be a S3 or GCS path using `/s3/<bucket>/<path/to/key>` or `/gcs/<bucket>/<path/to/key>` as appropriate. For S3 you should add an [aws](#aws) config as needed.
+- `signing_key`: string. Path to the signing ssh private key you created earlier. See the [note](#a-note-on-files) on files above.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
 - `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests. Must be a valid Go [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) string.
 - `permissions`: array of string. Actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list.
 
 ## aws
-AWS configuration is only needed for accessing signing keys stored on S3, and isn't required even then.  
+AWS configuration is only needed for accessing signing keys stored on S3, and isn't totally necessary even then.  
 The S3 client can be configured using any of [the usual AWS-SDK means](https://github.com/aws/aws-sdk-go/wiki/configuring-sdk) - environment variables, IAM roles etc.  
 It's strongly recommended that signing keys stored on S3 be locked down to specific IAM roles and encrypted using KMS.  
 
 - `region`: string. AWS region the bucket resides in, e.g. `us-east-1`.
-- `access_key`: string. AWS Access Key ID.
-- `secret_key`: string. AWS Secret Key.
+- `access_key`: string. AWS Access Key ID. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/aws_access_key`.
+- `secret_key`: string. AWS Secret Key. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/aws_secret_key`.
+
+## vault
+Vault support is currently a work-in-progress.
+
+- `address`: string. URL to the vault server.
+- `token`: string. Auth token for the vault.
 
 # Usage
 Cashier comes in two parts, a [cli](cmd/cashier) and a [server](cmd/cashierd).  

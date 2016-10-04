@@ -1,4 +1,4 @@
-package certutil
+package util
 
 import "golang.org/x/crypto/ssh"
 

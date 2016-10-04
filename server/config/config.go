@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/nsheridan/cashier/server/helpers/vault"
 	"github.com/spf13/viper"
 )
 
@@ -16,6 +17,7 @@ type Config struct {
 	Auth   *Auth   `mapstructure:"auth"`
 	SSH    *SSH    `mapstructure:"ssh"`
 	AWS    *AWS    `mapstructure:"aws"`
+	Vault  *Vault  `mapstructure:"vault"`
 }
 
 // unmarshalled holds the raw config.
@@ -24,6 +26,7 @@ type unmarshalled struct {
 	Auth   []Auth   `mapstructure:"auth"`
 	SSH    []SSH    `mapstructure:"ssh"`
 	AWS    []AWS    `mapstructure:"aws"`
+	Vault  []Vault  `mapstructure:"vault"`
 }
 
 // Server holds the configuration specific to the web server and sessions.
@@ -66,20 +69,30 @@ type AWS struct {
 	SecretKey string `mapstructure:"secret_key"`
 }
 
+// Vault holds Hashicorp Vault configuration.
+type Vault struct {
+	Address string `mapstructure:"address"`
+	Token   string `mapstructure:"token"`
+}
+
 func verifyConfig(u *unmarshalled) error {
 	var err error
 	if len(u.SSH) == 0 {
-		err = multierror.Append(errors.New("missing ssh config block"))
+		err = multierror.Append(errors.New("missing ssh config section"))
 	}
 	if len(u.Auth) == 0 {
-		err = multierror.Append(errors.New("missing auth config block"))
+		err = multierror.Append(errors.New("missing auth config section"))
 	}
 	if len(u.Server) == 0 {
-		err = multierror.Append(errors.New("missing server config block"))
+		err = multierror.Append(errors.New("missing server config section"))
 	}
 	if len(u.AWS) == 0 {
 		// AWS config is optional
 		u.AWS = append(u.AWS, AWS{})
+	}
+	if len(u.Vault) == 0 {
+		// Vault config is optional
+		u.Vault = append(u.Vault, Vault{})
 	}
 	return err
 }
@@ -106,6 +119,53 @@ func setFromEnv(u *unmarshalled) {
 	}
 }
 
+func setFromVault(u *unmarshalled) error {
+	if len(u.Vault) == 0 || u.Vault[0].Token == "" || u.Vault[0].Address == "" {
+		return nil
+	}
+	v, err := vault.NewClient(u.Vault[0].Address, u.Vault[0].Token)
+	if err != nil {
+		return err
+	}
+	get := func(value string) (string, error) {
+		if value[:7] == "/vault/" {
+			return v.Read(value)
+		}
+		return value, nil
+	}
+	if len(u.Auth) > 0 {
+		u.Auth[0].OauthClientID, err = get(u.Auth[0].OauthClientID)
+		if err != nil {
+			err = multierror.Append(err)
+		}
+		u.Auth[0].OauthClientSecret, err = get(u.Auth[0].OauthClientSecret)
+		if err != nil {
+			err = multierror.Append(err)
+		}
+	}
+	if len(u.Server) > 0 {
+		u.Server[0].CSRFSecret, err = get(u.Server[0].CSRFSecret)
+		if err != nil {
+			err = multierror.Append(err)
+		}
+		u.Server[0].CookieSecret, err = get(u.Server[0].CookieSecret)
+		if err != nil {
+			err = multierror.Append(err)
+		}
+	}
+	if len(u.AWS) > 0 {
+		u.AWS[0].AccessKey, err = get(u.AWS[0].AccessKey)
+		if err != nil {
+			err = multierror.Append(err)
+		}
+		u.AWS[0].SecretKey, err = get(u.AWS[0].SecretKey)
+		if err != nil {
+			err = multierror.Append(err)
+		}
+	}
+	return err
+}
+
 // ReadConfig parses a JSON configuration file into a Config struct.
 func ReadConfig(r io.Reader) (*Config, error) {
 	u := &unmarshalled{}
@@ -118,6 +178,9 @@ func ReadConfig(r io.Reader) (*Config, error) {
 		return nil, err
 	}
 	setFromEnv(u)
+	if err := setFromVault(u); err != nil {
+		return nil, err
+	}
 	if err := verifyConfig(u); err != nil {
 		return nil, err
 	}
@@ -126,5 +189,6 @@ func ReadConfig(r io.Reader) (*Config, error) {
 		Auth:   &u.Auth[0],
 		SSH:    &u.SSH[0],
 		AWS:    &u.AWS[0],
+		Vault:  &u.Vault[0],
 	}, nil
 }

@@ -1,4 +1,4 @@
-package fs
+package s3fs
 
 import (
 	"bytes"
