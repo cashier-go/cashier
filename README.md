@@ -1,3 +1,5 @@
+# Cashier
+
 [![Build Status](https://travis-ci.org/nsheridan/cashier.svg?branch=master)](https://travis-ci.org/nsheridan/cashier)
 
 - [Cashier](#cashier)
@@ -22,9 +24,6 @@
 	- [Revoking certificates](#revoking-certificates)
 - [Future Work](#future-work)
 - [Contributing](#contributing)
-
-
-# Cashier
 
 Cashier is a SSH Certificate Authority (CA).
 
