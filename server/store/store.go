@@ -5,8 +5,22 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/util"
 )
+
+// New returns a new configured database.
+func New(c config.Database) (CertStorer, error) {
+	switch c["type"] {
+	case "mongo":
+		return NewMongoStore(c)
+	case "mysql", "sqlite":
+		return NewSQLStore(c)
+	case "mem":
+		return NewMemoryStore(), nil
+	}
+	return NewMemoryStore(), nil
+}
 
 // CertStorer records issued certs in a persistent store for audit and
 // revocation purposes.

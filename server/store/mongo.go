@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nsheridan/cashier/server/config"
+
 	"golang.org/x/crypto/ssh"
 
 	mgo "gopkg.in/mgo.v2"
@@ -15,26 +17,20 @@ var (
 	issuedTable = "issued_certs"
 )
 
-func parseMongoConfig(config string) *mgo.DialInfo {
-	s := strings.SplitN(config, ":", 4)
-	_, user, passwd, hosts := s[0], s[1], s[2], s[3]
-	d := &mgo.DialInfo{
-		Addrs:    strings.Split(hosts, ","),
-		Username: user,
-		Password: passwd,
-		Database: certsDB,
-		Timeout:  time.Second * 5,
-	}
-	return d
-}
-
 func collection(session *mgo.Session) *mgo.Collection {
 	return session.DB(certsDB).C(issuedTable)
 }
 
 // NewMongoStore returns a MongoDB CertStorer.
-func NewMongoStore(config string) (CertStorer, error) {
-	session, err := mgo.DialWithInfo(parseMongoConfig(config))
+func NewMongoStore(c config.Database) (CertStorer, error) {
+	m := &mgo.DialInfo{
+		Addrs:    strings.Split(c["address"], ","),
+		Username: c["username"],
+		Password: c["password"],
+		Database: certsDB,
+		Timeout:  time.Second * 5,
+	}
+	session, err := mgo.DialWithInfo(m)
 	if err != nil {
 		return nil, err
 	}

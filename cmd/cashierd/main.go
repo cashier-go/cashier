@@ -297,23 +297,6 @@ func readConfig(filename string) (*config.Config, error) {
 	return config.ReadConfig(f)
 }
 
-func certStore(config string) (store.CertStorer, error) {
-	var cstore store.CertStorer
-	var err error
-	engine := strings.Split(config, ":")[0]
-	switch engine {
-	case "mysql", "sqlite":
-		cstore, err = store.NewSQLStore(config)
-	case "mongo":
-		cstore, err = store.NewMongoStore(config)
-	case "mem":
-		cstore = store.NewMemoryStore()
-	default:
-		cstore = store.NewMemoryStore()
-	}
-	return cstore, err
-}
-
 func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	key, err := wkfs.ReadFile(keyFile)
 	if err != nil {
@@ -388,7 +371,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	certstore, err := certStore(config.Server.Datastore)
+	certstore, err := store.New(config.Server.Database)
 	if err != nil {
 		log.Fatal(err)
 	}

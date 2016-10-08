@@ -3,7 +3,6 @@ package store
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -14,6 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/crypto/ssh"
+)
+
+var (
+	dbConfig = map[string]string{"username": "user", "password": "passwd", "address": "localhost"}
 )
 
 func TestParseCertificate(t *testing.T) {
@@ -87,11 +90,11 @@ func TestMemoryStore(t *testing.T) {
 
 func TestMySQLStore(t *testing.T) {
 	t.Parallel()
-	config := os.Getenv("MYSQL_TEST_CONFIG")
-	if config == "" {
-		t.Skip("No MYSQL_TEST_CONFIG environment variable")
+	if os.Getenv("MYSQL_TEST") == "" {
+		t.Skip("No MYSQL_TEST environment variable")
 	}
-	db, err := NewSQLStore(config)
+	dbConfig["type"] = "mysql"
+	db, err := NewSQLStore(dbConfig)
 	if err != nil {
 		t.Error(err)
 	}
@@ -100,11 +103,11 @@ func TestMySQLStore(t *testing.T) {
 
 func TestMongoStore(t *testing.T) {
 	t.Parallel()
-	config := os.Getenv("MONGO_TEST_CONFIG")
-	if config == "" {
-		t.Skip("No MONGO_TEST_CONFIG environment variable")
+	if os.Getenv("MONGO_TEST") == "" {
+		t.Skip("No MONGO_TEST environment variable")
 	}
-	db, err := NewMongoStore(config)
+	dbConfig["type"] = "mongo"
+	db, err := NewMongoStore(dbConfig)
 	if err != nil {
 		t.Error(err)
 	}
@@ -123,7 +126,8 @@ func TestSQLiteStore(t *testing.T) {
 	if err := exec.Command("go", args...).Run(); err != nil {
 		t.Error(err)
 	}
-	db, err := NewSQLStore(fmt.Sprintf("sqlite:%s", f.Name()))
+	config := map[string]string{"type": "sqlite", "filename": f.Name()}
+	db, err := NewSQLStore(config)
 	if err != nil {
 		t.Error(err)
 	}

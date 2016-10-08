@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"net"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 
 	"github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3" // required by sql driver
+	"github.com/nsheridan/cashier/server/config"
 )
 
 type sqldb struct {
@@ -24,31 +25,32 @@ type sqldb struct {
 	revoked     *sql.Stmt
 }
 
-func parse(config string) []string {
-	s := strings.Split(config, ":")
-	if s[0] == "sqlite" {
-		s[0] = "sqlite3"
-		return s
-	}
-	if len(s) == 4 {
-		s = append(s, "3306")
-	}
-	_, user, passwd, host, port := s[0], s[1], s[2], s[3], s[4]
-	c := &mysql.Config{
-		User:      user,
-		Passwd:    passwd,
-		Net:       "tcp",
-		Addr:      fmt.Sprintf("%s:%s", host, port),
-		DBName:    "certs",
-		ParseTime: true,
-	}
-	return []string{"mysql", c.FormatDSN()}
-}
-
 // NewSQLStore returns a *sql.DB CertStorer.
-func NewSQLStore(config string) (CertStorer, error) {
-	parsed := parse(config)
-	conn, err := sql.Open(parsed[0], parsed[1])
+func NewSQLStore(c config.Database) (CertStorer, error) {
+	var driver string
+	var dsn string
+	switch c["type"] {
+	case "mysql":
+		driver = "mysql"
+		address := c["address"]
+		_, _, err := net.SplitHostPort(address)
+		if err != nil {
+			address = address + ":3306"
+		}
+		m := &mysql.Config{
+			User:      c["username"],
+			Passwd:    c["password"],
+			Net:       "tcp",
+			Addr:      address,
+			DBName:    "certs",
+			ParseTime: true,
+		}
+		dsn = m.FormatDSN()
+	case "sqlite":
+		driver = "sqlite3"
+		dsn = c["filename"]
+	}
+	conn, err := sql.Open(driver, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("sqldb: could not get a connection: %v", err)
 	}

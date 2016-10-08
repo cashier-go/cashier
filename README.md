@@ -12,7 +12,8 @@
 	- [Client](#client)
 - [Configuration](#configuration)
 	- [server](#server-1)
-		- [datastore](#datastore)
+		- [database](#database)
+		- [datastore](#datastore) [DEPRECATED]
 	- [auth](#auth)
 		- [Provider-specific options](#provider-specific-options)
 	- [ssh](#ssh)
@@ -110,19 +111,63 @@ For any option that takes a file path as a parameter (e.g. SSH signing key, TLS 
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.
 - `datastore`: string. Datastore connection string. See [Datastore](#datastore).
 
-### datastore
-Datastores contain a record of issued certificates for audit and revocation purposes. The connection string is of the form `engine:username:password:host[:port]`.
+### database
 
-Supported database providers: `mysql`, `mongo`, `sqlite` and `mem`.
+The database is used to record issued certificates for audit and revocation purposes.
 
-`mem` is an in-memory database intended for testing and takes no additional config options.  
-`mysql` is the MySQL database and accepts `username`, `password` and `host` arguments. Only `username` and `host` arguments are required. `port` is assumed to be 3306 unless otherwise specified.  
-`mongo` is MongoDB and accepts `username`, `password` and `host` arguments. All arguments are optional and multiple hosts can be specified using comma-separated values: `mongo:dbuser:dbpasswd:host1,host2`.  
-`sqlite` is the SQLite database and accepts a `path` argument.
-
-If no datastore is specified the `mem` store is used by default.
+- `type` : string. One of `mongo`, `mysql`, `sqlite` or `mem`. Default: `mem`.
+- `address` : string. (`mongo` and `mysql` only) Hostname and optional port of the database server. For MongoDB replica sets separate multiple entries with commas.
+- `username` : string. Database username.
+- `password` : string. Database password. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/mysql_password`.
+- `filename` : string. (`sqlite` only). Path to sqlite database.
 
 Examples:
+```
+server {
+  database {
+    type = "mysql"
+    address = "my-db-host.corp"
+    username = "user"
+    password = "passwd"
+  }
+
+  database {
+    type = "mongo"
+    address = "mongo-host1.corp:27017,mongo-host2.corp:27018"
+    username = "user"
+    password = "passwd"
+  }
+
+  database {
+    type = "mem"
+  }
+
+  database {
+    type = "sqlite"
+    filename = "/data/cashier.db"
+  }
+}
+```
+
+Prior to using MySQL, MongoDB or SQLite you need to create the database and tables using the [dbinit tool](cmd/dbinit/dbinit.go).  
+dbinit hasn't been tested with mongo replica sets.
+
+### datastore
+
+## The datastore option is deprecated. Use the [database](#database) option instead
+
+~~Datastores contain a record of issued certificates for audit and revocation purposes. The connection string is of the form `engine:username:password:host[:port]`.~~
+
+~~Supported database providers: `mysql`, `mongo`, `sqlite` and `mem`.~~
+
+~~`mem` is an in-memory database intended for testing and takes no additional config options.~~  
+~~`mysql` is the MySQL database and accepts `username`, `password` and `host` arguments. Only `username` and `host` arguments are required. `port` is assumed to be 3306 unless otherwise specified.~~  
+~~`mongo` is MongoDB and accepts `username`, `password` and `host` arguments. All arguments are optional and multiple hosts can be specified using comma-separated values: `mongo:dbuser:dbpasswd:host1,host2`.~~  
+~~`sqlite` is the SQLite database and accepts a `path` argument.~~
+
+~~If no datastore is specified the `mem` store is used by default.~~
+
+~~Examples:~~
 
 ```
 server {
@@ -134,9 +179,6 @@ server {
   datastore = "sqlite:/data/certs.db"
 }
 ```
-
-Prior to using MySQL, MongoDB or SQLite datastores you need to create the database and tables using the [dbinit tool](cmd/dbinit/dbinit.go).  
-Note that dbinit has no support for replica sets.
 
 ## auth
 - `provider` : string. Name of the oauth provider. Valid providers are currently "google" and "github".

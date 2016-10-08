@@ -2,25 +2,30 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/nsheridan/cashier/server/helpers/vault"
 	"github.com/spf13/viper"
 )
 
-// Config holds the server configuration.
+// Config holds the final server configuration.
 type Config struct {
-	Server *Server `mapstructure:"server"`
-	Auth   *Auth   `mapstructure:"auth"`
-	SSH    *SSH    `mapstructure:"ssh"`
-	AWS    *AWS    `mapstructure:"aws"`
-	Vault  *Vault  `mapstructure:"vault"`
+	Server *Server
+	Auth   *Auth
+	SSH    *SSH
+	AWS    *AWS
+	Vault  *Vault
 }
 
 // unmarshalled holds the raw config.
+// The original hcl config is a series of slices. The config is unmarshalled from hcl into this structure and from there
+// we perform some validation checks, other overrides and then produce a final Config struct.
 type unmarshalled struct {
 	Server []Server `mapstructure:"server"`
 	Auth   []Auth   `mapstructure:"auth"`
@@ -29,18 +34,22 @@ type unmarshalled struct {
 	Vault  []Vault  `mapstructure:"vault"`
 }
 
+// Database config
+type Database map[string]string
+
 // Server holds the configuration specific to the web server and sessions.
 type Server struct {
-	UseTLS       bool   `mapstructure:"use_tls"`
-	TLSKey       string `mapstructure:"tls_key"`
-	TLSCert      string `mapstructure:"tls_cert"`
-	Addr         string `mapstructure:"address"`
-	Port         int    `mapstructure:"port"`
-	User         string `mapstructure:"user"`
-	CookieSecret string `mapstructure:"cookie_secret"`
-	CSRFSecret   string `mapstructure:"csrf_secret"`
-	HTTPLogFile  string `mapstructure:"http_logfile"`
-	Datastore    string `mapstructure:"datastore"`
+	UseTLS       bool     `mapstructure:"use_tls"`
+	TLSKey       string   `mapstructure:"tls_key"`
+	TLSCert      string   `mapstructure:"tls_cert"`
+	Addr         string   `mapstructure:"address"`
+	Port         int      `mapstructure:"port"`
+	User         string   `mapstructure:"user"`
+	CookieSecret string   `mapstructure:"cookie_secret"`
+	CSRFSecret   string   `mapstructure:"csrf_secret"`
+	HTTPLogFile  string   `mapstructure:"http_logfile"`
+	Database     Database `mapstructure:"database"`
+	Datastore    string   `mapstructure:"datastore"` // Deprecated.
 }
 
 // Auth holds the configuration specific to the OAuth provider.
@@ -78,13 +87,13 @@ type Vault struct {
 func verifyConfig(u *unmarshalled) error {
 	var err error
 	if len(u.SSH) == 0 {
-		err = multierror.Append(errors.New("missing ssh config section"))
+		err = multierror.Append(err, errors.New("missing ssh config section"))
 	}
 	if len(u.Auth) == 0 {
-		err = multierror.Append(errors.New("missing auth config section"))
+		err = multierror.Append(err, errors.New("missing auth config section"))
 	}
 	if len(u.Server) == 0 {
-		err = multierror.Append(errors.New("missing server config section"))
+		err = multierror.Append(err, errors.New("missing server config section"))
 	}
 	if len(u.AWS) == 0 {
 		// AWS config is optional
@@ -94,9 +103,48 @@ func verifyConfig(u *unmarshalled) error {
 		// Vault config is optional
 		u.Vault = append(u.Vault, Vault{})
 	}
+	if u.Server[0].Datastore != "" {
+		log.Println("The `datastore` option has been deprecated in favour of the `database` option. You should update your config.")
+		log.Println("The new config (passwords have been redacted) should look something like:")
+		fmt.Printf("server {\n  database {\n")
+		for k, v := range u.Server[0].Database {
+			if v == "" {
+				continue
+			}
+			if k == "password" {
+				fmt.Printf("    password = \"[ REDACTED ]\"\n")
+				continue
+			}
+			fmt.Printf("    %s = \"%s\"\n", k, v)
+		}
+		fmt.Printf("  }\n}\n")
+	}
 	return err
 }
 
+func convertDatastoreConfig(u *unmarshalled) {
+	// Convert the deprecated 'datastore' config to the new 'database' config.
+	if len(u.Server[0].Database) == 0 && u.Server[0].Datastore != "" {
+		c := u.Server[0].Datastore
+		engine := strings.Split(c, ":")[0]
+		switch engine {
+		case "mysql", "mongo":
+			s := strings.SplitN(c, ":", 4)
+			engine, user, passwd, addrs := s[0], s[1], s[2], s[3]
+			u.Server[0].Database = map[string]string{
+				"type":     engine,
+				"username": user,
+				"password": passwd,
+				"address":  addrs,
+			}
+		case "sqlite":
+			s := strings.Split(c, ":")
+			u.Server[0].Database = map[string]string{"type": s[0], "filename": s[1]}
+		case "mem":
+			u.Server[0].Database = map[string]string{"type": "mem"}
+		}
+	}
+}
 func setFromEnv(u *unmarshalled) {
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err == nil {
@@ -128,42 +176,49 @@ func setFromVault(u *unmarshalled) error {
 		return err
 	}
 	get := func(value string) (string, error) {
-		if value[:7] == "/vault/" {
+		if len(value) > 0 && value[:7] == "/vault/" {
 			return v.Read(value)
 		}
 		return value, nil
 	}
+	var errors error
 	if len(u.Auth) > 0 {
 		u.Auth[0].OauthClientID, err = get(u.Auth[0].OauthClientID)
 		if err != nil {
-			err = multierror.Append(err)
+			errors = multierror.Append(errors, err)
 		}
 		u.Auth[0].OauthClientSecret, err = get(u.Auth[0].OauthClientSecret)
 		if err != nil {
-			err = multierror.Append(err)
+			errors = multierror.Append(errors, err)
 		}
 	}
 	if len(u.Server) > 0 {
 		u.Server[0].CSRFSecret, err = get(u.Server[0].CSRFSecret)
 		if err != nil {
-			err = multierror.Append(err)
+			errors = multierror.Append(errors, err)
 		}
 		u.Server[0].CookieSecret, err = get(u.Server[0].CookieSecret)
 		if err != nil {
-			err = multierror.Append(err)
+			errors = multierror.Append(errors, err)
+		}
+		if len(u.Server[0].Database) > 0 {
+			u.Server[0].Database["password"], err = get(u.Server[0].Database["password"])
+			if err != nil {
+				errors = multierror.Append(errors, err)
+			}
 		}
 	}
 	if len(u.AWS) > 0 {
 		u.AWS[0].AccessKey, err = get(u.AWS[0].AccessKey)
 		if err != nil {
-			err = multierror.Append(err)
+			errors = multierror.Append(errors, err)
 		}
 		u.AWS[0].SecretKey, err = get(u.AWS[0].SecretKey)
 		if err != nil {
-			err = multierror.Append(err)
+			errors = multierror.Append(errors, err)
 		}
 	}
-	return err
+	return errors
 }
 
 // ReadConfig parses a JSON configuration file into a Config struct.
@@ -181,14 +236,16 @@ func ReadConfig(r io.Reader) (*Config, error) {
 	if err := setFromVault(u); err != nil {
 		return nil, err
 	}
+	convertDatastoreConfig(u)
 	if err := verifyConfig(u); err != nil {
 		return nil, err
 	}
-	return &Config{
+	c := &Config{
 		Server: &u.Server[0],
 		Auth:   &u.Auth[0],
 		SSH:    &u.SSH[0],
 		AWS:    &u.AWS[0],
 		Vault:  &u.Vault[0],
-	}, nil
+	}
+	return c, nil
 }
