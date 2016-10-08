@@ -87,6 +87,9 @@ const (
 
 	// https://developer.github.com/v3/repos/traffic/
 	mediaTypeTrafficPreview = "application/vnd.github.spiderman-preview+json"
+
+	// https://developer.github.com/changes/2016-09-14-projects-api/
+	mediaTypeProjectsPreview = "application/vnd.github.inertia-preview+json"
 )
 
 // A Client manages communication with the GitHub API.
@@ -611,8 +614,8 @@ type RateLimits struct {
 	Core *Rate `json:"core"`
 
 	// The rate limit for search API requests.  Unauthenticated requests
-	// are limited to 5 requests per minutes.  Authenticated requests are
-	// limited to 20 per minute.
+	// are limited to 10 requests per minutes.  Authenticated requests are
+	// limited to 30 per minute.
 	//
 	// GitHub API docs: https://developer.github.com/v3/search/#rate-limit
 	Search *Rate `json:"search"`

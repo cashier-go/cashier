@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package storage contains a Google Cloud Storage client.
-//
-// This package is experimental and may make backwards-incompatible changes.
-package storage // import "google.golang.org/cloud/storage"
+package storage
 
 import (
 	"bytes"
@@ -38,8 +35,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"google.golang.org/cloud"
-	"google.golang.org/cloud/internal/transport"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+	"google.golang.org/api/transport"
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/googleapi"
@@ -51,7 +49,7 @@ var (
 	ErrObjectNotExist = errors.New("storage: object doesn't exist")
 
 	// Done is returned by iterators in this package when they have no more items.
-	Done = errors.New("storage: no more results")
+	Done = iterator.Done
 )
 
 const userAgent = "gcloud-golang-storage/20151204"
@@ -82,7 +80,7 @@ type AdminClient struct {
 // NewAdminClient creates a new AdminClient for a given project.
 //
 // Deprecated: use NewClient instead.
-func NewAdminClient(ctx context.Context, projectID string, opts ...cloud.ClientOption) (*AdminClient, error) {
+func NewAdminClient(ctx context.Context, projectID string, opts ...option.ClientOption) (*AdminClient, error) {
 	c, err := NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -114,17 +112,20 @@ func (c *AdminClient) DeleteBucket(ctx context.Context, bucketName string) error
 }
 
 // Client is a client for interacting with Google Cloud Storage.
+//
+// Clients should be reused instead of created as needed.
+// The methods of Client are safe for concurrent use by multiple goroutines.
 type Client struct {
 	hc  *http.Client
 	raw *raw.Service
 }
 
 // NewClient creates a new Google Cloud Storage client.
-// The default scope is ScopeFullControl. To use a different scope, like ScopeReadOnly, use cloud.WithScopes.
-func NewClient(ctx context.Context, opts ...cloud.ClientOption) (*Client, error) {
-	o := []cloud.ClientOption{
-		cloud.WithScopes(ScopeFullControl),
-		cloud.WithUserAgent(userAgent),
+// The default scope is ScopeFullControl. To use a different scope, like ScopeReadOnly, use option.WithScopes.
+func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error) {
+	o := []option.ClientOption{
+		option.WithScopes(ScopeFullControl),
+		option.WithUserAgent(userAgent),
 	}
 	opts = append(o, opts...)
 	hc, _, err := transport.NewHTTPClient(ctx, opts...)
@@ -142,6 +143,8 @@ func NewClient(ctx context.Context, opts ...cloud.ClientOption) (*Client, error)
 }
 
 // Close closes the Client.
+//
+// Close need not be called at program exit.
 func (c *Client) Close() error {
 	c.hc = nil
 	return nil
@@ -150,8 +153,8 @@ func (c *Client) Close() error {
 // BucketHandle provides operations on a Google Cloud Storage bucket.
 // Use Client.Bucket to get a handle.
 type BucketHandle struct {
-	acl              *ACLHandle
-	defaultObjectACL *ACLHandle
+	acl              ACLHandle
+	defaultObjectACL ACLHandle
 
 	c    *Client
 	name string
@@ -160,254 +163,24 @@ type BucketHandle struct {
 // Bucket returns a BucketHandle, which provides operations on the named bucket.
 // This call does not perform any network operations.
 //
-// name must contain only lowercase letters, numbers, dashes, underscores, and
-// dots. The full specification for valid bucket names can be found at:
+// The supplied name must contain only lowercase letters, numbers, dashes,
+// underscores, and dots. The full specification for valid bucket names can be
+// found at:
 //   https://cloud.google.com/storage/docs/bucket-naming
 func (c *Client) Bucket(name string) *BucketHandle {
 	return &BucketHandle{
 		c:    c,
 		name: name,
-		acl: &ACLHandle{
+		acl: ACLHandle{
 			c:      c,
 			bucket: name,
 		},
-		defaultObjectACL: &ACLHandle{
+		defaultObjectACL: ACLHandle{
 			c:         c,
 			bucket:    name,
 			isDefault: true,
 		},
 	}
-}
-
-// Create creates the Bucket in the project.
-// If attrs is nil the API defaults will be used.
-func (b *BucketHandle) Create(ctx context.Context, projectID string, attrs *BucketAttrs) error {
-	var bkt *raw.Bucket
-	if attrs != nil {
-		bkt = attrs.toRawBucket()
-	} else {
-		bkt = &raw.Bucket{}
-	}
-	bkt.Name = b.name
-	req := b.c.raw.Buckets.Insert(projectID, bkt)
-	_, err := req.Context(ctx).Do()
-	return err
-}
-
-// Delete deletes the Bucket.
-func (b *BucketHandle) Delete(ctx context.Context) error {
-	req := b.c.raw.Buckets.Delete(b.name)
-	return req.Context(ctx).Do()
-}
-
-// ACL returns an ACLHandle, which provides access to the bucket's access control list.
-// This controls who can list, create or overwrite the objects in a bucket.
-// This call does not perform any network operations.
-func (c *BucketHandle) ACL() *ACLHandle {
-	return c.acl
-}
-
-// DefaultObjectACL returns an ACLHandle, which provides access to the bucket's default object ACLs.
-// These ACLs are applied to newly created objects in this bucket that do not have a defined ACL.
-// This call does not perform any network operations.
-func (c *BucketHandle) DefaultObjectACL() *ACLHandle {
-	return c.defaultObjectACL
-}
-
-// Object returns an ObjectHandle, which provides operations on the named object.
-// This call does not perform any network operations.
-//
-// name must consist entirely of valid UTF-8-encoded runes. The full specification
-// for valid object names can be found at:
-//   https://cloud.google.com/storage/docs/bucket-naming
-func (b *BucketHandle) Object(name string) *ObjectHandle {
-	return &ObjectHandle{
-		c:      b.c,
-		bucket: b.name,
-		object: name,
-		acl: &ACLHandle{
-			c:      b.c,
-			bucket: b.name,
-			object: name,
-		},
-	}
-}
-
-// TODO(jbd): Add storage.buckets.list.
-// TODO(jbd): Add storage.buckets.update.
-
-// TODO(jbd): Add storage.objects.watch.
-
-// Attrs returns the metadata for the bucket.
-func (b *BucketHandle) Attrs(ctx context.Context) (*BucketAttrs, error) {
-	resp, err := b.c.raw.Buckets.Get(b.name).Projection("full").Context(ctx).Do()
-	if e, ok := err.(*googleapi.Error); ok && e.Code == http.StatusNotFound {
-		return nil, ErrBucketNotExist
-	}
-	if err != nil {
-		return nil, err
-	}
-	return newBucket(resp), nil
-}
-
-// List lists objects from the bucket. You can specify a query
-// to filter the results. If q is nil, no filtering is applied.
-//
-// Deprecated. Use BucketHandle.Objects instead.
-func (b *BucketHandle) List(ctx context.Context, q *Query) (*ObjectList, error) {
-	it := b.Objects(ctx, q)
-	attrs, pres, err := it.NextPage()
-	if err != nil && err != Done {
-		return nil, err
-	}
-	objects := &ObjectList{
-		Results:  attrs,
-		Prefixes: pres,
-	}
-	if it.NextPageToken() != "" {
-		objects.Next = &it.query
-	}
-	return objects, nil
-}
-
-func (b *BucketHandle) Objects(ctx context.Context, q *Query) *ObjectIterator {
-	it := &ObjectIterator{
-		ctx:    ctx,
-		bucket: b,
-	}
-	if q != nil {
-		it.query = *q
-	}
-	return it
-}
-
-type ObjectIterator struct {
-	ctx      context.Context
-	bucket   *BucketHandle
-	query    Query
-	pageSize int32
-	objs     []*ObjectAttrs
-	prefixes []string
-	err      error
-}
-
-// Next returns the next result. Its second return value is Done if there are
-// no more results. Once Next returns Done, all subsequent calls will return
-// Done.
-//
-// Internally, Next retrieves results in bulk. You can call SetPageSize as a
-// performance hint to affect how many results are retrieved in a single RPC.
-//
-// SetPageToken should not be called when using Next.
-//
-// Next and NextPage should not be used with the same iterator.
-//
-// If Query.Delimiter is non-empty, Next returns an error. Use NextPage when using delimiters.
-func (it *ObjectIterator) Next() (*ObjectAttrs, error) {
-	if it.query.Delimiter != "" {
-		return nil, errors.New("cannot use ObjectIterator.Next with a delimiter")
-	}
-	for len(it.objs) == 0 { // "for", not "if", to handle empty pages
-		if it.err != nil {
-			return nil, it.err
-		}
-		it.nextPage()
-		if it.err != nil {
-			it.objs = nil
-			return nil, it.err
-		}
-		if it.query.Cursor == "" {
-			it.err = Done
-		}
-	}
-	o := it.objs[0]
-	it.objs = it.objs[1:]
-	return o, nil
-}
-
-const DefaultPageSize = 1000
-
-// NextPage returns the next page of results, both objects (as *ObjectAttrs)
-// and prefixes. Prefixes will be nil if query.Delimiter is empty.
-//
-// NextPage will return exactly the number of results (the total of objects and
-// prefixes) specified by the last call to SetPageSize, unless there are not
-// enough results available. If no page size was specified, it uses
-// DefaultPageSize.
-//
-// NextPage may return a second return value of Done along with the last page
-// of results.
-//
-// After NextPage returns Done, all subsequent calls to NextPage will return
-// (nil, Done).
-//
-// Next and NextPage should not be used with the same iterator.
-func (it *ObjectIterator) NextPage() (objs []*ObjectAttrs, prefixes []string, err error) {
-	defer it.SetPageSize(it.pageSize) // restore value at entry
-	if it.pageSize <= 0 {
-		it.pageSize = DefaultPageSize
-	}
-	for len(objs)+len(prefixes) < int(it.pageSize) {
-		it.pageSize -= int32(len(objs) + len(prefixes))
-		it.nextPage()
-		if it.err != nil {
-			return nil, nil, it.err
-		}
-		objs = append(objs, it.objs...)
-		prefixes = append(prefixes, it.prefixes...)
-		if it.query.Cursor == "" {
-			it.err = Done
-			return objs, prefixes, it.err
-		}
-	}
-	return objs, prefixes, it.err
-}
-
-// nextPage gets the next page of results by making a single call to the underlying method.
-// It sets it.objs, it.prefixes, it.query.Cursor, and it.err. It never sets it.err to Done.
-func (it *ObjectIterator) nextPage() {
-	if it.err != nil {
-		return
-	}
-	req := it.bucket.c.raw.Objects.List(it.bucket.name)
-	req.Projection("full")
-	req.Delimiter(it.query.Delimiter)
-	req.Prefix(it.query.Prefix)
-	req.Versions(it.query.Versions)
-	req.PageToken(it.query.Cursor)
-	if it.pageSize > 0 {
-		req.MaxResults(int64(it.pageSize))
-	}
-	resp, err := req.Context(it.ctx).Do()
-	if err != nil {
-		it.err = err
-		return
-	}
-	it.query.Cursor = resp.NextPageToken
-	it.objs = nil
-	for _, item := range resp.Items {
-		it.objs = append(it.objs, newObject(item))
-	}
-	it.prefixes = resp.Prefixes
-}
-
-// SetPageSize sets the page size for all subsequent calls to NextPage.
-// NextPage will return exactly this many items if they are present.
-func (it *ObjectIterator) SetPageSize(pageSize int32) {
-	it.pageSize = pageSize
-}
-
-// SetPageToken sets the page token for the next call to NextPage, to resume
-// the iteration from a previous point.
-func (it *ObjectIterator) SetPageToken(t string) {
-	it.query.Cursor = t
-}
-
-// NextPageToken returns a page token that can be used with SetPageToken to
-// resume iteration from the next page. It returns the empty string if there
-// are no more pages. For an example, see SetPageToken.
-func (it *ObjectIterator) NextPageToken() string {
-	return it.query.Cursor
 }
 
 // SignedURLOptions allows you to restrict the access to the signed URL.
@@ -549,7 +322,7 @@ type ObjectHandle struct {
 	bucket string
 	object string
 
-	acl   *ACLHandle
+	acl   ACLHandle
 	conds []Condition
 }
 
@@ -557,7 +330,7 @@ type ObjectHandle struct {
 // This controls who can read and write this object.
 // This call does not perform any network operations.
 func (o *ObjectHandle) ACL() *ACLHandle {
-	return o.acl
+	return &o.acl
 }
 
 // WithConditions returns a copy of o using the provided conditions.
@@ -631,45 +404,35 @@ func (o *ObjectHandle) Delete(ctx context.Context) error {
 
 // CopyTo copies the object to the given dst.
 // The copied object's attributes are overwritten by attrs if non-nil.
+//
+// Deprecated: use ObjectHandle.CopierFrom instead.
 func (o *ObjectHandle) CopyTo(ctx context.Context, dst *ObjectHandle, attrs *ObjectAttrs) (*ObjectAttrs, error) {
-	// TODO(djd): move bucket/object name validation to a single helper func.
-	if o.bucket == "" || dst.bucket == "" {
-		return nil, errors.New("storage: the source and destination bucket names must both be non-empty")
-	}
-	if o.object == "" || dst.object == "" {
-		return nil, errors.New("storage: the source and destination object names must both be non-empty")
-	}
-	if !utf8.ValidString(o.object) {
-		return nil, fmt.Errorf("storage: object name %q is not valid UTF-8", o.object)
-	}
-	if !utf8.ValidString(dst.object) {
-		return nil, fmt.Errorf("storage: dst name %q is not valid UTF-8", dst.object)
-	}
-	var rawObject *raw.Object
+	c := dst.CopierFrom(o)
 	if attrs != nil {
-		attrs.Name = dst.object
-		if attrs.ContentType == "" {
-			return nil, errors.New("storage: attrs.ContentType must be non-empty")
-		}
-		rawObject = attrs.toRawObject(dst.bucket)
+		c.ObjectAttrs = *attrs
 	}
-	call := o.c.raw.Objects.Copy(o.bucket, o.object, dst.bucket, dst.object, rawObject).Projection("full").Context(ctx)
-	if err := applyConds("CopyTo destination", dst.conds, call); err != nil {
-		return nil, err
+	return c.Run(ctx)
+}
+
+// ComposeFrom concatenates the provided slice of source objects into a new
+// object whose destination is the receiver. The provided attrs, if not nil,
+// are used to set the attributes on the newly-created object. All source
+// objects must reside within the same bucket as the destination.
+//
+// Deprecated: use ObjectHandle.ComposerFrom instead.
+func (o *ObjectHandle) ComposeFrom(ctx context.Context, srcs []*ObjectHandle, attrs *ObjectAttrs) (*ObjectAttrs, error) {
+	c := o.ComposerFrom(srcs...)
+	if attrs != nil {
+		c.ObjectAttrs = *attrs
 	}
-	if err := applyConds("CopyTo source", toSourceConds(o.conds), call); err != nil {
-		return nil, err
-	}
-	obj, err := call.Do()
-	if err != nil {
-		return nil, err
-	}
-	return newObject(obj), nil
+	return c.Run(ctx)
 }
 
 // NewReader creates a new Reader to read the contents of the
 // object.
 // ErrObjectNotExist will be returned if the object is not found.
+//
+// The caller must call Close on the returned Reader when done reading.
 func (o *ObjectHandle) NewReader(ctx context.Context) (*Reader, error) {
 	return o.NewRangeReader(ctx, 0, -1)
 }
@@ -726,11 +489,21 @@ func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64)
 		res.Body.Close()
 		return nil, errors.New("storage: partial request not satisfied")
 	}
-	clHeader := res.Header.Get("X-Goog-Stored-Content-Length")
-	cl, err := strconv.ParseInt(clHeader, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("storage: can't parse content length %q: %v", clHeader, err)
+
+	var size int64 // total size of object, even if a range was requested.
+	if res.StatusCode == http.StatusPartialContent {
+		cr := strings.TrimSpace(res.Header.Get("Content-Range"))
+		if !strings.HasPrefix(cr, "bytes ") || !strings.Contains(cr, "/") {
+			return nil, fmt.Errorf("storage: invalid Content-Range %q", cr)
+		}
+		size, err = strconv.ParseInt(cr[strings.LastIndex(cr, "/")+1:], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("storage: invalid Content-Range %q", cr)
+		}
+	} else {
+		size = res.ContentLength
 	}
+
 	remain := res.ContentLength
 	body := res.Body
 	if length == 0 {
@@ -738,9 +511,10 @@ func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64)
 		body.Close()
 		body = emptyBody
 	}
+
 	return &Reader{
 		body:        body,
-		size:        cl,
+		size:        size,
 		remain:      remain,
 		contentType: res.Header.Get("Content-Type"),
 	}, nil
@@ -751,7 +525,7 @@ var emptyBody = ioutil.NopCloser(strings.NewReader(""))
 // NewWriter returns a storage Writer that writes to the GCS object
 // associated with this ObjectHandle.
 //
-// A new object will be created if an object with this name already exists.
+// A new object will be created unless an object with this name already exists.
 // Otherwise any previous object with the same name will be replaced.
 // The object will not be available (and any previous object will remain)
 // until Close has been called.
@@ -794,64 +568,6 @@ func parseKey(key []byte) (*rsa.PrivateKey, error) {
 	return parsed, nil
 }
 
-// BucketAttrs represents the metadata for a Google Cloud Storage bucket.
-type BucketAttrs struct {
-	// Name is the name of the bucket.
-	Name string
-
-	// ACL is the list of access control rules on the bucket.
-	ACL []ACLRule
-
-	// DefaultObjectACL is the list of access controls to
-	// apply to new objects when no object ACL is provided.
-	DefaultObjectACL []ACLRule
-
-	// Location is the location of the bucket. It defaults to "US".
-	Location string
-
-	// MetaGeneration is the metadata generation of the bucket.
-	MetaGeneration int64
-
-	// StorageClass is the storage class of the bucket. This defines
-	// how objects in the bucket are stored and determines the SLA
-	// and the cost of storage. Typical values are "STANDARD" and
-	// "DURABLE_REDUCED_AVAILABILITY". Defaults to "STANDARD".
-	StorageClass string
-
-	// Created is the creation time of the bucket.
-	Created time.Time
-}
-
-func newBucket(b *raw.Bucket) *BucketAttrs {
-	if b == nil {
-		return nil
-	}
-	bucket := &BucketAttrs{
-		Name:           b.Name,
-		Location:       b.Location,
-		MetaGeneration: b.Metageneration,
-		StorageClass:   b.StorageClass,
-		Created:        convertTime(b.TimeCreated),
-	}
-	acl := make([]ACLRule, len(b.Acl))
-	for i, rule := range b.Acl {
-		acl[i] = ACLRule{
-			Entity: ACLEntity(rule.Entity),
-			Role:   ACLRole(rule.Role),
-		}
-	}
-	bucket.ACL = acl
-	objACL := make([]ACLRule, len(b.DefaultObjectAcl))
-	for i, rule := range b.DefaultObjectAcl {
-		objACL[i] = ACLRule{
-			Entity: ACLEntity(rule.Entity),
-			Role:   ACLRole(rule.Role),
-		}
-	}
-	bucket.DefaultObjectACL = objACL
-	return bucket
-}
-
 func toRawObjectACL(oldACL []ACLRule) []*raw.ObjectAccessControl {
 	var acl []*raw.ObjectAccessControl
 	if len(oldACL) > 0 {
@@ -864,28 +580,6 @@ func toRawObjectACL(oldACL []ACLRule) []*raw.ObjectAccessControl {
 		}
 	}
 	return acl
-}
-
-// toRawBucket copies the editable attribute from b to the raw library's Bucket type.
-func (b *BucketAttrs) toRawBucket() *raw.Bucket {
-	var acl []*raw.BucketAccessControl
-	if len(b.ACL) > 0 {
-		acl = make([]*raw.BucketAccessControl, len(b.ACL))
-		for i, rule := range b.ACL {
-			acl[i] = &raw.BucketAccessControl{
-				Entity: string(rule.Entity),
-				Role:   string(rule.Role),
-			}
-		}
-	}
-	dACL := toRawObjectACL(b.DefaultObjectACL)
-	return &raw.Bucket{
-		Name:             b.Name,
-		DefaultObjectAcl: dACL,
-		Location:         b.Location,
-		StorageClass:     b.StorageClass,
-		Acl:              acl,
-	}
 }
 
 // toRawObject copies the editable attributes from o to the raw library's Object type.
@@ -985,6 +679,12 @@ type ObjectAttrs struct {
 	// For buckets with versioning enabled, changing an object's
 	// metadata does not change this property. This field is read-only.
 	Updated time.Time
+
+	// Prefix is set only for ObjectAttrs which represent synthetic "directory
+	// entries" when iterating over buckets using Query.Delimiter. See
+	// ObjectIterator.Next. When set, no other fields in ObjectAttrs will be
+	// populated.
+	Prefix string
 }
 
 // convertTime converts a time in RFC3339 format to time.Time.
@@ -1064,6 +764,8 @@ type Query struct {
 	// Cursor is a previously-returned page token
 	// representing part of the larger set of results to view.
 	// Optional.
+	//
+	// Deprecated: Use ObjectIterator.PageInfo().Token instead.
 	Cursor string
 
 	// MaxResults is the maximum number of items plus prefixes
@@ -1071,24 +773,8 @@ type Query struct {
 	// fewer total results may be returned than requested.
 	// The default page limit is used if it is negative or zero.
 	//
-	// Deprecated. Use ObjectIterator.SetPageSize.
+	// Deprecated: Use ObjectIterator.PageInfo().MaxSize instead.
 	MaxResults int
-}
-
-// ObjectList represents a list of objects returned from a bucket List call.
-type ObjectList struct {
-	// Results represent a list of object results.
-	Results []*ObjectAttrs
-
-	// Next is the continuation query to retrieve more
-	// results with the same filtering criteria. If there
-	// are no more results to retrieve, it is nil.
-	Next *Query
-
-	// Prefixes represents prefixes of objects
-	// matching-but-not-listed up to and including
-	// the requested delimiter.
-	Prefixes []string
 }
 
 // contentTyper implements ContentTyper to enable an
@@ -1202,3 +888,23 @@ func (c objectsGetCall) IfMetagenerationMatch(gen int64) {
 func (c objectsGetCall) IfMetagenerationNotMatch(gen int64) {
 	appendParam(c.req, "ifMetagenerationNotMatch", fmt.Sprint(gen))
 }
+
+// composeSourceObj wraps a *raw.ComposeRequestSourceObjects, but adds the methods
+// that modifyCall searches for by name.
+type composeSourceObj struct {
+	src *raw.ComposeRequestSourceObjects
+}
+
+func (c composeSourceObj) Generation(gen int64) {
+	c.src.Generation = gen
+}
+
+func (c composeSourceObj) IfGenerationMatch(gen int64) {
+	// It's safe to overwrite ObjectPreconditions, since its only field is
+	// IfGenerationMatch.
+	c.src.ObjectPreconditions = &raw.ComposeRequestSourceObjectsObjectPreconditions{
+		IfGenerationMatch: gen,
+	}
+}
+
+// TODO(jbd): Add storage.objects.watch.

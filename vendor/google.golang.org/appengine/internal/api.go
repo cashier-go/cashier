@@ -60,6 +60,9 @@ var (
 			Dial:  limitDial,
 		},
 	}
+
+	defaultTicketOnce sync.Once
+	defaultTicket     string
 )
 
 func apiURL() *url.URL {
@@ -266,6 +269,19 @@ func WithContext(parent netcontext.Context, req *http.Request) netcontext.Contex
 	return withContext(parent, c)
 }
 
+func getDefaultTicket() string {
+	defaultTicketOnce.Do(func() {
+		appID := partitionlessAppID()
+		escAppID := strings.Replace(strings.Replace(appID, ":", "_", -1), ".", "_", -1)
+		majVersion := VersionID(nil)
+		if i := strings.Index(majVersion, "."); i > 0 {
+			majVersion = majVersion[:i]
+		}
+		defaultTicket = fmt.Sprintf("%s/%s.%s.%s", escAppID, ModuleName(nil), majVersion, InstanceID())
+	})
+	return defaultTicket
+}
+
 func BackgroundContext() netcontext.Context {
 	ctxs.Lock()
 	defer ctxs.Unlock()
@@ -275,13 +291,7 @@ func BackgroundContext() netcontext.Context {
 	}
 
 	// Compute background security ticket.
-	appID := partitionlessAppID()
-	escAppID := strings.Replace(strings.Replace(appID, ":", "_", -1), ".", "_", -1)
-	majVersion := VersionID(nil)
-	if i := strings.Index(majVersion, "."); i > 0 {
-		majVersion = majVersion[:i]
-	}
-	ticket := fmt.Sprintf("%s/%s.%s.%s", escAppID, ModuleName(nil), majVersion, InstanceID())
+	ticket := getDefaultTicket()
 
 	ctxs.bg = &context{
 		req: &http.Request{
@@ -475,6 +485,10 @@ func Call(ctx netcontext.Context, service, method string, in, out proto.Message)
 	}
 
 	ticket := c.req.Header.Get(ticketHeader)
+	// Fall back to use background ticket when the request ticket is not available in Flex.
+	if ticket == "" {
+		ticket = getDefaultTicket()
+	}
 	req := &remotepb.Request{
 		ServiceName: &service,
 		Method:      &method,
