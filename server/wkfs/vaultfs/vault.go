@@ -14,6 +14,10 @@ import (
 
 // Register the /vault/ filesystem as a well-known filesystem.
 func Register(vc *config.Vault) {
+	if vc == nil {
+		registerBrokenFS(errors.New("no vault configuration found"))
+		return
+	}
 	client, err := vault.NewClient(vc.Address, vc.Token)
 	if err != nil {
 		registerBrokenFS(err)

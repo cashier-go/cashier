@@ -21,6 +21,10 @@ import (
 
 // Register the /s3/ filesystem as a well-known filesystem.
 func Register(config *config.AWS) {
+	if config == nil {
+		registerBrokenFS(errors.New("aws credentials not found"))
+		return
+	}
 	ac := &aws.Config{}
 	// If region is unset the SDK will attempt to read the region from the environment.
 	if config.Region != "" {

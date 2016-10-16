@@ -3,61 +3,92 @@ package config
 import (
 	"bytes"
 	"testing"
-	"time"
 
-	"github.com/nsheridan/cashier/testdata"
+	"github.com/nsheridan/cashier/server/config/testdata"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServerConfig(t *testing.T) {
-	t.Parallel()
-	a := assert.New(t)
-	c, err := ReadConfig(bytes.NewBuffer(testdata.ServerConfig))
+var (
+	parsedConfig = &Config{
+		Server: &Server{
+			UseTLS:       true,
+			TLSKey:       "server.key",
+			TLSCert:      "server.crt",
+			Addr:         "127.0.0.1",
+			Port:         443,
+			User:         "nobody",
+			CookieSecret: "supersecret",
+			CSRFSecret:   "supersecret",
+			HTTPLogFile:  "cashierd.log",
+			Database:     Database{"type": "mysql", "username": "user", "password": "passwd", "address": "localhost:3306"},
+			Datastore:    "mysql:user:passwd:localhost:3306",
+		},
+		Auth: &Auth{
+			OauthClientID:     "client_id",
+			OauthClientSecret: "secret",
+			OauthCallbackURL:  "https://sshca.example.com/auth/callback",
+			Provider:          "google",
+			ProviderOpts:      map[string]string{"domain": "example.com"},
+			UsersWhitelist:    []string{"a_user"},
+		},
+		SSH: &SSH{
+			SigningKey:           "signing_key",
+			AdditionalPrincipals: []string{"ec2-user", "ubuntu"},
+			MaxAge:               "720h",
+			Permissions:          []string{"permit-pty", "permit-X11-forwarding", "permit-port-forwarding", "permit-user-rc"},
+		},
+		AWS: &AWS{
+			Region:    "us-east-1",
+			AccessKey: "abcdef",
+			SecretKey: "omg123",
+		},
+		Vault: &Vault{
+			Address: "https://vault:8200",
+			Token:   "abc-def-456-789",
+		},
+	}
+)
+
+func TestConfigParser(t *testing.T) {
+	c, err := ReadConfig(bytes.NewBuffer(testdata.Config))
 	if err != nil {
 		t.Error(err)
 	}
-	server := c.Server
-	a.IsType(server, &Server{})
-	a.True(server.UseTLS)
-	a.Equal(server.TLSKey, "server.key")
-	a.Equal(server.TLSCert, "server.crt")
-	a.Equal(server.Port, 443)
-	a.Equal(server.Addr, "127.0.0.1")
-	a.Equal(server.CookieSecret, "supersecret")
+	assert.Equal(t, parsedConfig, c)
 }
 
-func TestAuthConfig(t *testing.T) {
-	t.Parallel()
-	a := assert.New(t)
-	c, err := ReadConfig(bytes.NewBuffer(testdata.AuthConfig))
-	if err != nil {
-		t.Error(err)
-	}
-	auth := c.Auth
-	a.IsType(auth, &Auth{})
-	a.Equal(auth.Provider, "google")
-	a.Equal(auth.ProviderOpts, map[string]string{"domain": "example.com"})
-	a.Equal(auth.OauthClientID, "client_id")
-	a.Equal(auth.OauthClientSecret, "secret")
-	a.Equal(auth.OauthCallbackURL, "https://sshca.example.com/auth/callback")
+func TestConfigVerify(t *testing.T) {
+	bad := bytes.NewBuffer([]byte(""))
+	_, err := ReadConfig(bad)
+	assert.Contains(t, err.Error(), "missing ssh config section", "missing server config section", "missing auth config section")
 }
 
-func TestSSHConfig(t *testing.T) {
-	t.Parallel()
-	a := assert.New(t)
-	c, err := ReadConfig(bytes.NewBuffer(testdata.SSHConfig))
-	if err != nil {
-		t.Error(err)
+func TestDatastoreConversion(t *testing.T) {
+	tests := []struct {
+		in  string
+		out Database
+	}{
+		{
+			"mysql:user:passwd:localhost:3306", Database{"type": "mysql", "username": "user", "password": "passwd", "address": "localhost:3306"},
+		},
+		{
+			"mongo:::host1,host2", Database{"type": "mongo", "username": "", "password": "", "address": "host1,host2"},
+		},
+		{
+			"mem", Database{"type": "mem"},
+		},
+		{
+			"sqlite:/data/certs.db", Database{"type": "sqlite", "filename": "/data/certs.db"},
+		},
 	}
-	ssh := c.SSH
-	a.IsType(ssh, &SSH{})
-	a.Equal(ssh.SigningKey, "signing_key")
-	a.Equal(ssh.AdditionalPrincipals, []string{"ec2-user", "ubuntu"})
-	a.Equal(ssh.Permissions, []string{"permit-pty", "permit-X11-forwarding", "permit-port-forwarding", "permit-user-rc"})
-	a.Equal(ssh.MaxAge, "720h")
-	d, err := time.ParseDuration(ssh.MaxAge)
-	if err != nil {
-		t.Error(err)
+
+	for _, tc := range tests {
+		config := &Config{
+			Server: &Server{
+				Datastore: tc.in,
+			},
+		}
+		convertDatastoreConfig(config)
+		assert.EqualValues(t, config.Server.Database, tc.out)
 	}
-	a.Equal(d.Hours(), float64(720))
 }
