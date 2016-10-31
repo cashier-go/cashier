@@ -19,6 +19,10 @@ Google Cloud Storage stores data in named objects, which are grouped into bucket
 More information about Google Cloud Storage is available at
 https://cloud.google.com/storage/docs.
 
+All of the methods of this package use exponential backoff to retry calls
+that fail with certain errors, as described in
+https://cloud.google.com/storage/docs/exponential-backoff.
+
 Note: This package is experimental and may make backwards-incompatible changes.
 
 
@@ -134,8 +138,7 @@ For example, say you've read an object's metadata into objAttrs. Now
 you want to write to that object, but only if its contents haven't changed
 since you read it. Here is how to express that:
 
-    cond := storage.IfGenerationMatch(objAttrs.Generation)
-    w = obj.WithConditions(cond).NewWriter(ctx)
+    w = obj.If(storage.Conditions{GenerationMatch: objAttrs.Generation}).NewWriter(ctx)
     // Proceed with writing as above.
 
 Signed URLs

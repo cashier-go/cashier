@@ -7,7 +7,7 @@ env:
   - MYSQL_TEST="true" MONGO_TEST="true"
 
 go:
-  - 1.7.1
+  - 1.7.3
   - tip
 
 matrix:

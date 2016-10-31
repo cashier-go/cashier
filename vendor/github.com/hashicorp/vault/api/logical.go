@@ -119,7 +119,7 @@ func (c *Logical) Delete(path string) (*Secret, error) {
 
 func (c *Logical) Unwrap(wrappingToken string) (*Secret, error) {
 	var data map[string]interface{}
-	if wrappingToken != "" {
+	if wrappingToken != "" && wrappingToken != c.c.Token() {
 		data = map[string]interface{}{
 			"token": wrappingToken,
 		}
@@ -146,7 +146,7 @@ func (c *Logical) Unwrap(wrappingToken string) (*Secret, error) {
 		return nil, nil
 	}
 
-	if wrappingToken == "" {
+	if wrappingToken != "" {
 		origToken := c.c.Token()
 		defer c.c.SetToken(origToken)
 		c.c.SetToken(wrappingToken)
