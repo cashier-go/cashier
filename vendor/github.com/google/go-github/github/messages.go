@@ -49,10 +49,14 @@ var (
 		"integration_installation_repositories": "IntegrationInstallationRepositoriesEvent",
 		"issue_comment":                         "IssueCommentEvent",
 		"issues":                                "IssuesEvent",
+		"label":                                 "LabelEvent",
 		"member":                                "MemberEvent",
 		"membership":                            "MembershipEvent",
+		"milestone":                             "MilestoneEvent",
 		"page_build":                            "PageBuildEvent",
+		"ping":                                  "PingEvent",
 		"public":                                "PublicEvent",
+		"pull_request_review":                   "PullRequestReviewEvent",
 		"pull_request_review_comment":           "PullRequestReviewCommentEvent",
 		"pull_request":                          "PullRequestEvent",
 		"push":                                  "PushEvent",
@@ -168,9 +172,9 @@ func WebHookType(r *http.Request) string {
 //       event, err := github.ParseWebHook(github.WebHookType(r), payload)
 //       if err != nil { ... }
 //       switch event := event.(type) {
-//       case CommitCommentEvent:
+//       case *github.CommitCommentEvent:
 //           processCommitCommentEvent(event)
-//       case CreateEvent:
+//       case *github.CreateEvent:
 //           processCreateEvent(event)
 //       ...
 //       }

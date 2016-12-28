@@ -42,6 +42,8 @@ const (
 	mediaTypeV3                = "application/vnd.github.v3+json"
 	defaultMediaType           = "application/octet-stream"
 	mediaTypeV3SHA             = "application/vnd.github.v3.sha"
+	mediaTypeV3Diff            = "application/vnd.github.v3.diff"
+	mediaTypeV3Patch           = "application/vnd.github.v3.patch"
 	mediaTypeOrgPermissionRepo = "application/vnd.github.v3.repository+json"
 
 	// Media Type values to access preview APIs
@@ -68,6 +70,7 @@ const (
 	mediaTypeReactionsPreview = "application/vnd.github.squirrel-girl-preview"
 
 	// https://developer.github.com/changes/2016-04-01-squash-api-preview/
+	// https://developer.github.com/changes/2016-09-26-pull-request-merge-api-update/
 	mediaTypeSquashPreview = "application/vnd.github.polaris-preview+json"
 
 	// https://developer.github.com/changes/2016-04-04-git-signing-api-preview/
@@ -78,9 +81,6 @@ const (
 
 	// https://developer.github.com/changes/2016-06-14-repository-invitations/
 	mediaTypeRepositoryInvitationsPreview = "application/vnd.github.swamp-thing-preview+json"
-
-	// https://developer.github.com/changes/2016-04-21-oauth-authorizations-grants-api-preview/
-	mediaTypeOAuthGrantAuthorizationsPreview = "application/vnd.github.damage-preview+json"
 
 	// https://developer.github.com/changes/2016-07-06-github-pages-preiew-api/
 	mediaTypePagesPreview = "application/vnd.github.mister-fantastic-preview+json"
@@ -119,6 +119,7 @@ type Client struct {
 
 	// Services used for talking to different parts of the GitHub API.
 	Activity       *ActivityService
+	Admin          *AdminService
 	Authorizations *AuthorizationsService
 	Gists          *GistsService
 	Git            *GitService
@@ -126,6 +127,7 @@ type Client struct {
 	Integrations   *IntegrationsService
 	Issues         *IssuesService
 	Organizations  *OrganizationsService
+	Projects       *ProjectsService
 	PullRequests   *PullRequestsService
 	Repositories   *RepositoriesService
 	Search         *SearchService
@@ -152,6 +154,22 @@ type ListOptions struct {
 // UploadOptions specifies the parameters to methods that support uploads.
 type UploadOptions struct {
 	Name string `url:"name,omitempty"`
+}
+
+// RawType represents type of raw format of a request instead of JSON.
+type RawType uint8
+
+const (
+	// Diff format.
+	Diff RawType = 1 + iota
+	// Patch format.
+	Patch
+)
+
+// RawOptions specifies parameters when user wants to get raw format of
+// a response instead of JSON.
+type RawOptions struct {
+	Type RawType
 }
 
 // addOptions adds the parameters in opt as URL query parameters to s.  opt
@@ -190,6 +208,7 @@ func NewClient(httpClient *http.Client) *Client {
 	c := &Client{client: httpClient, BaseURL: baseURL, UserAgent: userAgent, UploadURL: uploadURL}
 	c.common.client = c
 	c.Activity = (*ActivityService)(&c.common)
+	c.Admin = (*AdminService)(&c.common)
 	c.Authorizations = (*AuthorizationsService)(&c.common)
 	c.Gists = (*GistsService)(&c.common)
 	c.Git = (*GitService)(&c.common)
@@ -199,6 +218,7 @@ func NewClient(httpClient *http.Client) *Client {
 	c.Licenses = (*LicensesService)(&c.common)
 	c.Migrations = (*MigrationService)(&c.common)
 	c.Organizations = (*OrganizationsService)(&c.common)
+	c.Projects = (*ProjectsService)(&c.common)
 	c.PullRequests = (*PullRequestsService)(&c.common)
 	c.Reactions = (*ReactionsService)(&c.common)
 	c.Repositories = (*RepositoriesService)(&c.common)
@@ -499,6 +519,18 @@ func (r *RateLimitError) Error() string {
 		r.Response.StatusCode, r.Message, r.Rate.Reset.Time.Sub(time.Now()))
 }
 
+// AcceptedError occurs when GitHub returns 202 Accepted response with an
+// empty body, which means a job was scheduled on the GitHub side to process
+// the information needed and cache it.
+// Technically, 202 Accepted is not a real error, it's just used to
+// indicate that results are not ready yet, but should be available soon.
+// The request can be repeated after some time.
+type AcceptedError struct{}
+
+func (*AcceptedError) Error() string {
+	return "job scheduled on GitHub side; try again later"
+}
+
 // AbuseRateLimitError occurs when GitHub returns 403 Forbidden response with the
 // "documentation_url" field value equal to "https://developer.github.com/v3#abuse-rate-limits".
 type AbuseRateLimitError struct {
@@ -562,14 +594,19 @@ func (e *Error) Error() string {
 }
 
 // CheckResponse checks the API response for errors, and returns them if
-// present.  A response is considered an error if it has a status code outside
-// the 200 range.  API error responses are expected to have either no response
+// present. A response is considered an error if it has a status code outside
+// the 200 range or equal to 202 Accepted.
+// API error responses are expected to have either no response
 // body, or a JSON response body that maps to ErrorResponse.  Any other
 // response body will be silently ignored.
 //
 // The error type will be *RateLimitError for rate limit exceeded errors,
+// *AcceptedError for 202 Accepted status codes,
 // and *TwoFactorAuthError for two-factor authentication errors.
 func CheckResponse(r *http.Response) error {
+	if r.StatusCode == http.StatusAccepted {
+		return &AcceptedError{}
+	}
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}
