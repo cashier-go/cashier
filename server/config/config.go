@@ -29,17 +29,19 @@ type Database map[string]string
 
 // Server holds the configuration specific to the web server and sessions.
 type Server struct {
-	UseTLS       bool     `mapstructure:"use_tls"`
-	TLSKey       string   `mapstructure:"tls_key"`
-	TLSCert      string   `mapstructure:"tls_cert"`
-	Addr         string   `mapstructure:"address"`
-	Port         int      `mapstructure:"port"`
-	User         string   `mapstructure:"user"`
-	CookieSecret string   `mapstructure:"cookie_secret"`
-	CSRFSecret   string   `mapstructure:"csrf_secret"`
-	HTTPLogFile  string   `mapstructure:"http_logfile"`
-	Database     Database `mapstructure:"database"`
-	Datastore    string   `mapstructure:"datastore"` // Deprecated. TODO: remove.
+	UseTLS                bool     `mapstructure:"use_tls"`
+	TLSKey                string   `mapstructure:"tls_key"`
+	TLSCert               string   `mapstructure:"tls_cert"`
+	LetsEncryptServername string   `mapstructure:"letsencrypt_servername"`
+	LetsEncryptCache      string   `mapstructure:"letsencrypt_cachedir"`
+	Addr                  string   `mapstructure:"address"`
+	Port                  int      `mapstructure:"port"`
+	User                  string   `mapstructure:"user"`
+	CookieSecret          string   `mapstructure:"cookie_secret"`
+	CSRFSecret            string   `mapstructure:"csrf_secret"`
+	HTTPLogFile           string   `mapstructure:"http_logfile"`
+	Database              Database `mapstructure:"database"`
+	Datastore             string   `mapstructure:"datastore"` // Deprecated. TODO: remove.
 }
 
 // Auth holds the configuration specific to the OAuth provider.

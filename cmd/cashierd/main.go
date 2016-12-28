@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"go4.org/wkfs"
+	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/oauth2"
 
 	"github.com/gorilla/csrf"
@@ -342,10 +343,19 @@ func main() {
 
 	tlsConfig := &tls.Config{}
 	if config.Server.UseTLS {
-		tlsConfig.Certificates = make([]tls.Certificate, 1)
-		tlsConfig.Certificates[0], err = loadCerts(config.Server.TLSCert, config.Server.TLSKey)
-		if err != nil {
-			log.Fatal(err)
+		if config.Server.LetsEncryptServername != "" {
+			m := autocert.Manager{
+				Prompt:     autocert.AcceptTOS,
+				Cache:      autocert.DirCache(config.Server.LetsEncryptCache),
+				HostPolicy: autocert.HostWhitelist(config.Server.LetsEncryptServername),
+			}
+			tlsConfig.GetCertificate = m.GetCertificate
+		} else {
+			tlsConfig.Certificates = make([]tls.Certificate, 1)
+			tlsConfig.Certificates[0], err = loadCerts(config.Server.TLSCert, config.Server.TLSKey)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 		l = tls.NewListener(l, tlsConfig)
 	}
