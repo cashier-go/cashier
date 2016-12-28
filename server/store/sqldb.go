@@ -10,7 +10,6 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/mattn/go-sqlite3" // required by sql driver
 	"github.com/nsheridan/cashier/server/config"
 )
 
