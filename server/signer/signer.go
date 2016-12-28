@@ -1,11 +1,9 @@
 package signer
 
 import (
-	"crypto/md5"
 	"crypto/rand"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"go4.org/wkfs"
@@ -49,7 +47,7 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Cer
 	if err := cert.SignCert(rand.Reader, s.ca); err != nil {
 		return nil, err
 	}
-	log.Printf("Issued cert id: %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, fingerprint(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
+	log.Printf("Issued cert id: %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, ssh.FingerprintSHA256(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
 	return cert, nil
 }
 
@@ -106,11 +104,4 @@ func New(conf *config.SSH) (*KeySigner, error) {
 		principals:  conf.AdditionalPrincipals,
 		permissions: makeperms(conf.Permissions),
 	}, nil
-}
-
-func fingerprint(pubkey ssh.PublicKey) string {
-	md5String := md5.New()
-	md5String.Write(pubkey.Marshal())
-	fp := fmt.Sprintf("% x", md5String.Sum(nil))
-	return strings.Replace(fp, " ", ":", -1)
 }
