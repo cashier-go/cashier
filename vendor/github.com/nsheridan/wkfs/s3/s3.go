@@ -1,11 +1,13 @@
-package s3fs
+package s3
 
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,35 +18,38 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/nsheridan/cashier/server/config"
 )
 
+// Options for registering the S3 wkfs.
+// None of these are required and can be supplied to the aws client by other means.
+type Options struct {
+	Region    string
+	AccessKey string
+	SecretKey string
+}
+
 // Register the /s3/ filesystem as a well-known filesystem.
-func Register(config *config.AWS) {
-	if config == nil {
-		registerBrokenFS(errors.New("aws credentials not found"))
+func Register(opts *Options) {
+	if opts == nil {
+		opts = &Options{}
+	}
+	config := &aws.Config{}
+	// If region is unset the SDK will attempt to read the region from the environment.
+	if opts.Region != "" {
+		config.Region = aws.String(opts.Region)
+	}
+	// Attempt to use supplied credentials, otherwise fall back to the SDK.
+	if opts.AccessKey != "" && opts.SecretKey != "" {
+		config.Credentials = credentials.NewStaticCredentials(opts.AccessKey, opts.SecretKey, "")
+	}
+	s, err := session.NewSession(config)
+	if err != nil {
+		registerBrokenFS(err)
 		return
 	}
-	ac := &aws.Config{}
-	// If region is unset the SDK will attempt to read the region from the environment.
-	if config.Region != "" {
-		ac.Region = aws.String(config.Region)
-	}
-	// Attempt to get credentials from the cashier config.
-	// Otherwise check for standard credentials. If neither are present register the fs as broken.
-	// TODO: implement this as a provider.
-	if config.AccessKey != "" && config.SecretKey != "" {
-		ac.Credentials = credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
-	} else {
-		_, err := session.New().Config.Credentials.Get()
-		if err != nil {
-			registerBrokenFS(errors.New("aws credentials not found"))
-			return
-		}
-	}
-	sc := s3.New(session.New(ac))
+	sc := s3.New(s)
 	if aws.StringValue(sc.Config.Region) == "" {
-		registerBrokenFS(errors.New("aws region configuration not found"))
+		registerBrokenFS(errors.New("could not find region configuration"))
 		return
 	}
 	wkfs.RegisterFS("/s3/", &s3FS{
@@ -125,10 +130,28 @@ func (fs *s3FS) Lstat(name string) (os.FileInfo, error) {
 	}, nil
 }
 
-func (fs *s3FS) MkdirAll(path string, perm os.FileMode) error { return nil }
+func (fs *s3FS) MkdirAll(path string, perm os.FileMode) error {
+	_, err := fs.OpenFile(fmt.Sprintf("%s/", filepath.Clean(path)), os.O_CREATE, perm)
+	return err
+}
 
 func (fs *s3FS) OpenFile(name string, flag int, perm os.FileMode) (wkfs.FileWriter, error) {
-	return nil, errors.New("not implemented")
+	bucket, filename, err := fs.parseName(name)
+	if err != nil {
+		return nil, err
+	}
+	switch flag {
+	case os.O_WRONLY | os.O_CREATE | os.O_EXCL:
+	case os.O_WRONLY | os.O_CREATE | os.O_TRUNC:
+	default:
+		return nil, fmt.Errorf("Unsupported OpenFlag flag mode %d on S3", flag)
+	}
+	if flag&os.O_EXCL != 0 {
+		if _, err := fs.Stat(name); err == nil {
+			return nil, os.ErrExist
+		}
+	}
+	return NewS3file(bucket, filename, fs.sc)
 }
 
 type statInfo struct {

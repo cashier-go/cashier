@@ -393,6 +393,12 @@
 			"revisionTime": "2016-12-11T22:23:15Z"
 		},
 		{
+			"checksumSHA1": "Ywe06VqOCpwDNjipGTMO0oOG/Yg=",
+			"path": "github.com/nsheridan/wkfs/s3",
+			"revision": "60e6f1760f59568e4ce95080d08cd4a90c3c50c7",
+			"revisionTime": "2016-12-29T20:48:42Z"
+		},
+		{
 			"checksumSHA1": "8Y05Pz7onrQPcVWW6JStSsYRh6E=",
 			"path": "github.com/pelletier/go-buffruneio",
 			"revision": "df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d",

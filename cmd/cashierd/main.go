@@ -35,8 +35,8 @@ import (
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
 	"github.com/nsheridan/cashier/server/util"
-	"github.com/nsheridan/cashier/server/wkfs/s3fs"
 	"github.com/nsheridan/cashier/server/wkfs/vaultfs"
+	"github.com/nsheridan/wkfs/s3"
 	"github.com/sid77/drop"
 )
 
@@ -313,46 +313,53 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 func main() {
 	// Privileged section
 	flag.Parse()
-	config, err := readConfig(*cfg)
+	conf, err := readConfig(*cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Register well-known filesystems.
-	s3fs.Register(config.AWS)
-	vaultfs.Register(config.Vault)
+	if conf.AWS == nil {
+		conf.AWS = &config.AWS{}
+	}
+	s3.Register(&s3.Options{
+		Region:    conf.AWS.Region,
+		AccessKey: conf.AWS.AccessKey,
+		SecretKey: conf.AWS.SecretKey,
+	})
+	vaultfs.Register(conf.Vault)
 
-	signer, err := signer.New(config.SSH)
+	signer, err := signer.New(conf.SSH)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	logfile := os.Stderr
-	if config.Server.HTTPLogFile != "" {
-		logfile, err = os.OpenFile(config.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0640)
+	if conf.Server.HTTPLogFile != "" {
+		logfile, err = os.OpenFile(conf.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0640)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	laddr := fmt.Sprintf("%s:%d", config.Server.Addr, config.Server.Port)
+	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
 	l, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	tlsConfig := &tls.Config{}
-	if config.Server.UseTLS {
-		if config.Server.LetsEncryptServername != "" {
+	if conf.Server.UseTLS {
+		if conf.Server.LetsEncryptServername != "" {
 			m := autocert.Manager{
 				Prompt:     autocert.AcceptTOS,
-				Cache:      autocert.DirCache(config.Server.LetsEncryptCache),
-				HostPolicy: autocert.HostWhitelist(config.Server.LetsEncryptServername),
+				Cache:      autocert.DirCache(conf.Server.LetsEncryptCache),
+				HostPolicy: autocert.HostWhitelist(conf.Server.LetsEncryptServername),
 			}
 			tlsConfig.GetCertificate = m.GetCertificate
 		} else {
 			tlsConfig.Certificates = make([]tls.Certificate, 1)
-			tlsConfig.Certificates[0], err = loadCerts(config.Server.TLSCert, config.Server.TLSKey)
+			tlsConfig.Certificates[0], err = loadCerts(conf.Server.TLSCert, conf.Server.TLSKey)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -360,33 +367,33 @@ func main() {
 		l = tls.NewListener(l, tlsConfig)
 	}
 
-	if config.Server.User != "" {
+	if conf.Server.User != "" {
 		log.Print("Dropping privileges...")
-		if err := drop.DropPrivileges(config.Server.User); err != nil {
+		if err := drop.DropPrivileges(conf.Server.User); err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// Unprivileged section
 	var authprovider auth.Provider
-	switch config.Auth.Provider {
+	switch conf.Auth.Provider {
 	case "google":
-		authprovider, err = google.New(config.Auth)
+		authprovider, err = google.New(conf.Auth)
 	case "github":
-		authprovider, err = github.New(config.Auth)
+		authprovider, err = github.New(conf.Auth)
 	default:
-		log.Fatalf("Unknown provider %s\n", config.Auth.Provider)
+		log.Fatalf("Unknown provider %s\n", conf.Auth.Provider)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	certstore, err := store.New(config.Server.Database)
+	certstore, err := store.New(conf.Server.Database)
 	if err != nil {
 		log.Fatal(err)
 	}
 	ctx := &appContext{
-		cookiestore:  sessions.NewCookieStore([]byte(config.Server.CookieSecret)),
+		cookiestore:  sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
 		authprovider: authprovider,
 		sshKeySigner: signer,
 		certstore:    certstore,
@@ -394,11 +401,11 @@ func main() {
 	ctx.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,
 		Path:     "/",
-		Secure:   config.Server.UseTLS,
+		Secure:   conf.Server.UseTLS,
 		HttpOnly: true,
 	}
 
-	CSRF := csrf.Protect([]byte(config.Server.CSRFSecret), csrf.Secure(config.Server.UseTLS))
+	CSRF := csrf.Protect([]byte(conf.Server.CSRFSecret), csrf.Secure(conf.Server.UseTLS))
 	r := mux.NewRouter()
 	r.Methods("GET").Path("/").Handler(appHandler{ctx, rootHandler})
 	r.Methods("GET").Path("/auth/login").Handler(appHandler{ctx, loginHandler})
