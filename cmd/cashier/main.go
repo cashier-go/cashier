@@ -36,7 +36,7 @@ func main() {
 		fmt.Println("Error launching web browser. Go to the link in your web browser")
 	}
 	fmt.Println("Generating new key pair")
-	priv, pub, err := client.GenerateKey(c.Keytype, c.Keysize)
+	priv, pub, err := client.GenerateKey(client.KeyType(c.Keytype), client.KeySize(c.Keysize))
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
 	}
