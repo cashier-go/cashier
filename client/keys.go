@@ -1,56 +1,51 @@
 package client
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
-	"strings"
 
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
 
 // Key is a private key.
-type Key interface{}
-type keyfunc func(int) (Key, ssh.PublicKey, error)
+type Key crypto.Signer
 
-var (
-	keytypes = map[string]keyfunc{
-		"rsa":     generateRSAKey,
-		"ecdsa":   generateECDSAKey,
-		"ed25519": generateED25519Key,
-	}
-)
+// KeyOptions allows specifying desired key type and size.
+type KeyOptions struct {
+	// Type of key to generate: "rsa", "ecdsa", "ed25519".
+	// Default is "rsa".
+	Type string
 
-func generateED25519Key(bits int) (Key, ssh.PublicKey, error) {
-	p, k, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	pub, err := ssh.NewPublicKey(p)
-	if err != nil {
-		return nil, nil, err
-	}
-	return &k, pub, nil
+	// Size of key to generate.
+	// RSA keys must be a minimum of 1024 bits. The default is 2048 bits.
+	// ECDSA keys must be one of the following: 256, 384 or 521 bits. The default is 256 bits.
+	// ED25519 keys are of fixed length and this field is ignored.
+	Size int
 }
 
-func generateRSAKey(bits int) (Key, ssh.PublicKey, error) {
-	k, err := rsa.GenerateKey(rand.Reader, bits)
-	if err != nil {
-		return nil, nil, err
-	}
-	pub, err := ssh.NewPublicKey(&k.PublicKey)
-	if err != nil {
-		return nil, nil, err
-	}
-	return k, pub, nil
+func generateED25519Key() (Key, error) {
+	_, k, err := ed25519.GenerateKey(rand.Reader)
+	return &k, err
 }
 
-func generateECDSAKey(bits int) (Key, ssh.PublicKey, error) {
+func generateRSAKey(size int) (Key, error) {
+	if size == 0 {
+		size = 2048
+	}
+	return rsa.GenerateKey(rand.Reader, size)
+}
+
+func generateECDSAKey(size int) (Key, error) {
+	if size == 0 {
+		size = 256
+	}
 	var curve elliptic.Curve
-	switch bits {
+	switch size {
 	case 256:
 		curve = elliptic.P256()
 	case 384:
@@ -58,28 +53,33 @@ func generateECDSAKey(bits int) (Key, ssh.PublicKey, error) {
 	case 521:
 		curve = elliptic.P521()
 	default:
-		return nil, nil, fmt.Errorf("Unsupported key size. Valid sizes are '256', '384', '521'")
+		return nil, fmt.Errorf("Unsupported key size: %d. Valid sizes are '256', '384', '521'", size)
 	}
-	k, err := ecdsa.GenerateKey(curve, rand.Reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	pub, err := ssh.NewPublicKey(&k.PublicKey)
-	if err != nil {
-		return nil, nil, err
-	}
-	return k, pub, nil
+	return ecdsa.GenerateKey(curve, rand.Reader)
 }
 
 // GenerateKey generates a ssh key-pair according to the type and size specified.
-func GenerateKey(keytype string, bits int) (Key, ssh.PublicKey, error) {
-	f, ok := keytypes[keytype]
-	if !ok {
-		var valid []string
-		for k := range keytypes {
-			valid = append(valid, k)
-		}
-		return nil, nil, fmt.Errorf("Unsupported key type %s. Valid choices are %s", keytype, strings.Join(valid, "|"))
+func GenerateKey(options ...KeyOptions) (Key, ssh.PublicKey, error) {
+	var privkey Key
+	var pubkey ssh.PublicKey
+	var err error
+	var opts KeyOptions
+	if len(options) > 0 {
+		opts = options[len(options)-1]
 	}
-	return f(bits)
+	switch opts.Type {
+	case "rsa":
+		privkey, err = generateRSAKey(opts.Size)
+	case "ecdsa":
+		privkey, err = generateECDSAKey(opts.Size)
+	case "ed25519":
+		privkey, err = generateED25519Key()
+	default:
+		privkey, err = generateRSAKey(opts.Size)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	pubkey, err = ssh.NewPublicKey(privkey.Public())
+	return privkey, pubkey, err
 }
