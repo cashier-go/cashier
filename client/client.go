@@ -79,11 +79,8 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 	if err != nil {
 		return nil, err
 	}
-	marshaled := ssh.MarshalAuthorizedKey(pub)
-	// Remove the trailing newline.
-	marshaled = marshaled[:len(marshaled)-1]
 	s, err := json.Marshal(&lib.SignRequest{
-		Key:        string(marshaled),
+		Key:        lib.GetPublicKey(pub),
 		ValidUntil: time.Now().Add(validity),
 	})
 	if err != nil {

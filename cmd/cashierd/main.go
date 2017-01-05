@@ -34,7 +34,6 @@ import (
 	"github.com/nsheridan/cashier/server/static"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
-	"github.com/nsheridan/cashier/server/util"
 	"github.com/nsheridan/cashier/server/wkfs/vaultfs"
 	"github.com/nsheridan/wkfs/s3"
 	"github.com/sid77/drop"
@@ -169,7 +168,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	}
 	json.NewEncoder(w).Encode(&lib.SignResponse{
 		Status:   "ok",
-		Response: util.GetPublicKey(cert),
+		Response: lib.GetPublicKey(cert),
 	})
 	return http.StatusOK, nil
 }
