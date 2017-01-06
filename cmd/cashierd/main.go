@@ -357,6 +357,9 @@ func main() {
 			}
 			tlsConfig.GetCertificate = m.GetCertificate
 		} else {
+			if conf.Server.TLSCert == "" || conf.Server.TLSKey == "" {
+				log.Fatal("TLS cert or key not specified in config")
+			}
 			tlsConfig.Certificates = make([]tls.Certificate, 1)
 			tlsConfig.Certificates[0], err = loadCerts(conf.Server.TLSCert, conf.Server.TLSKey)
 			if err != nil {
