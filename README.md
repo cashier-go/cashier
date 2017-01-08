@@ -151,8 +151,9 @@ server {
 }
 ```
 
-Prior to using MySQL, MongoDB or SQLite you need to create the database and tables using the [dbinit tool](cmd/dbinit/dbinit.go).  
-dbinit hasn't been tested with mongo replica sets.
+Prior to using MySQL, MongoDB or SQLite you need to create the database and tables using [one of the provided files](db).  
+e.g. `mysql < db/seed.sql` or `mongo db/seed.js`.  
+Obviously you should setup a role user for running in prodution.
 
 ### datastore
 

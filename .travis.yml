@@ -16,14 +16,13 @@ matrix:
 
 before_install:
   - go get -v github.com/golang/lint/golint
-  - go install ./cmd/dbinit
 
 install:
   - go version
 
 before_script:
-  - dbinit -db_user user -db_password passwd
-  - dbinit -db_type mongo -admin_user '' -db_user user -db_password passwd
+  - mysql < db/seed.sql
+  - mongo db/seed.js
 
 sudo: false
 script:
