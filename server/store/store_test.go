@@ -3,9 +3,11 @@ package store
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"database/sql"
 	"io/ioutil"
 	"os"
-	"os/exec"
+	"os/user"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,10 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/crypto/ssh"
-)
-
-var (
-	dbConfig = map[string]string{"username": "user", "password": "passwd", "address": "localhost"}
 )
 
 func TestParseCertificate(t *testing.T) {
@@ -93,8 +91,8 @@ func TestMySQLStore(t *testing.T) {
 	if os.Getenv("MYSQL_TEST") == "" {
 		t.Skip("No MYSQL_TEST environment variable")
 	}
-	dbConfig["type"] = "mysql"
-	db, err := NewSQLStore(dbConfig)
+	u, _ := user.Current()
+	db, err := NewSQLStore(map[string]string{"type": "mysql", "username": u.Username})
 	if err != nil {
 		t.Error(err)
 	}
@@ -106,8 +104,7 @@ func TestMongoStore(t *testing.T) {
 	if os.Getenv("MONGO_TEST") == "" {
 		t.Skip("No MONGO_TEST environment variable")
 	}
-	dbConfig["type"] = "mongo"
-	db, err := NewMongoStore(dbConfig)
+	db, err := NewMongoStore(map[string]string{"type": "mongo"})
 	if err != nil {
 		t.Error(err)
 	}
@@ -121,11 +118,21 @@ func TestSQLiteStore(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-	// This is so jank.
-	args := []string{"run", "../../cmd/dbinit/dbinit.go", "-db_type", "sqlite", "-db_path", f.Name()}
-	if err := exec.Command("go", args...).Run(); err != nil {
+
+	seed, err := ioutil.ReadFile("../../db/seed.sql")
+	if err != nil {
 		t.Error(err)
 	}
+	stmts := strings.Split(string(seed), ";")
+	d, _ := sql.Open("sqlite3", f.Name())
+	for _, stmt := range stmts {
+		if !strings.Contains(stmt, "CREATE TABLE") {
+			continue
+		}
+		d.Exec(stmt)
+	}
+	d.Close()
+
 	config := map[string]string{"type": "sqlite", "filename": f.Name()}
 	db, err := NewSQLStore(config)
 	if err != nil {

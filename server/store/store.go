@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/util"
 )
 
 // New returns a new configured database.
@@ -54,6 +54,6 @@ func parseCertificate(cert *ssh.Certificate) *CertRecord {
 		Principals: cert.ValidPrincipals,
 		CreatedAt:  parseTime(cert.ValidAfter),
 		Expires:    parseTime(cert.ValidBefore),
-		Raw:        util.GetPublicKey(cert),
+		Raw:        lib.GetPublicKey(cert),
 	}
 }

@@ -9,9 +9,7 @@ type SignRequest struct {
 }
 
 // SignResponse is sent by the server.
-// `Status' is "ok" or "error".
-// `Response' contains a signed certificate or an error message.
 type SignResponse struct {
-	Status   string `json:"status"`
-	Response string `json:"response"`
+	Status   string `json:"status"`   // Status will be "ok" or "error".
+	Response string `json:"response"` // Response will contain either the signed certificate or the error message.
 }

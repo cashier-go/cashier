@@ -34,7 +34,6 @@ import (
 	"github.com/nsheridan/cashier/server/static"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
-	"github.com/nsheridan/cashier/server/util"
 	"github.com/nsheridan/cashier/server/wkfs/vaultfs"
 	"github.com/nsheridan/wkfs/s3"
 	"github.com/sid77/drop"
@@ -169,7 +168,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	}
 	json.NewEncoder(w).Encode(&lib.SignResponse{
 		Status:   "ok",
-		Response: util.GetPublicKey(cert),
+		Response: lib.GetPublicKey(cert),
 	})
 	return http.StatusOK, nil
 }
@@ -358,6 +357,9 @@ func main() {
 			}
 			tlsConfig.GetCertificate = m.GetCertificate
 		} else {
+			if conf.Server.TLSCert == "" || conf.Server.TLSKey == "" {
+				log.Fatal("TLS cert or key not specified in config")
+			}
 			tlsConfig.Certificates = make([]tls.Certificate, 1)
 			tlsConfig.Certificates[0], err = loadCerts(conf.Server.TLSCert, conf.Server.TLSKey)
 			if err != nil {
