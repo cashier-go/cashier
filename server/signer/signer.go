@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"go4.org/wkfs"
@@ -16,12 +17,38 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var (
+	defaultPermissions = map[string]string{
+		"permit-X11-forwarding":   "",
+		"permit-agent-forwarding": "",
+		"permit-port-forwarding":  "",
+		"permit-pty":              "",
+		"permit-user-rc":          "",
+	}
+)
+
 // KeySigner does the work of signing a ssh public key with the CA key.
 type KeySigner struct {
 	ca          ssh.Signer
 	validity    time.Duration
 	principals  []string
-	permissions map[string]string
+	permissions []string
+}
+
+func (s *KeySigner) setPermissions(cert *ssh.Certificate) {
+	cert.CriticalOptions = make(map[string]string)
+	cert.Extensions = make(map[string]string)
+	for _, perm := range s.permissions {
+		if strings.Contains(perm, "=") {
+			opt := strings.Split(perm, "=")
+			cert.CriticalOptions[strings.TrimSpace(opt[0])] = strings.TrimSpace(opt[1])
+		} else {
+			cert.Extensions[perm] = ""
+		}
+	}
+	if len(cert.Extensions) == 0 {
+		cert.Extensions = defaultPermissions
+	}
 }
 
 // SignUserKey returns a signed ssh certificate.
@@ -35,15 +62,15 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Cer
 		req.ValidUntil = expires
 	}
 	cert := &ssh.Certificate{
-		CertType:    ssh.UserCert,
-		Key:         pubkey,
-		KeyId:       fmt.Sprintf("%s_%d", username, time.Now().UTC().Unix()),
-		ValidBefore: uint64(req.ValidUntil.Unix()),
-		ValidAfter:  uint64(time.Now().UTC().Add(-5 * time.Minute).Unix()),
+		CertType:        ssh.UserCert,
+		Key:             pubkey,
+		KeyId:           fmt.Sprintf("%s_%d", username, time.Now().UTC().Unix()),
+		ValidAfter:      uint64(time.Now().UTC().Add(-5 * time.Minute).Unix()),
+		ValidBefore:     uint64(req.ValidUntil.Unix()),
+		ValidPrincipals: []string{username},
 	}
-	cert.ValidPrincipals = append(cert.ValidPrincipals, username)
 	cert.ValidPrincipals = append(cert.ValidPrincipals, s.principals...)
-	cert.Extensions = s.permissions
+	s.setPermissions(cert)
 	if err := cert.SignCert(rand.Reader, s.ca); err != nil {
 		return nil, err
 	}
@@ -67,23 +94,6 @@ func (s *KeySigner) GenerateRevocationList(certs []*store.CertRecord) ([]byte, e
 	return k.Marshal(rand.Reader)
 }
 
-func makeperms(perms []string) map[string]string {
-	if len(perms) > 0 {
-		m := make(map[string]string)
-		for _, p := range perms {
-			m[p] = ""
-		}
-		return m
-	}
-	return map[string]string{
-		"permit-X11-forwarding":   "",
-		"permit-agent-forwarding": "",
-		"permit-port-forwarding":  "",
-		"permit-pty":              "",
-		"permit-user-rc":          "",
-	}
-}
-
 // New creates a new KeySigner from the supplied configuration.
 func New(conf *config.SSH) (*KeySigner, error) {
 	data, err := wkfs.ReadFile(conf.SigningKey)
@@ -102,6 +112,6 @@ func New(conf *config.SSH) (*KeySigner, error) {
 		ca:          key,
 		validity:    validity,
 		principals:  conf.AdditionalPrincipals,
-		permissions: makeperms(conf.Permissions),
+		permissions: conf.Permissions,
 	}, nil
 }

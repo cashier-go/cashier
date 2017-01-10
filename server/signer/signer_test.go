@@ -17,9 +17,10 @@ import (
 var (
 	key, _ = ssh.ParsePrivateKey(testdata.Priv)
 	signer = &KeySigner{
-		ca:         key,
-		validity:   12 * time.Hour,
-		principals: []string{"ec2-user"},
+		ca:          key,
+		validity:    12 * time.Hour,
+		principals:  []string{"ec2-user"},
+		permissions: []string{"permit-pty", "force-command=/bin/ls"},
 	}
 )
 
@@ -77,5 +78,30 @@ func TestRevocationList(t *testing.T) {
 	}
 	if k.IsRevoked(cert2) {
 		t.Errorf("cert %s should not be revoked", cert2.KeyId)
+	}
+}
+
+func TestPermissions(t *testing.T) {
+	t.Parallel()
+	r := &lib.SignRequest{
+		Key:        string(testdata.Pub),
+		ValidUntil: time.Now().Add(1 * time.Hour),
+	}
+	cert, err := signer.SignUserKey(r, "gopher1")
+	if err != nil {
+		t.Error(err)
+	}
+	want := struct {
+		extensions map[string]string
+		options    map[string]string
+	}{
+		extensions: map[string]string{"permit-pty": ""},
+		options:    map[string]string{"force-command": "/bin/ls"},
+	}
+	if !reflect.DeepEqual(cert.Extensions, want.extensions) {
+		t.Errorf("Wrong permissions: wanted: %v got :%v", cert.Extensions, want.extensions)
+	}
+	if !reflect.DeepEqual(cert.CriticalOptions, want.options) {
+		t.Errorf("Wrong options: wanted: %v got :%v", cert.CriticalOptions, want.options)
 	}
 }

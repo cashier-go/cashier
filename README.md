@@ -219,7 +219,7 @@ Supported options:
 - `signing_key`: string. Path to the signing ssh private key you created earlier. See the [note](#a-note-on-files) on files above.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
 - `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests. Must be a valid Go [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) string.
-- `permissions`: array of string. Actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list.
+- `permissions`: array of string. Specify the actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list. e.g. `permissions = ["permit-pty", "permit-port-forwarding", force-command=/bin/ls", "source-address=192.168.0.0/24"]`
 
 ## aws
 AWS configuration is only needed for accessing signing keys stored on S3, and isn't totally necessary even then.  
