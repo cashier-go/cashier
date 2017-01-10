@@ -7,7 +7,8 @@ env:
   - MYSQL_TEST="true" MONGO_TEST="true"
 
 go:
-  - 1.7.3
+  - 1.7.4
+  - 1.8rc1
   - tip
 
 matrix:
@@ -26,7 +27,7 @@ before_script:
 
 sudo: false
 script:
-  - go build -v ./cmd/cashier ./cmd/cashierd
+  - go install -v ./cmd/cashier ./cmd/cashierd
   - go list ./... |grep -v vendor/ |xargs go test
   - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
   - go list ./... |grep -v vendor/ |xargs go vet

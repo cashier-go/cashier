@@ -48,7 +48,7 @@ func TestCert(t *testing.T) {
 		t.Error("Cert key doesn't match public key")
 	}
 	if cert.ValidBefore != uint64(r.ValidUntil.Unix()) {
-		t.Errorf("Invalid validity, expected %d, got %d", r.ValidUntil, cert.ValidBefore)
+		t.Errorf("Invalid validity, expected %d, got %d", r.ValidUntil.Unix(), cert.ValidBefore)
 	}
 }
 
