@@ -92,7 +92,17 @@ func TestMySQLStore(t *testing.T) {
 		t.Skip("No MYSQL_TEST environment variable")
 	}
 	u, _ := user.Current()
-	db, err := NewSQLStore(map[string]string{"type": "mysql", "username": u.Username})
+	sql_config := map[string]string{"type": "mysql", "username": u.Username}
+	if os.Getenv("MYSQL_TEST_USER") != "" {
+		sql_config["username"] = os.Getenv("MYSQL_TEST_USER")
+	}
+	if os.Getenv("MYSQL_TEST_PASS") != "" {
+		sql_config["password"] = os.Getenv("MYSQL_TEST_PASS")
+	}
+	if os.Getenv("MYSQL_TEST_HOST") != "" {
+		sql_config["address"] = os.Getenv("MYSQL_TEST_HOST")
+	}
+	db, err := NewSQLStore(sql_config)
 	if err != nil {
 		t.Error(err)
 	}
