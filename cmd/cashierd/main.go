@@ -25,6 +25,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	wkfscache "github.com/nsheridan/autocert-wkfs-cache"
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/auth/github"
@@ -352,7 +353,7 @@ func main() {
 		if conf.Server.LetsEncryptServername != "" {
 			m := autocert.Manager{
 				Prompt:     autocert.AcceptTOS,
-				Cache:      autocert.DirCache(conf.Server.LetsEncryptCache),
+				Cache:      wkfscache.Cache(conf.Server.LetsEncryptCache),
 				HostPolicy: autocert.HostWhitelist(conf.Server.LetsEncryptServername),
 			}
 			tlsConfig.GetCertificate = m.GetCertificate

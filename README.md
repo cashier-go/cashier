@@ -104,7 +104,7 @@ For any option that takes a file path as a parameter (e.g. SSH signing key, TLS 
 - `tls_key` : string. Path to the TLS key. See the [note](#a-note-on-files) on files above.
 - `tls_cert` : string. Path to the TLS cert. See the [note](#a-note-on-files) on files above.
 - `letsencrypt_servername`: string. If set will request a certificate from LetsEncrypt. This should match the expected FQDN of the server.
-- `letsencrypt_cachedir`: string. Directory to cache the LetsEncrypt certificate.
+- `letsencrypt_cachedir`: string. Directory to cache the LetsEncrypt certificate. See the [note](#a-note-on-files) on files above.
 - `address` : string. IP address to listen on. If unset the server listens on all addresses.
 - `port` : int. Port to listen on.
 - `user` : string. User to which the server drops privileges to.

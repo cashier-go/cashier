@@ -53,3 +53,10 @@ func (c *Client) Read(value string) (string, error) {
 	}
 	return secret.(string), nil
 }
+
+// Delete deletes the secret from vault.
+func (c *Client) Delete(value string) error {
+	p, _ := parseName(value)
+	_, err := c.vault.Logical().Delete(p)
+	return err
+}

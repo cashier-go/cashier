@@ -393,10 +393,16 @@
 			"revisionTime": "2016-12-11T22:23:15Z"
 		},
 		{
-			"checksumSHA1": "Ywe06VqOCpwDNjipGTMO0oOG/Yg=",
+			"checksumSHA1": "hTzdsWWDTWFpX1FcF77fKgR0tEM=",
+			"path": "github.com/nsheridan/autocert-wkfs-cache",
+			"revision": "fafece944e938451c2e901fdc355b75f675562f1",
+			"revisionTime": "2017-01-13T00:09:44Z"
+		},
+		{
+			"checksumSHA1": "4YKc2c3W7KOIkhSg/InVVbQjqDk=",
 			"path": "github.com/nsheridan/wkfs/s3",
-			"revision": "60e6f1760f59568e4ce95080d08cd4a90c3c50c7",
-			"revisionTime": "2016-12-29T20:48:42Z"
+			"revision": "7e8499ec8b00669d3a0a262273b9342d3c63cb1c",
+			"revisionTime": "2017-01-12T23:56:57Z"
 		},
 		{
 			"checksumSHA1": "8Y05Pz7onrQPcVWW6JStSsYRh6E=",
@@ -495,16 +501,16 @@
 			"revisionTime": "2016-07-21T22:16:07Z"
 		},
 		{
-			"checksumSHA1": "BS9oue0y6JjMzz3spKlMTVmxZxo=",
+			"checksumSHA1": "RBe0HvUoZ1JL4XXPxslcvt+E6AI=",
 			"path": "go4.org/wkfs",
-			"revision": "09d86de304dc27e636298361bbfee4ac6ab04f21",
-			"revisionTime": "2016-11-18T21:00:15Z"
+			"revision": "0d03c2721aeea5277882f764f9ac7dd19fdfe4ac",
+			"revisionTime": "2017-01-01T02:01:48Z"
 		},
 		{
-			"checksumSHA1": "VcZWSieqrSxETQY2EP97rg4kLAw=",
+			"checksumSHA1": "soMi4lOier3JilXADBSxqyNAg2g=",
 			"path": "go4.org/wkfs/gcs",
-			"revision": "09d86de304dc27e636298361bbfee4ac6ab04f21",
-			"revisionTime": "2016-11-18T21:00:15Z"
+			"revision": "0d03c2721aeea5277882f764f9ac7dd19fdfe4ac",
+			"revisionTime": "2017-01-01T02:01:48Z"
 		},
 		{
 			"checksumSHA1": "TK1Yr8BbwionaaAvM+77lwAAx/8=",
@@ -551,8 +557,8 @@
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
 			"path": "golang.org/x/net/context",
-			"revision": "45e771701b814666a7eb299e6c7a57d0b1799e91",
-			"revisionTime": "2016-12-15T19:42:18Z"
+			"revision": "60c41d1de8da134c05b7b40154a9a82bf5b7edb9",
+			"revisionTime": "2017-01-10T03:16:11Z"
 		},
 		{
 			"checksumSHA1": "WHc3uByvGaMcnSoI21fhzYgbOgg=",

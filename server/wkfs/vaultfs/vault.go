@@ -69,6 +69,10 @@ func (fs *vaultFS) OpenFile(name string, flag int, perm os.FileMode) (wkfs.FileW
 	return nil, errors.New("not implemented")
 }
 
+func (fs *vaultFS) Remove(path string) error {
+	return fs.client.Delete(path)
+}
+
 type statInfo struct {
 	name    string
 	size    int64

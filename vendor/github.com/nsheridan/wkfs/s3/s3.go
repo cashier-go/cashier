@@ -28,6 +28,8 @@ type Options struct {
 	SecretKey string
 }
 
+var _ wkfs.FileSystem = (*s3FS)(nil)
+
 // Register the /s3/ filesystem as a well-known filesystem.
 func Register(opts *Options) {
 	if opts == nil {
@@ -91,6 +93,12 @@ func (fs *s3FS) Open(name string) (wkfs.File, error) {
 		Key:    &fileName,
 	})
 	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case "NoSuchKey", "NoSuchBucket":
+				return nil, os.ErrNotExist
+			}
+		}
 		return nil, err
 	}
 	defer obj.Body.Close()
@@ -131,7 +139,7 @@ func (fs *s3FS) Lstat(name string) (os.FileInfo, error) {
 }
 
 func (fs *s3FS) MkdirAll(path string, perm os.FileMode) error {
-	_, err := fs.OpenFile(fmt.Sprintf("%s/", filepath.Clean(path)), os.O_CREATE, perm)
+	_, err := fs.OpenFile(fmt.Sprintf("%s/", filepath.Clean(path)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
 	return err
 }
 
@@ -152,6 +160,19 @@ func (fs *s3FS) OpenFile(name string, flag int, perm os.FileMode) (wkfs.FileWrit
 		}
 	}
 	return NewS3file(bucket, filename, fs.sc)
+}
+
+func (fs *s3FS) Remove(name string) error {
+	var err error
+	bucket, filename, err := fs.parseName(name)
+	if err != nil {
+		return err
+	}
+	_, err = fs.sc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filename),
+	})
+	return err
 }
 
 type statInfo struct {
