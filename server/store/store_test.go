@@ -44,8 +44,9 @@ func testStore(t *testing.T, db CertStorer) {
 	defer db.Close()
 
 	r := &CertRecord{
-		KeyID:   "a",
-		Expires: time.Now().UTC().Add(1 * time.Minute),
+		KeyID:     "a",
+		CreatedAt: time.Now().UTC(),
+		Expires:   time.Now().UTC().Add(1 * time.Minute),
 	}
 	if err := db.SetRecord(r); err != nil {
 		t.Error(err)
@@ -92,17 +93,17 @@ func TestMySQLStore(t *testing.T) {
 		t.Skip("No MYSQL_TEST environment variable")
 	}
 	u, _ := user.Current()
-	sql_config := map[string]string{"type": "mysql", "username": u.Username}
+	sqlConfig := map[string]string{"type": "mysql", "username": u.Username}
 	if os.Getenv("MYSQL_TEST_USER") != "" {
-		sql_config["username"] = os.Getenv("MYSQL_TEST_USER")
+		sqlConfig["username"] = os.Getenv("MYSQL_TEST_USER")
 	}
 	if os.Getenv("MYSQL_TEST_PASS") != "" {
-		sql_config["password"] = os.Getenv("MYSQL_TEST_PASS")
+		sqlConfig["password"] = os.Getenv("MYSQL_TEST_PASS")
 	}
 	if os.Getenv("MYSQL_TEST_HOST") != "" {
-		sql_config["address"] = os.Getenv("MYSQL_TEST_HOST")
+		sqlConfig["address"] = os.Getenv("MYSQL_TEST_HOST")
 	}
-	db, err := NewSQLStore(sql_config)
+	db, err := NewSQLStore(sqlConfig)
 	if err != nil {
 		t.Error(err)
 	}
