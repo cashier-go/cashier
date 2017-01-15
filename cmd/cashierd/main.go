@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"html/template"
@@ -16,6 +15,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"go4.org/wkfs"
 	"golang.org/x/crypto/acme/autocert"
@@ -125,7 +126,7 @@ func (a *appContext) login(w http.ResponseWriter, r *http.Request) (int, error) 
 }
 
 // parseKey retrieves and unmarshals the signing request.
-func parseKey(r *http.Request) (*lib.SignRequest, error) {
+func extractKey(r *http.Request) (*lib.SignRequest, error) {
 	var s lib.SignRequest
 	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 		return nil, err
@@ -154,23 +155,25 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	}
 
 	// Sign the pubkey and issue the cert.
-	req, err := parseKey(r)
+	req, err := extractKey(r)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusBadRequest, errors.Wrap(err, "unable to extract key from request")
 	}
 	username := a.authprovider.Username(token)
 	a.authprovider.Revoke(token) // We don't need this anymore.
 	cert, err := a.sshKeySigner.SignUserKey(req, username)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalServerError, errors.Wrap(err, "error signing key")
 	}
 	if err := a.certstore.SetCert(cert); err != nil {
 		log.Printf("Error recording cert: %v", err)
 	}
-	json.NewEncoder(w).Encode(&lib.SignResponse{
+	if err := json.NewEncoder(w).Encode(&lib.SignResponse{
 		Status:   "ok",
 		Response: lib.GetPublicKey(cert),
-	})
+	}); err != nil {
+		return http.StatusInternalServerError, errors.Wrap(err, "error encoding response")
+	}
 	return http.StatusOK, nil
 }
 
@@ -219,7 +222,7 @@ func listRevokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Reque
 	}
 	rl, err := a.sshKeySigner.GenerateRevocationList(revoked)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalServerError, errors.Wrap(err, "unable to generate KRL")
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Write(rl)
@@ -258,7 +261,7 @@ func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (i
 	r.ParseForm()
 	for _, id := range r.Form["cert_id"] {
 		if err := a.certstore.Revoke(id); err != nil {
-			return http.StatusInternalServerError, err
+			return http.StatusInternalServerError, errors.Wrap(err, "unable to revoke")
 		}
 	}
 	http.Redirect(w, r, "/admin/certs", http.StatusSeeOther)
@@ -292,7 +295,7 @@ func newState() string {
 func readConfig(filename string) (*config.Config, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to parse config file")
 	}
 	defer f.Close()
 	return config.ReadConfig(f)
@@ -301,11 +304,11 @@ func readConfig(filename string) (*config.Config, error) {
 func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	key, err := wkfs.ReadFile(keyFile)
 	if err != nil {
-		return tls.Certificate{}, err
+		return tls.Certificate{}, errors.Wrap(err, "error reading TLS private key")
 	}
 	cert, err := wkfs.ReadFile(certFile)
 	if err != nil {
-		return tls.Certificate{}, err
+		return tls.Certificate{}, errors.Wrap(err, "error reading TLS certificate")
 	}
 	return tls.X509KeyPair(cert, key)
 }
@@ -338,14 +341,15 @@ func main() {
 	if conf.Server.HTTPLogFile != "" {
 		logfile, err = os.OpenFile(conf.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0640)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("unable to open %s for writing. logging to stdout", conf.Server.HTTPLogFile)
+			logfile = os.Stderr
 		}
 	}
 
 	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
 	l, err := net.Listen("tcp", laddr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrapf(err, "unable to listen on %s:%d", conf.Server.Addr, conf.Server.Port))
 	}
 
 	tlsConfig := &tls.Config{}
@@ -364,7 +368,7 @@ func main() {
 			tlsConfig.Certificates = make([]tls.Certificate, 1)
 			tlsConfig.Certificates[0], err = loadCerts(conf.Server.TLSCert, conf.Server.TLSKey)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal(errors.Wrap(err, "unable to create TLS listener"))
 			}
 		}
 		l = tls.NewListener(l, tlsConfig)
@@ -373,7 +377,7 @@ func main() {
 	if conf.Server.User != "" {
 		log.Print("Dropping privileges...")
 		if err := drop.DropPrivileges(conf.Server.User); err != nil {
-			log.Fatal(err)
+			log.Fatal(errors.Wrap(err, "unable to drop privileges"))
 		}
 	}
 
@@ -388,7 +392,7 @@ func main() {
 		log.Fatalf("Unknown provider %s\n", conf.Auth.Provider)
 	}
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrapf(err, "unable to use provider '%s'", conf.Auth.Provider))
 	}
 
 	certstore, err := store.New(conf.Server.Database)

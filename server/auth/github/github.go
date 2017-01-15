@@ -32,7 +32,7 @@ func New(c *config.Auth) (auth.Provider, error) {
 		uw[u] = true
 	}
 	if c.ProviderOpts["organization"] == "" && len(uw) == 0 {
-		return nil, errors.New("github_opts organization and the users whitelist must not be both empty")
+		return nil, errors.New("either GitHub organization or users whitelist must be specified")
 	}
 	return &Config{
 		config: &oauth2.Config{

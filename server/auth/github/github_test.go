@@ -29,11 +29,9 @@ func TestNew(t *testing.T) {
 
 func TestNewEmptyOrganization(t *testing.T) {
 	organization = ""
-	a := assert.New(t)
-
-	_, err := newGithub()
-	a.EqualError(err, "github_opts organization and the users whitelist must not be both empty")
-
+	if _, err := newGithub(); err == nil {
+		t.Error("creating a provider without an organization set should return an error")
+	}
 	organization = "exampleorg"
 }
 

@@ -34,7 +34,7 @@ func New(c *config.Auth) (auth.Provider, error) {
 		uw[u] = true
 	}
 	if c.ProviderOpts["domain"] == "" && len(uw) == 0 {
-		return nil, errors.New("google_opts domain and the users whitelist must not be both empty")
+		return nil, errors.New("either Google Apps domain or users whitelist must be specified")
 	}
 
 	return &Config{

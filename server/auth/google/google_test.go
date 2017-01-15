@@ -28,12 +28,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewWithoutDomain(t *testing.T) {
-	a := assert.New(t)
-
 	domain = ""
 
-	_, err := newGoogle()
-	a.EqualError(err, "google_opts domain and the users whitelist must not be both empty")
+	if _, err := newGoogle(); err == nil {
+		t.Error("creating a provider without a domain set should return an error")
+	}
 
 	domain = "example.com"
 }

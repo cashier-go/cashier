@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +11,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/mitchellh/mapstructure"
 	"github.com/nsheridan/cashier/server/helpers/vault"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -156,14 +156,14 @@ func setFromVault(c *Config) error {
 	}
 	v, err := vault.NewClient(c.Vault.Address, c.Vault.Token)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "vault error")
 	}
-	var errors error
+	var errs error
 	get := func(value string) string {
 		if strings.HasPrefix(value, "/vault/") {
 			s, err := v.Read(value)
 			if err != nil {
-				errors = multierror.Append(errors, err)
+				errs = multierror.Append(errs, err)
 			}
 			return s
 		}
@@ -180,12 +180,12 @@ func setFromVault(c *Config) error {
 		c.AWS.AccessKey = get(c.AWS.AccessKey)
 		c.AWS.SecretKey = get(c.AWS.SecretKey)
 	}
-	return errors
+	return errors.Wrap(errs, "errors reading from vault")
 }
 
 // Unmarshal the config into a *Config
 func decode() (*Config, error) {
-	var errors error
+	var errs error
 	config := &Config{}
 	configPieces := map[string]interface{}{
 		"auth":   &config.Auth,
@@ -200,21 +200,21 @@ func decode() (*Config, error) {
 			continue
 		}
 		if err := mapstructure.WeakDecode(conf[0], val); err != nil {
-			errors = multierror.Append(errors, err)
+			errs = multierror.Append(errs, err)
 		}
 	}
-	return config, errors
+	return config, errs
 }
 
 // ReadConfig parses a hcl configuration file into a Config struct.
 func ReadConfig(r io.Reader) (*Config, error) {
 	viper.SetConfigType("hcl")
 	if err := viper.ReadConfig(r); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to read config")
 	}
 	config, err := decode()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to parse config")
 	}
 	if err := setFromVault(config); err != nil {
 		return nil, err
@@ -222,7 +222,7 @@ func ReadConfig(r io.Reader) (*Config, error) {
 	setFromEnvironment(config)
 	convertDatastoreConfig(config)
 	if err := verifyConfig(config); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to verify config")
 	}
 	return config, nil
 }

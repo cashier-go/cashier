@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nsheridan/cashier/lib"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
@@ -27,7 +28,7 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key) error {
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(pubcert); err != nil {
-		return fmt.Errorf("error importing certificate: %s", err)
+		return errors.Wrap(err, "unable to add cert to ssh agent")
 	}
 	privkey := agent.AddedKey{
 		PrivateKey:   key,
@@ -35,7 +36,7 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key) error {
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(privkey); err != nil {
-		return fmt.Errorf("error importing key: %s", err)
+		return errors.Wrap(err, "unable to add private key to ssh agent")
 	}
 	return nil
 }
@@ -48,7 +49,7 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 	client := &http.Client{Transport: transport}
 	u, err := url.Parse(ca)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to parse CA url")
 	}
 	u.Path = path.Join(u.Path, "/sign")
 	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(s))
@@ -68,7 +69,7 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 	defer resp.Body.Close()
 	c := &lib.SignResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(c); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to decode server response")
 	}
 	return c, nil
 }
@@ -84,22 +85,22 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 		ValidUntil: time.Now().Add(validity),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to create sign request")
 	}
 	resp, err := send(s, token, conf.CA, conf.ValidateTLSCertificate)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error sending request to CA")
 	}
 	if resp.Status != "ok" {
-		return nil, fmt.Errorf("error: %s", resp.Response)
+		return nil, fmt.Errorf("bad response from CA: %s", resp.Response)
 	}
 	k, _, _, _, err := ssh.ParseAuthorizedKey([]byte(resp.Response))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to parse response")
 	}
 	cert, ok := k.(*ssh.Certificate)
 	if !ok {
-		return nil, fmt.Errorf("did not receive a certificate from server")
+		return nil, fmt.Errorf("did not receive a valid certificate from server")
 	}
 	return cert, nil
 }

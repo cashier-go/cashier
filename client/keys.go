@@ -8,6 +8,8 @@ import (
 	"crypto/rsa"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
@@ -68,7 +70,7 @@ func generateECDSAKey(size int) (Key, error) {
 	case 521:
 		curve = elliptic.P521()
 	default:
-		return nil, fmt.Errorf("Unsupported key size: %d. Valid sizes are '256', '384', '521'", size)
+		return nil, fmt.Errorf("Unsupported ECDSA key size: %d. Valid sizes are '256', '384', '521'", size)
 	}
 	return ecdsa.GenerateKey(curve, rand.Reader)
 }
@@ -101,8 +103,8 @@ func GenerateKey(options ...func(*options)) (Key, ssh.PublicKey, error) {
 		privkey, err = generateRSAKey(config.size)
 	}
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.Wrapf(err, "unable to generate %s key-pair", config.keytype)
 	}
 	pubkey, err = ssh.NewPublicKey(privkey.Public())
-	return privkey, pubkey, err
+	return privkey, pubkey, errors.Wrap(err, "error parsing public key")
 }
