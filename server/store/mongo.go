@@ -22,7 +22,7 @@ func collection(session *mgo.Session) *mgo.Collection {
 }
 
 // NewMongoStore returns a MongoDB CertStorer.
-func NewMongoStore(c config.Database) (CertStorer, error) {
+func NewMongoStore(c config.Database) (*MongoStore, error) {
 	m := &mgo.DialInfo{
 		Addrs:    strings.Split(c["address"], ","),
 		Username: c["username"],
@@ -34,16 +34,20 @@ func NewMongoStore(c config.Database) (CertStorer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &mongoDB{
+	return &MongoStore{
 		session: session,
 	}, nil
 }
 
-type mongoDB struct {
+var _ CertStorer = (*MongoStore)(nil)
+
+// MongoStore is a MongoDB-based CertStorer
+type MongoStore struct {
 	session *mgo.Session
 }
 
-func (m *mongoDB) Get(id string) (*CertRecord, error) {
+// Get a single *CertRecord
+func (m *MongoStore) Get(id string) (*CertRecord, error) {
 	s := m.session.Copy()
 	defer s.Close()
 	if err := s.Ping(); err != nil {
@@ -54,12 +58,14 @@ func (m *mongoDB) Get(id string) (*CertRecord, error) {
 	return c, err
 }
 
-func (m *mongoDB) SetCert(cert *ssh.Certificate) error {
+// SetCert parses a *ssh.Certificate and records it
+func (m *MongoStore) SetCert(cert *ssh.Certificate) error {
 	r := parseCertificate(cert)
 	return m.SetRecord(r)
 }
 
-func (m *mongoDB) SetRecord(record *CertRecord) error {
+// SetRecord records a *CertRecord
+func (m *MongoStore) SetRecord(record *CertRecord) error {
 	s := m.session.Copy()
 	defer s.Close()
 	if err := s.Ping(); err != nil {
@@ -68,7 +74,9 @@ func (m *mongoDB) SetRecord(record *CertRecord) error {
 	return collection(s).Insert(record)
 }
 
-func (m *mongoDB) List(includeExpired bool) ([]*CertRecord, error) {
+// List returns all recorded certs.
+// By default only active certs are returned.
+func (m *MongoStore) List(includeExpired bool) ([]*CertRecord, error) {
 	s := m.session.Copy()
 	defer s.Close()
 	if err := s.Ping(); err != nil {
@@ -85,7 +93,8 @@ func (m *mongoDB) List(includeExpired bool) ([]*CertRecord, error) {
 	return result, err
 }
 
-func (m *mongoDB) Revoke(id string) error {
+// Revoke an issued cert by id.
+func (m *MongoStore) Revoke(id string) error {
 	s := m.session.Copy()
 	defer s.Close()
 	if err := s.Ping(); err != nil {
@@ -95,7 +104,8 @@ func (m *mongoDB) Revoke(id string) error {
 	return c.Update(bson.M{"keyid": id}, bson.M{"$set": bson.M{"revoked": true}})
 }
 
-func (m *mongoDB) GetRevoked() ([]*CertRecord, error) {
+// GetRevoked returns all revoked certs
+func (m *MongoStore) GetRevoked() ([]*CertRecord, error) {
 	s := m.session.Copy()
 	defer s.Close()
 	if err := s.Ping(); err != nil {
@@ -106,7 +116,8 @@ func (m *mongoDB) GetRevoked() ([]*CertRecord, error) {
 	return result, err
 }
 
-func (m *mongoDB) Close() error {
+// Close the connection to the database
+func (m *MongoStore) Close() error {
 	m.session.Close()
 	return nil
 }

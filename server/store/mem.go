@@ -8,12 +8,16 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type memoryStore struct {
+var _ CertStorer = (*MemoryStore)(nil)
+
+// MemoryStore is an in-memory CertStorer
+type MemoryStore struct {
 	sync.Mutex
 	certs map[string]*CertRecord
 }
 
-func (ms *memoryStore) Get(id string) (*CertRecord, error) {
+// Get a single *CertRecord
+func (ms *MemoryStore) Get(id string) (*CertRecord, error) {
 	ms.Lock()
 	defer ms.Unlock()
 	r, ok := ms.certs[id]
@@ -23,18 +27,22 @@ func (ms *memoryStore) Get(id string) (*CertRecord, error) {
 	return r, nil
 }
 
-func (ms *memoryStore) SetCert(cert *ssh.Certificate) error {
+// SetCert parses a *ssh.Certificate and records it
+func (ms *MemoryStore) SetCert(cert *ssh.Certificate) error {
 	return ms.SetRecord(parseCertificate(cert))
 }
 
-func (ms *memoryStore) SetRecord(record *CertRecord) error {
+// SetRecord records a *CertRecord
+func (ms *MemoryStore) SetRecord(record *CertRecord) error {
 	ms.Lock()
 	defer ms.Unlock()
 	ms.certs[record.KeyID] = record
 	return nil
 }
 
-func (ms *memoryStore) List(includeExpired bool) ([]*CertRecord, error) {
+// List returns all recorded certs.
+// By default only active certs are returned.
+func (ms *MemoryStore) List(includeExpired bool) ([]*CertRecord, error) {
 	var records []*CertRecord
 	ms.Lock()
 	defer ms.Unlock()
@@ -48,7 +56,8 @@ func (ms *memoryStore) List(includeExpired bool) ([]*CertRecord, error) {
 	return records, nil
 }
 
-func (ms *memoryStore) Revoke(id string) error {
+// Revoke an issued cert by id.
+func (ms *MemoryStore) Revoke(id string) error {
 	r, err := ms.Get(id)
 	if err != nil {
 		return err
@@ -58,7 +67,8 @@ func (ms *memoryStore) Revoke(id string) error {
 	return nil
 }
 
-func (ms *memoryStore) GetRevoked() ([]*CertRecord, error) {
+// GetRevoked returns all revoked certs
+func (ms *MemoryStore) GetRevoked() ([]*CertRecord, error) {
 	var revoked []*CertRecord
 	all, _ := ms.List(false)
 	for _, r := range all {
@@ -69,22 +79,23 @@ func (ms *memoryStore) GetRevoked() ([]*CertRecord, error) {
 	return revoked, nil
 }
 
-func (ms *memoryStore) Close() error {
+// Close the store. This will clear the contents.
+func (ms *MemoryStore) Close() error {
 	ms.Lock()
 	defer ms.Unlock()
 	ms.certs = nil
 	return nil
 }
 
-func (ms *memoryStore) clear() {
+func (ms *MemoryStore) clear() {
 	for k := range ms.certs {
 		delete(ms.certs, k)
 	}
 }
 
 // NewMemoryStore returns an in-memory CertStorer.
-func NewMemoryStore() CertStorer {
-	return &memoryStore{
+func NewMemoryStore() *MemoryStore {
+	return &MemoryStore{
 		certs: make(map[string]*CertRecord),
 	}
 }
