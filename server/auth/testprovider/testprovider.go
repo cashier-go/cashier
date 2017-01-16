@@ -15,8 +15,10 @@ const (
 // Config is an implementation of `auth.Provider` for testing.
 type Config struct{}
 
+var _ auth.Provider = (*Config)(nil)
+
 // New creates a new provider.
-func New() auth.Provider {
+func New() *Config {
 	return &Config{}
 }
 

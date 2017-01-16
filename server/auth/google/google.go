@@ -27,8 +27,10 @@ type Config struct {
 	whitelist map[string]bool
 }
 
+var _ auth.Provider = (*Config)(nil)
+
 // New creates a new Google provider from a configuration.
-func New(c *config.Auth) (auth.Provider, error) {
+func New(c *config.Auth) (*Config, error) {
 	uw := make(map[string]bool)
 	for _, u := range c.UsersWhitelist {
 		uw[u] = true
