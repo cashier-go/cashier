@@ -99,6 +99,8 @@ For any option that takes a file path as a parameter (e.g. SSH signing key, TLS 
 - A Google GCS bucket + object path starting with `/gcs/` e.g. `/gcs/my-bucket/ssh_signing_key`.
 - A [Vault](https://www.vaultproject.io) path + key starting with `/vault/` e.g. `/vault/secret/cashier/ssh_signing_key`. You should add a [vault](#vault) config as needed.
 
+Exception to this: the `http_logfile` option **ONLY** writes to local files.
+
 ## server
 - `use_tls` : boolean. If this is set then either `tls_key` and `tls_cert` are required, or `letsencrypt_servername` is required.
 - `tls_key` : string. Path to the TLS key. See the [note](#a-note-on-files) on files above.
@@ -110,7 +112,7 @@ For any option that takes a file path as a parameter (e.g. SSH signing key, TLS 
 - `user` : string. User to which the server drops privileges to.
 - `cookie_secret`: string. Authentication key for the session cookie. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/cookie_secret`.
 - `csrf_secret`: string. Authentication key for CSRF protection. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/csrf_secret`.
-- `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). If not set logs are written to stderr.
+- `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). The only valid destination for logs is a local file path.
 - `datastore`: string. Datastore connection string. See [Datastore](#datastore).
 
 ### database
