@@ -8,7 +8,7 @@ env:
 
 go:
   - 1.7.4
-  - 1.8rc1
+  - 1.8rc2
   - tip
 
 matrix:
