@@ -513,6 +513,12 @@
 			"revisionTime": "2016-07-21T22:16:07Z"
 		},
 		{
+			"checksumSHA1": "1JTNCVjS1dDWnQg3Ylpk4bV4Xd0=",
+			"path": "github.com/xanzy/go-gitlab",
+			"revision": "9b456c8c8b1ab0ce25ebb166a9dad455ac00900b",
+			"revisionTime": "2017-01-21T18:32:42Z"
+		},
+		{
 			"checksumSHA1": "RBe0HvUoZ1JL4XXPxslcvt+E6AI=",
 			"path": "go4.org/wkfs",
 			"revision": "0d03c2721aeea5277882f764f9ac7dd19fdfe4ac",
