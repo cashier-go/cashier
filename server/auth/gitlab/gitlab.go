@@ -39,15 +39,15 @@ func New(c *config.Auth) (auth.Provider, error) {
 	if !allUsers && c.ProviderOpts["group"] == "" && len(uw) == 0 {
 		return nil, errors.New("gitlab_opts group and the users whitelist must not be both empty if allusers isn't true")
 	}
-	siteUrl := "https://gitlab.com/"
+	siteURL := "https://gitlab.com/"
 	if c.ProviderOpts["siteurl"] != "" {
-		siteUrl = c.ProviderOpts["siteurl"]
-		if siteUrl[len(siteUrl)-1] != '/' {
+		siteURL = c.ProviderOpts["siteurl"]
+		if siteURL[len(siteURL)-1] != '/' {
 			return nil, errors.New("gitlab_opts siteurl must end in /")
 		}
 	} else {
 		if allUsers {
-			return nil, errors.New("gitlab_opts if allusers is set, siteurl must be set.")
+			return nil, errors.New("gitlab_opts if allusers is set, siteurl must be set")
 		}
 	}
 
@@ -57,8 +57,8 @@ func New(c *config.Auth) (auth.Provider, error) {
 			ClientSecret: c.OauthClientSecret,
 			RedirectURL:  c.OauthCallbackURL,
 			Endpoint: oauth2.Endpoint{
-				AuthURL:  siteUrl + "oauth/authorize",
-				TokenURL: siteUrl + "oauth/token",
+				AuthURL:  siteURL + "oauth/authorize",
+				TokenURL: siteURL + "oauth/token",
 			},
 			Scopes: []string{
 				"api",
@@ -67,7 +67,7 @@ func New(c *config.Auth) (auth.Provider, error) {
 		group:     c.ProviderOpts["group"],
 		whitelist: uw,
 		allusers:  allUsers,
-		baseurl:   siteUrl + "api/v3/",
+		baseurl:   siteURL + "api/v3/",
 	}, nil
 }
 
