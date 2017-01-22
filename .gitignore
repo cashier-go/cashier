@@ -1,3 +1,9 @@
 config.json
 cashierd.conf
 tmp
+
+cashier
+cashierd
+
+signing_key
+http.log
