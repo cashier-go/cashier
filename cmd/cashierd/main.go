@@ -30,6 +30,7 @@ import (
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/auth/github"
+	"github.com/nsheridan/cashier/server/auth/gitlab"
 	"github.com/nsheridan/cashier/server/auth/google"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/signer"
@@ -379,6 +380,8 @@ func main() {
 		authprovider, err = google.New(conf.Auth)
 	case "github":
 		authprovider, err = github.New(conf.Auth)
+	case "gitlab":
+		authprovider, err = gitlab.New(conf.Auth)
 	default:
 		log.Fatalf("Unknown provider %s\n", conf.Auth.Provider)
 	}
