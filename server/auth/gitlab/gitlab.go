@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -99,13 +98,11 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	}
 	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
 	client.SetBaseURL(c.baseurl)
-	groups, response, err := client.Groups.SearchGroup(c.group)
-	fmt.Printf("response: %+v\n", response)
+	groups, _, err := client.Groups.SearchGroup(c.group)
 	if err != nil {
 		return false
 	}
 	for _, g := range groups {
-		fmt.Printf("group: %s = '%+v'\n", g.Path, g)
 		if g.Path == c.group {
 			return true
 		}
