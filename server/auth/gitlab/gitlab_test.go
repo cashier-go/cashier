@@ -13,6 +13,7 @@ var (
 	oauthClientID     = "id"
 	oauthClientSecret = "secret"
 	oauthCallbackURL  = "url"
+	allusers          = ""
 	siteurl           = "https://exampleorg/"
 	group             = "exampleorg"
 )
@@ -35,6 +36,31 @@ func TestNewBrokenSiteURL(t *testing.T) {
 	a.EqualError(err, "gitlab_opts siteurl must end in /")
 
 	siteurl = "https://exampleorg/"
+}
+
+func TestBadAllUsers(t *testing.T) {
+	allusers = "true"
+	siteurl = ""
+	a := assert.New(t)
+
+	_, err := newGitlab()
+	a.EqualError(err, "gitlab_opts if allusers is set, siteurl must be set")
+
+	allusers = ""
+	siteurl = "https://exampleorg/"
+}
+
+func TestGoodAllUsers(t *testing.T) {
+	allusers = "true"
+	a := assert.New(t)
+
+	p, _ := newGitlab()
+	s := p.StartSession("test_state")
+	a.Contains(s.AuthURL, "exampleorg/oauth/authorize")
+	a.Contains(s.AuthURL, "state=test_state")
+	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
+
+	allusers = ""
 }
 
 func TestNewEmptyGroupList(t *testing.T) {
@@ -63,8 +89,9 @@ func newGitlab() (auth.Provider, error) {
 		OauthClientSecret: oauthClientSecret,
 		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts: map[string]string{
-			"group":   group,
-			"siteurl": siteurl,
+			"group":    group,
+			"siteurl":  siteurl,
+			"allusers": allusers,
 		},
 	}
 	return New(c)

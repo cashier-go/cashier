@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nsheridan/cashier/server/store/types"
 	"github.com/nsheridan/cashier/testdata"
 	"github.com/stretchr/testify/assert"
 
@@ -25,7 +26,7 @@ func TestParseCertificate(t *testing.T) {
 	pub, _ := ssh.NewPublicKey(r.Public())
 	c := &ssh.Certificate{
 		KeyId:           "id",
-		ValidPrincipals: []string{"principal"},
+		ValidPrincipals: types.StringSlice{"principal"},
 		ValidBefore:     now,
 		CertType:        ssh.UserCert,
 		Key:             pub,
@@ -35,7 +36,7 @@ func TestParseCertificate(t *testing.T) {
 	rec := parseCertificate(c)
 
 	a.Equal(c.KeyId, rec.KeyID)
-	a.Equal(c.ValidPrincipals, rec.Principals)
+	a.Equal(c.ValidPrincipals, []string(rec.Principals))
 	a.Equal(c.ValidBefore, uint64(rec.Expires.Unix()))
 	a.Equal(c.ValidAfter, uint64(rec.CreatedAt.Unix()))
 }
