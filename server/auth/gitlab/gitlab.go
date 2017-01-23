@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"errors"
-	"net/http"
 	"strconv"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -68,11 +67,6 @@ func New(c *config.Auth) (auth.Provider, error) {
 	}, nil
 }
 
-// A new oauth2 http client.
-func (c *Config) newClient(token *oauth2.Token) *http.Client {
-	return c.config.Client(oauth2.NoContext, token)
-}
-
 // Name returns the name of the provider.
 func (c *Config) Name() string {
 	return name
@@ -94,7 +88,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		// here if user whitelist is set and user is in whitelist.
 		return true
 	}
-	client := gitlabapi.NewOAuthClient(c.newClient(token), token.AccessToken)
+	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
 	client.SetBaseURL(c.baseurl)
 	groups, _, err := client.Groups.SearchGroup(c.group)
 	if err != nil {
@@ -129,7 +123,7 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 
 // Username retrieves the username of the Gitlab user.
 func (c *Config) Username(token *oauth2.Token) string {
-	client := gitlabapi.NewOAuthClient(c.newClient(token), token.AccessToken)
+	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
 	client.SetBaseURL(c.baseurl)
 	u, _, err := client.Users.CurrentUser()
 	if err != nil {
