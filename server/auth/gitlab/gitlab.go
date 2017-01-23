@@ -3,6 +3,7 @@ package gitlab
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
@@ -31,10 +32,7 @@ func New(c *config.Auth) (auth.Provider, error) {
 	for _, u := range c.UsersWhitelist {
 		uw[u] = true
 	}
-	allUsers := false
-	if c.ProviderOpts["allusers"] == "true" {
-		allUsers = true
-	}
+	allUsers, _ := strconv.ParseBool(c.ProviderOpts["allusers"])
 	if !allUsers && c.ProviderOpts["group"] == "" && len(uw) == 0 {
 		return nil, errors.New("gitlab_opts group and the users whitelist must not be both empty if allusers isn't true")
 	}
@@ -96,7 +94,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		// here if user whitelist is set and user is in whitelist.
 		return true
 	}
-	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
+	client := gitlabapi.NewOAuthClient(c.newClient(token), token.AccessToken)
 	client.SetBaseURL(c.baseurl)
 	groups, _, err := client.Groups.SearchGroup(c.group)
 	if err != nil {
@@ -131,7 +129,7 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 
 // Username retrieves the username of the Gitlab user.
 func (c *Config) Username(token *oauth2.Token) string {
-	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
+	client := gitlabapi.NewOAuthClient(c.newClient(token), token.AccessToken)
 	client.SetBaseURL(c.baseurl)
 	u, _, err := client.Users.CurrentUser()
 	if err != nil {
