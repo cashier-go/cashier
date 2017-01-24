@@ -292,15 +292,6 @@ func newState() string {
 	return hex.EncodeToString(k)
 }
 
-func readConfig(filename string) (*config.Config, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse config file")
-	}
-	defer f.Close()
-	return config.ReadConfig(f)
-}
-
 func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	key, err := wkfs.ReadFile(keyFile)
 	if err != nil {
@@ -316,7 +307,7 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 func main() {
 	// Privileged section
 	flag.Parse()
-	conf, err := readConfig(*cfg)
+	conf, err := config.ReadConfig(*cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
