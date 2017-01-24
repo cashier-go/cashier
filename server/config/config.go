@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -111,20 +112,22 @@ func convertDatastoreConfig(c *Config) {
 		case "mem":
 			c.Server.Database = map[string]string{"type": "mem"}
 		}
-		log.Println("The `datastore` option has been deprecated in favour of the `database` option. You should update your config.")
-		log.Println("The new config (passwords have been redacted) should look something like:")
-		fmt.Printf("server {\n  database {\n")
+		var out bytes.Buffer
+		out.WriteString("The `datastore` option has been deprecated in favour of the `database` option. You should update your config.\n")
+		out.WriteString("The new config (passwords have been redacted) should look something like:\n")
+		out.WriteString("server {\n  database {\n")
 		for k, v := range c.Server.Database {
 			if v == "" {
 				continue
 			}
 			if k == "password" {
-				fmt.Printf("    password = \"[ REDACTED ]\"\n")
+				out.WriteString("    password = \"[ REDACTED ]\"\n")
 				continue
 			}
-			fmt.Printf("    %s = \"%s\"\n", k, v)
+			out.WriteString(fmt.Sprintf("    %s = \"%s\"\n", k, v))
 		}
-		fmt.Printf("  }\n}\n")
+		out.WriteString("  }\n}")
+		log.Println(out.String())
 	}
 }
 
