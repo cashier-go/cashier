@@ -1,10 +1,9 @@
 language: go
 services:
   - mysql
-  - mongodb
 
 env:
-  - MYSQL_TEST="true" MONGO_TEST="true"
+  - MYSQL_TEST="true"
 
 go:
   - 1.7.4
@@ -23,7 +22,6 @@ install:
 
 before_script:
   - mysql < db/seed.sql
-  - mongo db/seed.js
 
 sudo: false
 script:

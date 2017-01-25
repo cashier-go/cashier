@@ -119,8 +119,8 @@ Exception to this: the `http_logfile` option **ONLY** writes to local files.
 
 The database is used to record issued certificates for audit and revocation purposes.
 
-- `type` : string. One of `mongo`, `mysql`, `sqlite` or `mem`. Default: `mem`.
-- `address` : string. (`mongo` and `mysql` only) Hostname and optional port of the database server. For MongoDB replica sets separate multiple entries with commas.
+- `type` : string. One of `mysql`, `sqlite` or `mem`. Default: `mem`.
+- `address` : string. (`mysql` only) Hostname and optional port of the database server.
 - `username` : string. Database username.
 - `password` : string. Database password. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/mysql_password`.
 - `filename` : string. (`sqlite` only). Path to sqlite database.
@@ -136,13 +136,6 @@ server {
   }
 
   database {
-    type = "mongo"
-    address = "mongo-host1.corp:27017,mongo-host2.corp:27018"
-    username = "user"
-    password = "passwd"
-  }
-
-  database {
     type = "mem"
   }
 
@@ -153,8 +146,8 @@ server {
 }
 ```
 
-Prior to using MySQL, MongoDB or SQLite you need to create the database and tables using [one of the provided files](db).  
-e.g. `mysql < db/seed.sql` or `mongo db/seed.js`.  
+Prior to using MySQL or SQLite you need to create the database and tables using [one of the provided files](db).  
+e.g. `mysql < db/seed.sql`.  
 Obviously you should setup a role user for running in prodution.
 
 ### datastore
@@ -163,11 +156,10 @@ Obviously you should setup a role user for running in prodution.
 
 ~~Datastores contain a record of issued certificates for audit and revocation purposes. The connection string is of the form `engine:username:password:host[:port]`.~~
 
-~~Supported database providers: `mysql`, `mongo`, `sqlite` and `mem`.~~
+~~Supported database providers: `mysql`, `sqlite` and `mem`.~~
 
 ~~`mem` is an in-memory database intended for testing and takes no additional config options.~~  
 ~~`mysql` is the MySQL database and accepts `username`, `password` and `host` arguments. Only `username` and `host` arguments are required. `port` is assumed to be 3306 unless otherwise specified.~~  
-~~`mongo` is MongoDB and accepts `username`, `password` and `host` arguments. All arguments are optional and multiple hosts can be specified using comma-separated values: `mongo:dbuser:dbpasswd:host1,host2`.~~  
 ~~`sqlite` is the SQLite database and accepts a `path` argument.~~
 
 ~~If no datastore is specified the `mem` store is used by default.~~
@@ -179,8 +171,6 @@ server {
   datastore = "mem"  # use the in-memory database.
   datastore = "mysql:root::localhost"  # mysql running on localhost with the user 'root' and no password.
   datastore = "mysql:cashier:PaSsWoRd:mydbprovider.example.com:5150"  # mysql running on a remote host on port 5150
-  datastore = "mongo:cashier:PaSsWoRd:mydbprovider.example.com:27018"  # mongo running on a remote host on port 27018
-  datastore = "mongo:cashier:PaSsWoRd:server1.example.com:27018,server2.example.com:27018"  # mongo running on multiple servers on port 27018
   datastore = "sqlite:/data/certs.db"
 }
 ```

@@ -95,7 +95,7 @@ func convertDatastoreConfig(c *Config) {
 		conf := c.Server.Datastore
 		engine := strings.Split(conf, ":")[0]
 		switch engine {
-		case "mysql", "mongo":
+		case "mysql":
 			s := strings.SplitN(conf, ":", 4)
 			engine, user, passwd, addrs := s[0], s[1], s[2], s[3]
 			c.Server.Database = map[string]string{

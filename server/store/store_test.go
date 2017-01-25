@@ -111,18 +111,6 @@ func TestMySQLStore(t *testing.T) {
 	testStore(t, db)
 }
 
-func TestMongoStore(t *testing.T) {
-	t.Parallel()
-	if os.Getenv("MONGO_TEST") == "" {
-		t.Skip("No MONGO_TEST environment variable")
-	}
-	db, err := NewMongoStore(map[string]string{"type": "mongo"})
-	if err != nil {
-		t.Error(err)
-	}
-	testStore(t, db)
-}
-
 func TestSQLiteStore(t *testing.T) {
 	t.Parallel()
 	f, err := ioutil.TempFile("", "sqlite_test_db")
