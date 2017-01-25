@@ -16,12 +16,13 @@ import (
 )
 
 var (
-	u, _     = user.Current()
-	cfg      = pflag.String("config", path.Join(u.HomeDir, ".cashier.conf"), "Path to config file")
-	ca       = pflag.String("ca", "http://localhost:10000", "CA server")
-	keysize  = pflag.Int("key_size", 2048, "Key size. Ignored for ed25519 keys")
-	validity = pflag.Duration("validity", time.Hour*24, "Key validity")
-	keytype  = pflag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
+	u, _             = user.Current()
+	cfg              = pflag.String("config", path.Join(u.HomeDir, ".cashier.conf"), "Path to config file")
+	ca               = pflag.String("ca", "http://localhost:10000", "CA server")
+	keysize          = pflag.Int("key_size", 2048, "Key size. Ignored for ed25519 keys")
+	validity         = pflag.Duration("validity", time.Hour*24, "Key validity")
+	keytype          = pflag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
+	publicFilePrefix = pflag.String("public_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
 )
 
 func main() {
@@ -56,6 +57,9 @@ func main() {
 	defer sock.Close()
 	a := agent.NewClient(sock)
 	if err := client.InstallCert(a, cert, priv); err != nil {
+		log.Fatalln(err)
+	}
+	if err := client.InstallPublicFiles(c.PublicFilePrefix, cert, pub); err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println("Credentials added.")
