@@ -1,9 +1,6 @@
 package config
 
 import (
-	"bytes"
-	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -40,7 +37,6 @@ type Server struct {
 	CSRFSecret            string   `hcl:"csrf_secret"`
 	HTTPLogFile           string   `hcl:"http_logfile"`
 	Database              Database `hcl:"database"`
-	Datastore             string   `hcl:"datastore"` // Deprecated. TODO: remove.
 }
 
 // Auth holds the configuration specific to the OAuth provider.
@@ -89,53 +85,10 @@ func verifyConfig(c *Config) error {
 	return err
 }
 
-func convertDatastoreConfig(c *Config) {
-	// Convert the deprecated 'datastore' config to the new 'database' config.
-	if c.Server != nil && c.Server.Datastore != "" {
-		conf := c.Server.Datastore
-		engine := strings.Split(conf, ":")[0]
-		switch engine {
-		case "mysql":
-			s := strings.SplitN(conf, ":", 4)
-			engine, user, passwd, addrs := s[0], s[1], s[2], s[3]
-			c.Server.Database = map[string]string{
-				"type":     engine,
-				"username": user,
-				"password": passwd,
-				"address":  addrs,
-			}
-		case "sqlite":
-			s := strings.Split(conf, ":")
-			c.Server.Database = map[string]string{"type": s[0], "filename": s[1]}
-		case "mem":
-			c.Server.Database = map[string]string{"type": "mem"}
-		}
-		var out bytes.Buffer
-		out.WriteString("The `datastore` option has been deprecated in favour of the `database` option. You should update your config.\n")
-		out.WriteString("The new config (passwords have been redacted) should look something like:\n")
-		out.WriteString("server {\n  database {\n")
-		for k, v := range c.Server.Database {
-			if v == "" {
-				continue
-			}
-			if k == "password" {
-				out.WriteString("    password = \"[ REDACTED ]\"\n")
-				continue
-			}
-			out.WriteString(fmt.Sprintf("    %s = \"%s\"\n", k, v))
-		}
-		out.WriteString("  }\n}")
-		log.Println(out.String())
-	}
-}
-
 func setFromEnvironment(c *Config) {
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 	if err == nil {
 		c.Server.Port = port
-	}
-	if os.Getenv("DATASTORE") != "" {
-		c.Server.Datastore = os.Getenv("DATASTORE")
 	}
 	if os.Getenv("OAUTH_CLIENT_ID") != "" {
 		c.Auth.OauthClientID = os.Getenv("OAUTH_CLIENT_ID")
@@ -194,7 +147,6 @@ func ReadConfig(f string) (*Config, error) {
 		return nil, err
 	}
 	setFromEnvironment(config)
-	convertDatastoreConfig(config)
 	if err := verifyConfig(config); err != nil {
 		return nil, errors.Wrap(err, "unable to verify config")
 	}
