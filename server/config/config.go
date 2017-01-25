@@ -1,27 +1,26 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/mitchellh/mapstructure"
+	"github.com/homemade/scl"
 	"github.com/nsheridan/cashier/server/helpers/vault"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 )
 
 // Config holds the final server configuration.
 type Config struct {
-	Server *Server `mapstructure:"server"`
-	Auth   *Auth   `mapstructure:"auth"`
-	SSH    *SSH    `mapstructure:"ssh"`
-	AWS    *AWS    `mapstructure:"aws"`
-	Vault  *Vault  `mapstructure:"vault"`
+	Server *Server `hcl:"server"`
+	Auth   *Auth   `hcl:"auth"`
+	SSH    *SSH    `hcl:"ssh"`
+	AWS    *AWS    `hcl:"aws"`
+	Vault  *Vault  `hcl:"vault"`
 }
 
 // Database holds database configuration.
@@ -29,51 +28,51 @@ type Database map[string]string
 
 // Server holds the configuration specific to the web server and sessions.
 type Server struct {
-	UseTLS                bool     `mapstructure:"use_tls"`
-	TLSKey                string   `mapstructure:"tls_key"`
-	TLSCert               string   `mapstructure:"tls_cert"`
-	LetsEncryptServername string   `mapstructure:"letsencrypt_servername"`
-	LetsEncryptCache      string   `mapstructure:"letsencrypt_cachedir"`
-	Addr                  string   `mapstructure:"address"`
-	Port                  int      `mapstructure:"port"`
-	User                  string   `mapstructure:"user"`
-	CookieSecret          string   `mapstructure:"cookie_secret"`
-	CSRFSecret            string   `mapstructure:"csrf_secret"`
-	HTTPLogFile           string   `mapstructure:"http_logfile"`
-	Database              Database `mapstructure:"database"`
-	Datastore             string   `mapstructure:"datastore"` // Deprecated. TODO: remove.
+	UseTLS                bool     `hcl:"use_tls"`
+	TLSKey                string   `hcl:"tls_key"`
+	TLSCert               string   `hcl:"tls_cert"`
+	LetsEncryptServername string   `hcl:"letsencrypt_servername"`
+	LetsEncryptCache      string   `hcl:"letsencrypt_cachedir"`
+	Addr                  string   `hcl:"address"`
+	Port                  int      `hcl:"port"`
+	User                  string   `hcl:"user"`
+	CookieSecret          string   `hcl:"cookie_secret"`
+	CSRFSecret            string   `hcl:"csrf_secret"`
+	HTTPLogFile           string   `hcl:"http_logfile"`
+	Database              Database `hcl:"database"`
+	Datastore             string   `hcl:"datastore"` // Deprecated. TODO: remove.
 }
 
 // Auth holds the configuration specific to the OAuth provider.
 type Auth struct {
-	OauthClientID     string            `mapstructure:"oauth_client_id"`
-	OauthClientSecret string            `mapstructure:"oauth_client_secret"`
-	OauthCallbackURL  string            `mapstructure:"oauth_callback_url"`
-	Provider          string            `mapstructure:"provider"`
-	ProviderOpts      map[string]string `mapstructure:"provider_opts"`
-	UsersWhitelist    []string          `mapstructure:"users_whitelist"`
+	OauthClientID     string            `hcl:"oauth_client_id"`
+	OauthClientSecret string            `hcl:"oauth_client_secret"`
+	OauthCallbackURL  string            `hcl:"oauth_callback_url"`
+	Provider          string            `hcl:"provider"`
+	ProviderOpts      map[string]string `hcl:"provider_opts"`
+	UsersWhitelist    []string          `hcl:"users_whitelist"`
 }
 
 // SSH holds the configuration specific to signing ssh keys.
 type SSH struct {
-	SigningKey           string   `mapstructure:"signing_key"`
-	AdditionalPrincipals []string `mapstructure:"additional_principals"`
-	MaxAge               string   `mapstructure:"max_age"`
-	Permissions          []string `mapstructure:"permissions"`
+	SigningKey           string   `hcl:"signing_key"`
+	AdditionalPrincipals []string `hcl:"additional_principals"`
+	MaxAge               string   `hcl:"max_age"`
+	Permissions          []string `hcl:"permissions"`
 }
 
 // AWS holds Amazon AWS configuration.
 // AWS can also be configured using SDK methods.
 type AWS struct {
-	Region    string `mapstructure:"region"`
-	AccessKey string `mapstructure:"access_key"`
-	SecretKey string `mapstructure:"secret_key"`
+	Region    string `hcl:"region"`
+	AccessKey string `hcl:"access_key"`
+	SecretKey string `hcl:"secret_key"`
 }
 
 // Vault holds Hashicorp Vault configuration.
 type Vault struct {
-	Address string `mapstructure:"address"`
-	Token   string `mapstructure:"token"`
+	Address string `hcl:"address"`
+	Token   string `hcl:"token"`
 }
 
 func verifyConfig(c *Config) error {
@@ -111,20 +110,22 @@ func convertDatastoreConfig(c *Config) {
 		case "mem":
 			c.Server.Database = map[string]string{"type": "mem"}
 		}
-		log.Println("The `datastore` option has been deprecated in favour of the `database` option. You should update your config.")
-		log.Println("The new config (passwords have been redacted) should look something like:")
-		fmt.Printf("server {\n  database {\n")
+		var out bytes.Buffer
+		out.WriteString("The `datastore` option has been deprecated in favour of the `database` option. You should update your config.\n")
+		out.WriteString("The new config (passwords have been redacted) should look something like:\n")
+		out.WriteString("server {\n  database {\n")
 		for k, v := range c.Server.Database {
 			if v == "" {
 				continue
 			}
 			if k == "password" {
-				fmt.Printf("    password = \"[ REDACTED ]\"\n")
+				out.WriteString("    password = \"[ REDACTED ]\"\n")
 				continue
 			}
-			fmt.Printf("    %s = \"%s\"\n", k, v)
+			out.WriteString(fmt.Sprintf("    %s = \"%s\"\n", k, v))
 		}
-		fmt.Printf("  }\n}\n")
+		out.WriteString("  }\n}")
+		log.Println(out.String())
 	}
 }
 
@@ -183,38 +184,11 @@ func setFromVault(c *Config) error {
 	return errors.Wrap(errs, "errors reading from vault")
 }
 
-// Unmarshal the config into a *Config
-func decode() (*Config, error) {
-	var errs error
-	config := &Config{}
-	configPieces := map[string]interface{}{
-		"auth":   &config.Auth,
-		"aws":    &config.AWS,
-		"server": &config.Server,
-		"ssh":    &config.SSH,
-		"vault":  &config.Vault,
-	}
-	for key, val := range configPieces {
-		conf, ok := viper.Get(key).([]map[string]interface{})
-		if !ok {
-			continue
-		}
-		if err := mapstructure.WeakDecode(conf[0], val); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-	return config, errs
-}
-
 // ReadConfig parses a hcl configuration file into a Config struct.
-func ReadConfig(r io.Reader) (*Config, error) {
-	viper.SetConfigType("hcl")
-	if err := viper.ReadConfig(r); err != nil {
-		return nil, errors.Wrap(err, "unable to read config")
-	}
-	config, err := decode()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse config")
+func ReadConfig(f string) (*Config, error) {
+	config := &Config{}
+	if err := scl.DecodeFile(config, f); err != nil {
+		return nil, errors.Wrapf(err, "unable to load config from file %s", f)
 	}
 	if err := setFromVault(config); err != nil {
 		return nil, err

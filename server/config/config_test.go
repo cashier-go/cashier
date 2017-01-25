@@ -1,10 +1,8 @@
 package config
 
 import (
-	"bytes"
 	"testing"
 
-	"github.com/nsheridan/cashier/server/config/testdata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +19,6 @@ var (
 			CSRFSecret:   "supersecret",
 			HTTPLogFile:  "cashierd.log",
 			Database:     Database{"type": "mysql", "username": "user", "password": "passwd", "address": "localhost:3306"},
-			Datastore:    "mysql:user:passwd:localhost:3306",
 		},
 		Auth: &Auth{
 			OauthClientID:     "client_id",
@@ -50,7 +47,7 @@ var (
 )
 
 func TestConfigParser(t *testing.T) {
-	c, err := ReadConfig(bytes.NewBuffer(testdata.Config))
+	c, err := ReadConfig("testdata/test.config")
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,8 +55,7 @@ func TestConfigParser(t *testing.T) {
 }
 
 func TestConfigVerify(t *testing.T) {
-	bad := bytes.NewBuffer([]byte(""))
-	_, err := ReadConfig(bad)
+	_, err := ReadConfig("testdata/empty.config")
 	assert.Contains(t, err.Error(), "missing ssh config section", "missing server config section", "missing auth config section")
 }
 
