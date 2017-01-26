@@ -59,7 +59,7 @@ func main() {
 	if err := client.InstallCert(a, cert, priv); err != nil {
 		log.Fatalln(err)
 	}
-	if err := client.InstallPublicFiles(c.PublicFilePrefix, cert, pub); err != nil {
+	if err := client.SavePublicFiles(c.PublicFilePrefix, cert, pub); err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println("Credentials added.")

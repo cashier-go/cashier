@@ -18,20 +18,18 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 )
 
-// InstallPublicFiles installs the public part of the cert and key.
-func InstallPublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) error {
+// SavePublicFiles installs the public part of the cert and key.
+func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) error {
 	if prefix == "" {
 		return nil
 	}
-	pubKey := prefix + ".pub"
-	pubCert := prefix + "-cert.pub"
 	pubTxt := ssh.MarshalAuthorizedKey(pub)
 	certPubTxt := []byte(cert.Type() + " " + base64.StdEncoding.EncodeToString(cert.Marshal()))
 
-	if err := ioutil.WriteFile(pubKey, pubTxt, 0644); err != nil {
+	if err := ioutil.WriteFile(prefix+".pub", pubTxt, 0644); err != nil {
 		return err
 	}
-	err := ioutil.WriteFile(pubCert, certPubTxt, 0644)
+	err := ioutil.WriteFile(prefix+"-cert.pub", certPubTxt, 0644)
 
 	return err
 }

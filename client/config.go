@@ -1,10 +1,9 @@
 package client
 
 import (
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"os/user"
-	"regexp"
 )
 
 // Config holds the client configuration.
@@ -26,21 +25,6 @@ func setDefaults() {
 	viper.SetDefault("validateTLSCertificate", true)
 }
 
-// expandTilde expands ~ and ~user for a given path.
-func expandTilde(path string) string {
-	re := regexp.MustCompile("^~([^/]*)(/.*)")
-	if m := re.FindStringSubmatch(path); len(m) > 0 {
-		u, _ := user.Current()
-		if m[1] != "" {
-			u, _ = user.Lookup(m[1])
-		}
-		if u != nil {
-			return u.HomeDir + m[2]
-		}
-	}
-	return path
-}
-
 // ReadConfig reads the client configuration from a file into a Config struct.
 func ReadConfig(path string) (*Config, error) {
 	setDefaults()
@@ -53,6 +37,9 @@ func ReadConfig(path string) (*Config, error) {
 	if err := viper.Unmarshal(c); err != nil {
 		return nil, err
 	}
-	c.PublicFilePrefix = expandTilde(c.PublicFilePrefix)
+	if p, err := homedir.Expand(c.PublicFilePrefix); err != nil {
+		return nil, err
+	}
+	c.PublicFilePrefix = p
 	return c, nil
 }
