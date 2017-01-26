@@ -37,10 +37,10 @@ func ReadConfig(path string) (*Config, error) {
 	if err := viper.Unmarshal(c); err != nil {
 		return nil, err
 	}
-	if p, err := homedir.Expand(c.PublicFilePrefix); err != nil {
+	p, err := homedir.Expand(c.PublicFilePrefix)
+	if err != nil {
 		return nil, err
-	} else {
-		c.PublicFilePrefix = p
 	}
+	c.PublicFilePrefix = p
 	return c, nil
 }
