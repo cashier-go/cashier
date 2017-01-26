@@ -39,7 +39,8 @@ func ReadConfig(path string) (*Config, error) {
 	}
 	if p, err := homedir.Expand(c.PublicFilePrefix); err != nil {
 		return nil, err
+	} else {
+		c.PublicFilePrefix = p
 	}
-	c.PublicFilePrefix = p
 	return c, nil
 }
