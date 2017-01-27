@@ -2,8 +2,8 @@ config.json
 cashierd.conf
 tmp
 
-cashier
-cashierd
+/cashier
+/cashierd
 
 signing_key
 http.log

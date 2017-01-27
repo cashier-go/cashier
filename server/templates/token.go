@@ -35,7 +35,7 @@ const Token = `
 			<h2>Access Token</h2>
 		</div>
 		<div>
-			<textarea style="font-size: 15pt" class="u-full-width code" readonly spellcheck="false" onclick="this.focus();this.select();">{{.Token}}</textarea>
+			<textarea style="font-size: 12pt" class="u-full-width code" readonly spellcheck="false" onclick="this.focus();this.select();">{{.Token}}</textarea>
 			<h3>
 				The token will expire in &lt; 1 hour.
 			</h3>

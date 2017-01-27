@@ -6,8 +6,8 @@ env:
   - MYSQL_TEST="true"
 
 go:
-  - 1.7.4
-  - 1.8rc2
+  - 1.7.5
+  - 1.8rc3
 
 matrix:
   allow_failures:
@@ -24,8 +24,4 @@ before_script:
 
 sudo: false
 script:
-  - go install -v ./cmd/cashier ./cmd/cashierd
-  - go list ./... |grep -v vendor/ |xargs go test
-  - gofmt -d $(find -type f -name '*.go' -not -path './vendor/*')
-  - go list ./... |grep -v vendor/ |xargs go vet
-  - go list ./... |grep -v vendor/ |xargs -L1 golint -set_exit_status
+  - ./run_tests.sh
