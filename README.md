@@ -13,7 +13,6 @@
 - [Configuration](#configuration)
 	- [server](#server-1)
 		- [database](#database)
-		- [datastore](#datastore) [DEPRECATED]
 	- [auth](#auth)
 		- [Provider-specific options](#provider-specific-options)
 	- [ssh](#ssh)
@@ -113,7 +112,6 @@ Exception to this: the `http_logfile` option **ONLY** writes to local files.
 - `cookie_secret`: string. Authentication key for the session cookie. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/cookie_secret`.
 - `csrf_secret`: string. Authentication key for CSRF protection. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/csrf_secret`.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). The only valid destination for logs is a local file path.
-- `datastore`: string. Datastore connection string. See [Datastore](#datastore).
 
 ### database
 
@@ -146,34 +144,9 @@ server {
 }
 ```
 
-Prior to using MySQL or SQLite you need to create the database and tables using [one of the provided files](db).  
+Prior to using MySQL or SQLite you need to create the database and tables using [the provided seed file](db/seed.sql).  
 e.g. `mysql < db/seed.sql`.  
 Obviously you should setup a role user for running in prodution.
-
-### datastore
-
-## The datastore option is deprecated. Use the [database](#database) option instead
-
-~~Datastores contain a record of issued certificates for audit and revocation purposes. The connection string is of the form `engine:username:password:host[:port]`.~~
-
-~~Supported database providers: `mysql`, `sqlite` and `mem`.~~
-
-~~`mem` is an in-memory database intended for testing and takes no additional config options.~~  
-~~`mysql` is the MySQL database and accepts `username`, `password` and `host` arguments. Only `username` and `host` arguments are required. `port` is assumed to be 3306 unless otherwise specified.~~  
-~~`sqlite` is the SQLite database and accepts a `path` argument.~~
-
-~~If no datastore is specified the `mem` store is used by default.~~
-
-~~Examples:~~
-
-```
-server {
-  datastore = "mem"  # use the in-memory database.
-  datastore = "mysql:root::localhost"  # mysql running on localhost with the user 'root' and no password.
-  datastore = "mysql:cashier:PaSsWoRd:mydbprovider.example.com:5150"  # mysql running on a remote host on port 5150
-  datastore = "sqlite:/data/certs.db"
-}
-```
 
 ## auth
 - `provider` : string. Name of the oauth provider. Valid providers are currently "google", "github" and "gitlab".
@@ -275,7 +248,7 @@ where `/etc/ssh/ca.pub` contains the public part of your signing key.
 If you wish to use certificate revocation you need to set the `RevokedKeys` option in sshd_config - see the next section.
 
 ## Revoking certificates
-When a certificate is signed a record is kept in the configured datastore. You can view issued certs at `http(s)://<ca url>/admin/certs` and also revoke them.  
+When a certificate is signed a record is kept in the configured database. You can view issued certs at `http(s)://<ca url>/admin/certs` and also revoke them.  
 The revocation list is served at `http(s)://<ca url>/revoked`. To use it your sshd_config must have `RevokedKeys` set:
 ```
 RevokedKeys /etc/ssh/revoked_keys
