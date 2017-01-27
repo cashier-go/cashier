@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -12,6 +13,7 @@ type Config struct {
 	Keysize                int    `mapstructure:"key_size"`
 	Validity               string `mapstructure:"validity"`
 	ValidateTLSCertificate bool   `mapstructure:"validate_tls_certificate"`
+	PublicFilePrefix       string `mapstructure:"public_file_prefix"`
 }
 
 func setDefaults() {
@@ -19,6 +21,7 @@ func setDefaults() {
 	viper.BindPFlag("key_type", pflag.Lookup("key_type"))
 	viper.BindPFlag("key_size", pflag.Lookup("key_size"))
 	viper.BindPFlag("validity", pflag.Lookup("validity"))
+	viper.BindPFlag("public_file_prefix", pflag.Lookup("public_file_prefix"))
 	viper.SetDefault("validateTLSCertificate", true)
 }
 
@@ -34,5 +37,10 @@ func ReadConfig(path string) (*Config, error) {
 	if err := viper.Unmarshal(c); err != nil {
 		return nil, err
 	}
+	p, err := homedir.Expand(c.PublicFilePrefix)
+	if err != nil {
+		return nil, err
+	}
+	c.PublicFilePrefix = p
 	return c, nil
 }
