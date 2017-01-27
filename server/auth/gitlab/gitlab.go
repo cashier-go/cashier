@@ -26,7 +26,7 @@ type Config struct {
 }
 
 // New creates a new Gitlab provider from a configuration.
-func New(c *config.Auth) (auth.Provider, error) {
+func New(c *config.Auth) (*Config, error) {
 	uw := make(map[string]bool)
 	for _, u := range c.UsersWhitelist {
 		uw[u] = true
