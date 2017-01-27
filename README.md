@@ -251,7 +251,14 @@ For the server you need the following:
 
 ## Using cashier
 Once the server is up and running you'll need to configure your client.  
-The client is configured using either a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.conf) - or command-line flags.  
+The client is configured using either a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.conf) - or command-line flags.
+
+- `--ca`          CA server (default "http://localhost:10000").
+- `--config`      Path to config file (default "~/.cashier.conf").
+- `--key_size`    Key size. Ignored for ed25519 keys (default 2048).
+- `--key_type`    Type of private key to generate - rsa, ecdsa or ed25519 (default "rsa").
+- `--public_file_prefix` Prefix for filename for public key and cert (optional, no default). The public key is put in a file with `.pub` appended to it; the public cert file in a file with `-cert.pub` appended to it.
+- `--validity`    Key validity (default 24h).
 
 Running the `cashier` cli tool will open a browser window at the configured CA address.
 The CA will redirect to the auth provider for authorisation, and redirect back to the CA where the access token will printed.  
@@ -259,9 +266,17 @@ Copy the access token. In the terminal where you ran the `cashier` cli paste the
 The client will then generate a new ssh key-pair and send the public part to the server (along with the access token).  
 Once signed the client will install the key and signed certificate in your ssh agent. When the certificate expires it will be removed automatically from the agent.
 
+If you set `public_file_prefix` then the public key and public cert will be written to the files that start with `public_file_prefix` and end with `.pub` and `-cert.pub` respectively.
+
+In your `ssh_config` you can load these for a given host with the `IdentityFile` and `CertificateFile`. However prior to OpenSSH version 7.2p1 the latter option didn't exist.
+In that case you could specify `~/.ssh/some-identity` as your `IdentityFile` and OpenSSH would look in `~/.ssh/some-identity.pub` and `~/.ssh/some-identity-cert.pub`.
+
+Starting with 7.2p1 the two options exist in the `ssh_config` and you'll need to use the full paths to them.
+Note that like these `ssh_config` options, the `public_file_prefix` supports tilde expansion.
+
 ## Configuring SSH
-The ssh client needs no special configuration, just a running ssh-agent.  
-The ssh server needs to trust the public part of the CA signing key. Add something like the following to your sshd_config:
+The ssh client needs no special configuration, just a running `ssh-agent`.  
+The ssh server needs to trust the public part of the CA signing key. Add something like the following to your `sshd_config`:  
 ```
 TrustedUserCAKeys /etc/ssh/ca.pub
 ```
