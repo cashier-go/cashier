@@ -68,9 +68,6 @@ func TestDatastoreConversion(t *testing.T) {
 			"mysql:user:passwd:localhost:3306", Database{"type": "mysql", "username": "user", "password": "passwd", "address": "localhost:3306"},
 		},
 		{
-			"mongo:::host1,host2", Database{"type": "mongo", "username": "", "password": "", "address": "host1,host2"},
-		},
-		{
 			"mem", Database{"type": "mem"},
 		},
 		{
