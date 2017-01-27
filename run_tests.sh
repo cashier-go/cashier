@@ -1,8 +1,10 @@
 #! /bin/sh
 
 # This can be used as a pre-commit script.  Just run
-#   cp build.sh .git/hooks/pre-commit
+#   cp run_tests.sh .git/hooks/pre-commit
 # and it will run before each commit.
+
+set -xue
 
 go install -v ./cmd/cashier ./cmd/cashierd
 go list ./... |grep -v vendor/ |xargs go test
