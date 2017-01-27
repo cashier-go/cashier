@@ -58,30 +58,3 @@ func TestConfigVerify(t *testing.T) {
 	_, err := ReadConfig("testdata/empty.config")
 	assert.Contains(t, err.Error(), "missing ssh config section", "missing server config section", "missing auth config section")
 }
-
-func TestDatastoreConversion(t *testing.T) {
-	tests := []struct {
-		in  string
-		out Database
-	}{
-		{
-			"mysql:user:passwd:localhost:3306", Database{"type": "mysql", "username": "user", "password": "passwd", "address": "localhost:3306"},
-		},
-		{
-			"mem", Database{"type": "mem"},
-		},
-		{
-			"sqlite:/data/certs.db", Database{"type": "sqlite", "filename": "/data/certs.db"},
-		},
-	}
-
-	for _, tc := range tests {
-		config := &Config{
-			Server: &Server{
-				Datastore: tc.in,
-			},
-		}
-		convertDatastoreConfig(config)
-		assert.EqualValues(t, config.Server.Database, tc.out)
-	}
-}
