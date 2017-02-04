@@ -40,7 +40,6 @@ func New(c *config.Auth) (*Config, error) {
 		config: &oauth2.Config{
 			ClientID:     c.OauthClientID,
 			ClientSecret: c.OauthClientSecret,
-			RedirectURL:  c.OauthCallbackURL,
 			Endpoint:     github.Endpoint,
 			Scopes: []string{
 				string(githubapi.ScopeUser),
@@ -91,7 +90,8 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 }
 
 // StartSession retrieves an authentication endpoint from Github.
-func (c *Config) StartSession(state string) *auth.Session {
+func (c *Config) StartSession(state string, r *http.Request) *auth.Session {
+	c.config.RedirectURL = auth.Oauth2RedirectURL(r)
 	return &auth.Session{
 		AuthURL: c.config.AuthCodeURL(state),
 	}
