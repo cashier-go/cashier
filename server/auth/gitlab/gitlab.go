@@ -6,6 +6,7 @@ import (
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/nsheridan/cashier/server/metrics"
 
 	gitlabapi "github.com/xanzy/go-gitlab"
 	"golang.org/x/oauth2"
@@ -78,6 +79,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		return false
 	}
 	if c.allusers {
+		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
 	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
@@ -86,6 +88,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	if c.group == "" {
 		// There's no group and token is valid.  Can only reach
 		// here if user whitelist is set and user is in whitelist.
+		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
 	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
@@ -96,6 +99,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	}
 	for _, g := range groups {
 		if g.Path == c.group {
+			metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 			return true
 		}
 	}
@@ -118,7 +122,11 @@ func (c *Config) StartSession(state string) *auth.Session {
 
 // Exchange authorizes the session and returns an access token.
 func (c *Config) Exchange(code string) (*oauth2.Token, error) {
-	return c.config.Exchange(oauth2.NoContext, code)
+	t, err := c.config.Exchange(oauth2.NoContext, code)
+	if err == nil {
+		metrics.M.AuthExchange.WithLabelValues("gitlab").Inc()
+	}
+	return t, err
 }
 
 // Username retrieves the username of the Gitlab user.

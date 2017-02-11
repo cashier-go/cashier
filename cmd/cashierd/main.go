@@ -33,12 +33,14 @@ import (
 	"github.com/nsheridan/cashier/server/auth/gitlab"
 	"github.com/nsheridan/cashier/server/auth/google"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/nsheridan/cashier/server/metrics"
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/server/static"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
 	"github.com/nsheridan/cashier/server/wkfs/vaultfs"
 	"github.com/nsheridan/wkfs/s3"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sid77/drop"
 )
 
@@ -374,6 +376,8 @@ func main() {
 	}
 
 	// Unprivileged section
+	metrics.Register()
+
 	var authprovider auth.Provider
 	switch conf.Auth.Provider {
 	case "google":
@@ -416,6 +420,7 @@ func main() {
 	r.Methods("POST").Path("/admin/revoke").Handler(CSRF(appHandler{ctx, revokeCertHandler}))
 	r.Methods("GET").Path("/admin/certs").Handler(CSRF(appHandler{ctx, listAllCertsHandler}))
 	r.Methods("GET").Path("/admin/certs.json").Handler(appHandler{ctx, listCertsJSONHandler})
+	r.Methods("GET").Path("/metrics").Handler(promhttp.Handler())
 	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
 	h := handlers.LoggingHandler(logfile, r)
 

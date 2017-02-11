@@ -8,6 +8,7 @@ import (
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/nsheridan/cashier/server/metrics"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -90,6 +91,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	if c.domain != "" && ui.Hd != c.domain {
 		return false
 	}
+	metrics.M.AuthValid.WithLabelValues("google").Inc()
 	return true
 }
 
@@ -109,7 +111,11 @@ func (c *Config) StartSession(state string) *auth.Session {
 
 // Exchange authorizes the session and returns an access token.
 func (c *Config) Exchange(code string) (*oauth2.Token, error) {
-	return c.config.Exchange(oauth2.NoContext, code)
+	t, err := c.config.Exchange(oauth2.NoContext, code)
+	if err == nil {
+		metrics.M.AuthExchange.WithLabelValues("google").Inc()
+	}
+	return t, err
 }
 
 // Email retrieves the email address of the user.
