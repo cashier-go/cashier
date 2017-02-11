@@ -2,7 +2,6 @@ package google
 
 import (
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/nsheridan/cashier/server/config"
@@ -23,6 +22,7 @@ func TestNew(t *testing.T) {
 	a.NoError(err)
 	a.Equal(p.config.ClientID, oauthClientID)
 	a.Equal(p.config.ClientSecret, oauthClientSecret)
+	a.Equal(p.config.RedirectURL, oauthCallbackURL)
 	a.Equal(p.domain, domain)
 	a.Equal(p.whitelist, map[string]bool{"user": true})
 }
@@ -31,6 +31,7 @@ func TestWhitelist(t *testing.T) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
+		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts:      map[string]string{"domain": ""},
 		UsersWhitelist:    []string{},
 	}
@@ -55,10 +56,7 @@ func TestStartSession(t *testing.T) {
 
 	p, err := newGoogle()
 	a.NoError(err)
-	r := &http.Request{
-		Host: oauthCallbackURL,
-	}
-	s := p.StartSession("test_state", r)
+	s := p.StartSession("test_state")
 	a.Contains(s.AuthURL, "accounts.google.com/o/oauth2/auth")
 	a.Contains(s.AuthURL, "state=test_state")
 	a.Contains(s.AuthURL, fmt.Sprintf("hd=%s", domain))
@@ -69,6 +67,7 @@ func newGoogle() (*Config, error) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
+		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts:      map[string]string{"domain": domain},
 		UsersWhitelist:    users,
 	}

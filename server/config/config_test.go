@@ -23,6 +23,7 @@ var (
 		Auth: &Auth{
 			OauthClientID:     "client_id",
 			OauthClientSecret: "secret",
+			OauthCallbackURL:  "https://sshca.example.com/auth/callback",
 			Provider:          "google",
 			ProviderOpts:      map[string]string{"domain": "example.com"},
 			UsersWhitelist:    []string{"a_user"},

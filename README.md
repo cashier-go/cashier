@@ -152,6 +152,7 @@ Obviously you should setup a role user for running in prodution.
 - `provider` : string. Name of the oauth provider. Valid providers are currently "google", "github" and "gitlab".
 - `oauth_client_id` : string. Oauth Client ID. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/oauth_client_id`.
 - `oauth_client_secret` : string. Oauth secret. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/oauth_client_secret`.
+- `oauth_callback_url` : string. URL that the Oauth provider will redirect to after user authorisation. The path is hardcoded to `"/auth/callback"` in the source.
 - `provider_opts` : object. Additional options for the provider.
 - `users_whitelist` : array of strings. Optional list of whitelisted usernames. If missing, all users of your current domain/organization are allowed to authenticate against cashierd. For Google auth a user is an email address. For GitHub auth a user is a GitHub username.
 
@@ -209,7 +210,7 @@ The server is configured using a HCL configuration file - [example](example-serv
 
 For the server you need the following:
 - A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
-- OAuth (Google, GitHub or Gitlab) credentials. Cashier's callback handler is `/auth/callback` so set the callback URL appropriately when creating the credentials.
+- OAuth (Google or GitHub) credentials. You may also need to set the callback URL when creating these.
 
 ## Using cashier
 Once the server is up and running you'll need to configure your client.  

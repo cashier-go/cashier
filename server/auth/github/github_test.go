@@ -2,7 +2,6 @@ package github
 
 import (
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/nsheridan/cashier/server/config"
@@ -23,11 +22,13 @@ func TestNew(t *testing.T) {
 	p, _ := New(&config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
+		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts:      map[string]string{"organization": organization},
 		UsersWhitelist:    users,
 	})
 	a.Equal(p.config.ClientID, oauthClientID)
 	a.Equal(p.config.ClientSecret, oauthClientSecret)
+	a.Equal(p.config.RedirectURL, oauthCallbackURL)
 	a.Equal(p.organization, organization)
 	a.Equal(p.whitelist, map[string]bool{"user": true})
 }
@@ -36,6 +37,7 @@ func TestWhitelist(t *testing.T) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
+		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts:      map[string]string{"organization": ""},
 		UsersWhitelist:    []string{},
 	}
@@ -59,10 +61,7 @@ func TestStartSession(t *testing.T) {
 	a := assert.New(t)
 
 	p, _ := newGithub()
-	r := &http.Request{
-		Host: oauthCallbackURL,
-	}
-	s := p.StartSession("test_state", r)
+	s := p.StartSession("test_state")
 	a.Contains(s.AuthURL, "github.com/login/oauth/authorize")
 	a.Contains(s.AuthURL, "state=test_state")
 	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
@@ -72,6 +71,7 @@ func newGithub() (*Config, error) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
+		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts:      map[string]string{"organization": organization},
 	}
 	return New(c)

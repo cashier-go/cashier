@@ -1,7 +1,6 @@
 package testprovider
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -39,7 +38,7 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 }
 
 // StartSession retrieves an authentication endpoint.
-func (c *Config) StartSession(state string, r *http.Request) *auth.Session {
+func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{
 		AuthURL: "https://www.example.com/auth",
 	}

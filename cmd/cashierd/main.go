@@ -182,7 +182,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	state := newState()
 	a.setAuthStateCookie(w, r, state)
-	a.authsession = a.authprovider.StartSession(state, r)
+	a.authsession = a.authprovider.StartSession(state)
 	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
 	return http.StatusFound, nil
 }

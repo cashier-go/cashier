@@ -43,6 +43,7 @@ func New(c *config.Auth) (*Config, error) {
 		config: &oauth2.Config{
 			ClientID:     c.OauthClientID,
 			ClientSecret: c.OauthClientSecret,
+			RedirectURL:  c.OauthCallbackURL,
 			Endpoint:     google.Endpoint,
 			Scopes:       []string{googleapi.UserinfoEmailScope, googleapi.UserinfoProfileScope},
 		},
@@ -100,8 +101,7 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 }
 
 // StartSession retrieves an authentication endpoint from Google.
-func (c *Config) StartSession(state string, r *http.Request) *auth.Session {
-	c.config.RedirectURL = auth.Oauth2RedirectURL(r)
+func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{
 		AuthURL: c.config.AuthCodeURL(state, oauth2.SetAuthURLParam("hd", c.domain)),
 	}

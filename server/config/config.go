@@ -43,6 +43,7 @@ type Server struct {
 type Auth struct {
 	OauthClientID     string            `hcl:"oauth_client_id"`
 	OauthClientSecret string            `hcl:"oauth_client_secret"`
+	OauthCallbackURL  string            `hcl:"oauth_callback_url"`
 	Provider          string            `hcl:"provider"`
 	ProviderOpts      map[string]string `hcl:"provider_opts"`
 	UsersWhitelist    []string          `hcl:"users_whitelist"`

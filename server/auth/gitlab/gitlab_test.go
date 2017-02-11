@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -26,6 +25,7 @@ func TestNew(t *testing.T) {
 	g := p.(*Config)
 	a.Equal(g.config.ClientID, oauthClientID)
 	a.Equal(g.config.ClientSecret, oauthClientSecret)
+	a.Equal(g.config.RedirectURL, oauthCallbackURL)
 }
 
 func TestNewBrokenSiteURL(t *testing.T) {
@@ -55,10 +55,7 @@ func TestGoodAllUsers(t *testing.T) {
 	a := assert.New(t)
 
 	p, _ := newGitlab()
-	r := &http.Request{
-		Host: oauthCallbackURL,
-	}
-	s := p.StartSession("test_state", r)
+	s := p.StartSession("test_state")
 	a.Contains(s.AuthURL, "exampleorg/oauth/authorize")
 	a.Contains(s.AuthURL, "state=test_state")
 	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
@@ -80,10 +77,7 @@ func TestStartSession(t *testing.T) {
 	a := assert.New(t)
 
 	p, _ := newGitlab()
-	r := &http.Request{
-		Host: oauthCallbackURL,
-	}
-	s := p.StartSession("test_state", r)
+	s := p.StartSession("test_state")
 	a.Contains(s.AuthURL, "exampleorg/oauth/authorize")
 	a.Contains(s.AuthURL, "state=test_state")
 	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
@@ -93,6 +87,7 @@ func newGitlab() (auth.Provider, error) {
 	c := &config.Auth{
 		OauthClientID:     oauthClientID,
 		OauthClientSecret: oauthClientSecret,
+		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts: map[string]string{
 			"group":    group,
 			"siteurl":  siteurl,

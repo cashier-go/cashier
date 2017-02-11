@@ -1,16 +1,11 @@
 package auth
 
-import (
-	"fmt"
-	"net/http"
-
-	"golang.org/x/oauth2"
-)
+import "golang.org/x/oauth2"
 
 // Provider is an abstraction of different auth methods.
 type Provider interface {
 	Name() string
-	StartSession(string, *http.Request) *Session
+	StartSession(string) *Session
 	Exchange(string) (*oauth2.Token, error)
 	Username(*oauth2.Token) string
 	Valid(*oauth2.Token) bool
@@ -32,13 +27,4 @@ func (s *Session) Authorize(provider Provider, code string) error {
 	}
 	s.Token = t
 	return nil
-}
-
-// Oauth2RedirectURL returns an OAuth redirect_uri for this request.
-func Oauth2RedirectURL(r *http.Request) string {
-	protocol := "http"
-	if r.TLS != nil {
-		protocol = "https"
-	}
-	return fmt.Sprintf("%s://%s/auth/callback", protocol, r.Host)
 }
