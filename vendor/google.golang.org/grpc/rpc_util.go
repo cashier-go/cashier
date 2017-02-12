@@ -48,6 +48,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/transport"
 )
@@ -140,6 +141,7 @@ type callInfo struct {
 	failFast  bool
 	headerMD  metadata.MD
 	trailerMD metadata.MD
+	peer      *peer.Peer
 	traceInfo traceInfo // in trace.go
 }
 
@@ -180,6 +182,14 @@ func Header(md *metadata.MD) CallOption {
 func Trailer(md *metadata.MD) CallOption {
 	return afterCall(func(c *callInfo) {
 		*md = c.trailerMD
+	})
+}
+
+// Peer returns a CallOption that retrieves peer information for a
+// unary RPC.
+func Peer(peer *peer.Peer) CallOption {
+	return afterCall(func(c *callInfo) {
+		*peer = *c.peer
 	})
 }
 
@@ -486,17 +496,17 @@ type MethodConfig struct {
 	// then the other will be used.  If neither is set, then the RPC has no deadline.
 	Timeout time.Duration
 	// MaxReqSize is the maximum allowed payload size for an individual request in a
-	// stream (client->server) in bytes. The size which is measured is the serialized,
-	// uncompressed payload in bytes. The actual value used is the minumum of the value
-	// specified here and the value set by the application via the gRPC client API. If
-	// either one is not set, then the other will be used.  If neither is set, then the
-	// built-in default is used.
+	// stream (client->server) in bytes. The size which is measured is the serialized
+	// payload after per-message compression (but before stream compression) in bytes.
+	// The actual value used is the minumum of the value specified here and the value set
+	// by the application via the gRPC client API. If either one is not set, then the other
+	// will be used.  If neither is set, then the built-in default is used.
 	// TODO: support this.
-	MaxReqSize uint64
+	MaxReqSize uint32
 	// MaxRespSize is the maximum allowed payload size for an individual response in a
 	// stream (server->client) in bytes.
 	// TODO: support this.
-	MaxRespSize uint64
+	MaxRespSize uint32
 }
 
 // ServiceConfig is provided by the service provider and contains parameters for how
