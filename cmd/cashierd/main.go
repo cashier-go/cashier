@@ -46,15 +46,16 @@ import (
 
 var (
 	cfg = flag.String("config_file", "cashierd.conf", "Path to configuration file.")
+
+	authprovider auth.Provider
+	certstore    store.CertStorer
+	keysigner    *signer.KeySigner
 )
 
-// appContext contains local context - cookiestore, authprovider, authsession etc.
+// appContext contains local context - cookiestore, authsession etc.
 type appContext struct {
-	cookiestore  *sessions.CookieStore
-	authprovider auth.Provider
-	authsession  *auth.Session
-	sshKeySigner *signer.KeySigner
-	certstore    store.CertStorer
+	cookiestore *sessions.CookieStore
+	authsession *auth.Session
 }
 
 // getAuthTokenCookie retrieves a cookie from the request.
@@ -116,7 +117,7 @@ func (a *appContext) setCurrentURL(w http.ResponseWriter, r *http.Request) {
 
 func (a *appContext) isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
 	tok := a.getAuthTokenCookie(r)
-	if !tok.Valid() || !a.authprovider.Valid(tok) {
+	if !tok.Valid() || !authprovider.Valid(tok) {
 		return false
 	}
 	return true
@@ -152,7 +153,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	token := &oauth2.Token{
 		AccessToken: t,
 	}
-	ok := a.authprovider.Valid(token)
+	ok := authprovider.Valid(token)
 	if !ok {
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
@@ -162,13 +163,13 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if err != nil {
 		return http.StatusBadRequest, errors.Wrap(err, "unable to extract key from request")
 	}
-	username := a.authprovider.Username(token)
-	a.authprovider.Revoke(token) // We don't need this anymore.
-	cert, err := a.sshKeySigner.SignUserKey(req, username)
+	username := authprovider.Username(token)
+	authprovider.Revoke(token) // We don't need this anymore.
+	cert, err := keysigner.SignUserKey(req, username)
 	if err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "error signing key")
 	}
-	if err := a.certstore.SetCert(cert); err != nil {
+	if err := certstore.SetCert(cert); err != nil {
 		log.Printf("Error recording cert: %v", err)
 	}
 	if err := json.NewEncoder(w).Encode(&lib.SignResponse{
@@ -184,7 +185,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	state := newState()
 	a.setAuthStateCookie(w, r, state)
-	a.authsession = a.authprovider.StartSession(state)
+	a.authsession = authprovider.StartSession(state)
 	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
 	return http.StatusFound, nil
 }
@@ -195,7 +196,7 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 	code := r.FormValue("code")
-	if err := a.authsession.Authorize(a.authprovider, code); err != nil {
+	if err := a.authsession.Authorize(authprovider, code); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	a.setAuthTokenCookie(w, r, a.authsession.Token)
@@ -219,11 +220,11 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 }
 
 func listRevokedCertsHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
-	revoked, err := a.certstore.GetRevoked()
+	revoked, err := certstore.GetRevoked()
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	rl, err := a.sshKeySigner.GenerateRevocationList(revoked)
+	rl, err := keysigner.GenerateRevocationList(revoked)
 	if err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "unable to generate KRL")
 	}
@@ -248,7 +249,7 @@ func listCertsJSONHandler(a *appContext, w http.ResponseWriter, r *http.Request)
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 	includeExpired, _ := strconv.ParseBool(r.URL.Query().Get("all"))
-	certs, err := a.certstore.List(includeExpired)
+	certs, err := certstore.List(includeExpired)
 	j, err := json.Marshal(certs)
 	if err != nil {
 		return http.StatusInternalServerError, errors.New(http.StatusText(http.StatusInternalServerError))
@@ -263,7 +264,7 @@ func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (i
 	}
 	r.ParseForm()
 	for _, id := range r.Form["cert_id"] {
-		if err := a.certstore.Revoke(id); err != nil {
+		if err := certstore.Revoke(id); err != nil {
 			return http.StatusInternalServerError, errors.Wrap(err, "unable to revoke")
 		}
 	}
@@ -326,7 +327,7 @@ func main() {
 	})
 	vaultfs.Register(conf.Vault)
 
-	signer, err := signer.New(conf.SSH)
+	keysigner, err = signer.New(conf.SSH)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -378,7 +379,6 @@ func main() {
 	// Unprivileged section
 	metrics.Register()
 
-	var authprovider auth.Provider
 	switch conf.Auth.Provider {
 	case "google":
 		authprovider, err = google.New(conf.Auth)
@@ -393,15 +393,12 @@ func main() {
 		log.Fatal(errors.Wrapf(err, "unable to use provider '%s'", conf.Auth.Provider))
 	}
 
-	certstore, err := store.New(conf.Server.Database)
+	certstore, err = store.New(conf.Server.Database)
 	if err != nil {
 		log.Fatal(err)
 	}
 	ctx := &appContext{
-		cookiestore:  sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
-		authprovider: authprovider,
-		sshKeySigner: signer,
-		certstore:    certstore,
+		cookiestore: sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
 	}
 	ctx.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,

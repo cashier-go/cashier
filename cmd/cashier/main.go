@@ -19,9 +19,9 @@ var (
 	u, _             = user.Current()
 	cfg              = pflag.String("config", path.Join(u.HomeDir, ".cashier.conf"), "Path to config file")
 	ca               = pflag.String("ca", "http://localhost:10000", "CA server")
-	keysize          = pflag.Int("key_size", 2048, "Key size. Ignored for ed25519 keys")
-	validity         = pflag.Duration("validity", time.Hour*24, "Key validity")
-	keytype          = pflag.String("key_type", "rsa", "Type of private key to generate - rsa, ecdsa or ed25519")
+	keysize          = pflag.Int("key_size", 0, "Size of key to generate. Ignored for ed25519 keys. (default 2048 for rsa keys, 256 for ecdsa keys)")
+	validity         = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
+	keytype          = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
 	publicFilePrefix = pflag.String("public_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
 )
 
@@ -30,7 +30,7 @@ func main() {
 
 	c, err := client.ReadConfig(*cfg)
 	if err != nil {
-		log.Fatalf("Error parsing config file: %v\n", err)
+		log.Printf("Error parsing config file: %v\n", err)
 	}
 	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
 	if err := browser.OpenURL(c.CA); err != nil {
@@ -52,7 +52,7 @@ func main() {
 	}
 	sock, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 	if err != nil {
-		log.Fatalln("Error connecting to agent: %s", err)
+		log.Fatalf("Error connecting to agent: %v\n", err)
 	}
 	defer sock.Close()
 	a := agent.NewClient(sock)

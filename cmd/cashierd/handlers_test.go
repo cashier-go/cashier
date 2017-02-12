@@ -34,19 +34,17 @@ func newContext(t *testing.T) *appContext {
 	defer os.Remove(f.Name())
 	f.Write(testdata.Priv)
 	f.Close()
-	signer, err := signer.New(&config.SSH{
+	if keysigner, err = signer.New(&config.SSH{
 		SigningKey: f.Name(),
 		MaxAge:     "1h",
-	})
-	if err != nil {
+	}); err != nil {
 		t.Error(err)
 	}
+	authprovider = testprovider.New()
+	certstore = store.NewMemoryStore()
 	return &appContext{
-		cookiestore:  sessions.NewCookieStore([]byte("secret")),
-		authprovider: testprovider.New(),
-		certstore:    store.NewMemoryStore(),
-		authsession:  &auth.Session{AuthURL: "https://www.example.com/auth"},
-		sshKeySigner: signer,
+		cookiestore: sessions.NewCookieStore([]byte("secret")),
+		authsession: &auth.Session{AuthURL: "https://www.example.com/auth"},
 	}
 }
 
