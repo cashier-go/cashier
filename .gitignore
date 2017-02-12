@@ -5,5 +5,5 @@ tmp
 /cashier
 /cashierd
 
-signing_key
+signing_key*
 http.log

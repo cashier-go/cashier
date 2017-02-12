@@ -7,6 +7,7 @@ import (
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/nsheridan/cashier/server/metrics"
 
 	githubapi "github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -73,12 +74,16 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	if c.organization == "" {
 		// There's no organization and the token is valid. Can only reach here
 		// if there's a user whitelist set and the user is in the whitelist.
+		metrics.M.AuthValid.WithLabelValues("github").Inc()
 		return true
 	}
 	client := githubapi.NewClient(c.newClient(token))
 	member, _, err := client.Organizations.IsMember(c.organization, c.Username(token))
 	if err != nil {
 		return false
+	}
+	if member {
+		metrics.M.AuthValid.WithLabelValues("github").Inc()
 	}
 	return member
 }
@@ -108,6 +113,7 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 	if t.Expiry.Unix() <= 0 {
 		t.Expiry = time.Now().Add(1 * time.Hour)
 	}
+	metrics.M.AuthExchange.WithLabelValues("github").Inc()
 	return t, nil
 }
 
