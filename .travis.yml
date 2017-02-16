@@ -7,11 +7,12 @@ env:
 
 go:
   - 1.7.5
-  - 1.8rc3
+  - 1.8
+  - tip
 
 matrix:
   allow_failures:
-    - go: 1.8rc2
+    - go: tip
 
 before_install:
   - go get -v github.com/golang/lint/golint
