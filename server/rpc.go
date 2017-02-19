@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"log"
@@ -61,7 +61,7 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 	return handler(ctx, req)
 }
 
-func newGrpcServer(l net.Listener) {
+func runGRPCServer(l net.Listener) {
 	serv := grpc.NewServer(grpc.UnaryInterceptor(authInterceptor))
 	proto.RegisterSignerServer(serv, &rpcServer{})
 	serv.Serve(l)
