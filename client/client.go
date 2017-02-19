@@ -10,12 +10,19 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
+	"github.com/golang/protobuf/ptypes"
 	"github.com/nsheridan/cashier/lib"
+	"github.com/nsheridan/cashier/proto"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+	"golang.org/x/net/context"
 )
 
 // SavePublicFiles installs the public part of the cert and key.
@@ -99,7 +106,7 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 		return nil, err
 	}
 	s, err := json.Marshal(&lib.SignRequest{
-		Key:        lib.GetPublicKey(pub),
+		Key:        string(lib.GetPublicKey(pub)),
 		ValidUntil: time.Now().Add(validity),
 	})
 	if err != nil {
@@ -119,6 +126,54 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 	cert, ok := k.(*ssh.Certificate)
 	if !ok {
 		return nil, fmt.Errorf("did not receive a valid certificate from server")
+	}
+	return cert, nil
+}
+
+// RPCSign sends the public key to the CA to be signed.
+func RPCSign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, error) {
+	var opts []grpc.DialOption
+	var srv string
+	if strings.HasPrefix(conf.CA, "https://") {
+		srv = strings.TrimPrefix(conf.CA, "https://")
+	} else {
+		srv = strings.TrimPrefix(conf.CA, "http://")
+		opts = append(opts, grpc.WithInsecure())
+	}
+	conn, err := grpc.Dial(srv, opts...)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	stub := proto.NewSignerClient(conn)
+	lifetime, err := time.ParseDuration(conf.Validity)
+	if err != nil {
+		return nil, err
+	}
+	deadline := time.Now().Add(lifetime)
+	ts, err := ptypes.TimestampProto(deadline)
+	if err != nil {
+		return nil, err
+	}
+	req := &proto.SignRequest{
+		Key:        lib.GetPublicKey(pub),
+		ValidUntil: ts,
+	}
+	md := metadata.New(map[string]string{
+		"security": "authorization",
+		"payload":  token,
+	})
+	r, err := stub.Sign(metadata.NewContext(context.TODO(), md), req)
+	if err != nil {
+		return nil, err
+	}
+	k, _, _, _, err := ssh.ParseAuthorizedKey(r.Cert)
+	if err != nil {
+		return nil, err
+	}
+	cert, ok := k.(*ssh.Certificate)
+	if !ok {
+		return nil, errors.New("did not receive a valid certificate from server")
 	}
 	return cert, nil
 }

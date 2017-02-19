@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/soheilhy/cmux"
 
 	"go4.org/wkfs"
 	"golang.org/x/crypto/acme/autocert"
@@ -153,8 +154,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	token := &oauth2.Token{
 		AccessToken: t,
 	}
-	ok := authprovider.Valid(token)
-	if !ok {
+	if !authprovider.Valid(token) {
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 
@@ -174,7 +174,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	}
 	if err := json.NewEncoder(w).Encode(&lib.SignResponse{
 		Status:   "ok",
-		Response: lib.GetPublicKey(cert),
+		Response: string(lib.GetPublicKey(cert)),
 	}); err != nil {
 		return http.StatusInternalServerError, errors.Wrap(err, "error encoding response")
 	}
@@ -425,5 +425,11 @@ func main() {
 	s := &http.Server{
 		Handler: h,
 	}
-	log.Fatal(s.Serve(l))
+
+	cm := cmux.New(l)
+	httpl := cm.Match(cmux.HTTP1Fast())
+	grpcl := cm.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+	go s.Serve(httpl)
+	go newGrpcServer(grpcl)
+	log.Fatal(cm.Serve())
 }

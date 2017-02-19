@@ -1,0 +1,17 @@
+syntax = "proto3";
+package proto;
+
+import "google/protobuf/timestamp.proto";
+
+message SignRequest {
+  bytes key = 1;
+  google.protobuf.Timestamp valid_until = 2;
+}
+
+message SignResponse {
+  bytes cert = 1;
+}
+
+service Signer {
+  rpc Sign(SignRequest) returns (SignResponse) {}
+}

@@ -53,6 +53,6 @@ func parseCertificate(cert *ssh.Certificate) *CertRecord {
 		Principals: types.StringSlice(cert.ValidPrincipals),
 		CreatedAt:  parseTime(cert.ValidAfter),
 		Expires:    parseTime(cert.ValidBefore),
-		Raw:        lib.GetPublicKey(cert),
+		Raw:        string(lib.GetPublicKey(cert)),
 	}
 }

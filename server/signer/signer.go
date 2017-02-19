@@ -10,7 +10,9 @@ import (
 	"go4.org/wkfs"
 	_ "go4.org/wkfs/gcs" // Register "/gcs/" as a wkfs.
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/nsheridan/cashier/lib"
+	"github.com/nsheridan/cashier/proto"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/stripe/krl"
@@ -49,6 +51,19 @@ func (s *KeySigner) setPermissions(cert *ssh.Certificate) {
 	if len(cert.Extensions) == 0 {
 		cert.Extensions = defaultPermissions
 	}
+}
+
+// SignUserKeyFromRPC returns a signed ssh certificate.
+func (s *KeySigner) SignUserKeyFromRPC(req *proto.SignRequest, username string) (*ssh.Certificate, error) {
+	valid, err := ptypes.Timestamp(req.GetValidUntil())
+	if err != nil {
+		return nil, err
+	}
+	r := &lib.SignRequest{
+		Key:        string(req.GetKey()),
+		ValidUntil: valid,
+	}
+	return s.SignUserKey(r, username)
 }
 
 // SignUserKey returns a signed ssh certificate.

@@ -13,4 +13,4 @@ go list ./... |grep -v vendor/ |xargs go vet
 if ! type -f golint > /dev/null; then
   go get -u github.com/golang/lint/golint
 fi
-go list ./... |grep -v vendor/ |xargs -L1 golint -set_exit_status
+go list ./... |egrep -v 'vendor/|proto$' |xargs -L1 golint -set_exit_status

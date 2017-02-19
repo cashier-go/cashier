@@ -12,6 +12,7 @@ import (
 	"github.com/nsheridan/cashier/client"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
 
@@ -23,10 +24,12 @@ var (
 	validity         = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
 	keytype          = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
 	publicFilePrefix = pflag.String("public_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
+	useGRPC          = pflag.Bool("use_grpc", false, "Use grpc (experimental)")
 )
 
 func main() {
 	pflag.Parse()
+	var err error
 
 	c, err := client.ReadConfig(*cfg)
 	if err != nil {
@@ -46,7 +49,12 @@ func main() {
 	var token string
 	fmt.Scanln(&token)
 
-	cert, err := client.Sign(pub, token, c)
+	var cert *ssh.Certificate
+	if *useGRPC {
+		cert, err = client.RPCSign(pub, token, c)
+	} else {
+		cert, err = client.Sign(pub, token, c)
+	}
 	if err != nil {
 		log.Fatalln(err)
 	}
