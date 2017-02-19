@@ -99,7 +99,7 @@ func (s *RepositoriesService) GetDeployment(owner, repo string, deploymentID int
 		return nil, resp, err
 	}
 
-	return deployment, resp, err
+	return deployment, resp, nil
 }
 
 // CreateDeployment creates a new deployment for a repository.
@@ -122,7 +122,7 @@ func (s *RepositoriesService) CreateDeployment(owner, repo string, request *Depl
 		return nil, resp, err
 	}
 
-	return d, resp, err
+	return d, resp, nil
 }
 
 // DeploymentStatus represents the status of a
@@ -144,7 +144,6 @@ type DeploymentStatus struct {
 // DeploymentStatusRequest represents a deployment request
 type DeploymentStatusRequest struct {
 	State          *string `json:"state,omitempty"`
-	TargetURL      *string `json:"target_url,omitempty"` // Deprecated. Use LogURL instead.
 	LogURL         *string `json:"log_url,omitempty"`
 	Description    *string `json:"description,omitempty"`
 	EnvironmentURL *string `json:"environment_url,omitempty"`
@@ -195,7 +194,7 @@ func (s *RepositoriesService) GetDeploymentStatus(owner, repo string, deployment
 		return nil, resp, err
 	}
 
-	return d, resp, err
+	return d, resp, nil
 }
 
 // CreateDeploymentStatus creates a new status for a deployment.
@@ -218,5 +217,5 @@ func (s *RepositoriesService) CreateDeploymentStatus(owner, repo string, deploym
 		return nil, resp, err
 	}
 
-	return d, resp, err
+	return d, resp, nil
 }

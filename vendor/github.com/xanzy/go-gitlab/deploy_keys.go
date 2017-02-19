@@ -46,14 +46,14 @@ func (k DeployKey) String() string {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/deploy_keys.html#list-deploy-keys
-func (s *DeployKeysService) ListDeployKeys(pid interface{}) ([]*DeployKey, *Response, error) {
+func (s *DeployKeysService) ListDeployKeys(pid interface{}, options ...OptionFunc) ([]*DeployKey, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/keys", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("GET", u, nil)
+	req, err := s.client.NewRequest("GET", u, nil, options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,16 +71,14 @@ func (s *DeployKeysService) ListDeployKeys(pid interface{}) ([]*DeployKey, *Resp
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/deploy_keys.html#single-deploy-key
-func (s *DeployKeysService) GetDeployKey(
-	pid interface{},
-	deployKey int) (*DeployKey, *Response, error) {
+func (s *DeployKeysService) GetDeployKey(pid interface{}, deployKey int, options ...OptionFunc) (*DeployKey, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/keys/%d", url.QueryEscape(project), deployKey)
 
-	req, err := s.client.NewRequest("GET", u, nil)
+	req, err := s.client.NewRequest("GET", u, nil, options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,16 +107,14 @@ type AddDeployKeyOptions struct {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/deploy_keys.html#add-deploy-key
-func (s *DeployKeysService) AddDeployKey(
-	pid interface{},
-	opt *AddDeployKeyOptions) (*DeployKey, *Response, error) {
+func (s *DeployKeysService) AddDeployKey(pid interface{}, opt *AddDeployKeyOptions, options ...OptionFunc) (*DeployKey, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/keys", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("POST", u, opt)
+	req, err := s.client.NewRequest("POST", u, opt, options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -136,14 +132,14 @@ func (s *DeployKeysService) AddDeployKey(
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/deploy_keys.html#delete-deploy-key
-func (s *DeployKeysService) DeleteDeployKey(pid interface{}, deployKey int) (*Response, error) {
+func (s *DeployKeysService) DeleteDeployKey(pid interface{}, deployKey int, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/keys/%d", url.QueryEscape(project), deployKey)
 
-	req, err := s.client.NewRequest("DELETE", u, nil)
+	req, err := s.client.NewRequest("DELETE", u, nil, options)
 	if err != nil {
 		return nil, err
 	}

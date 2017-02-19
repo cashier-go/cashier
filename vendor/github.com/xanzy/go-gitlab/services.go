@@ -60,16 +60,14 @@ type SetGitLabCIServiceOptions struct {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#edit-gitlab-ci-service
-func (s *ServicesService) SetGitLabCIService(
-	pid interface{},
-	opt *SetGitLabCIServiceOptions) (*Response, error) {
+func (s *ServicesService) SetGitLabCIService(pid interface{}, opt *SetGitLabCIServiceOptions, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/gitlab-ci", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("PUT", u, opt)
+	req, err := s.client.NewRequest("PUT", u, opt, options)
 	if err != nil {
 		return nil, err
 	}
@@ -81,14 +79,14 @@ func (s *ServicesService) SetGitLabCIService(
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#delete-gitlab-ci-service
-func (s *ServicesService) DeleteGitLabCIService(pid interface{}) (*Response, error) {
+func (s *ServicesService) DeleteGitLabCIService(pid interface{}, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/gitlab-ci", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("DELETE", u, nil)
+	req, err := s.client.NewRequest("DELETE", u, nil, options)
 	if err != nil {
 		return nil, err
 	}
@@ -110,16 +108,14 @@ type SetHipChatServiceOptions struct {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#edit-hipchat-service
-func (s *ServicesService) SetHipChatService(
-	pid interface{},
-	opt *SetHipChatServiceOptions) (*Response, error) {
+func (s *ServicesService) SetHipChatService(pid interface{}, opt *SetHipChatServiceOptions, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/hipchat", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("PUT", u, opt)
+	req, err := s.client.NewRequest("PUT", u, opt, options)
 	if err != nil {
 		return nil, err
 	}
@@ -131,14 +127,14 @@ func (s *ServicesService) SetHipChatService(
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#delete-hipchat-service
-func (s *ServicesService) DeleteHipChatService(pid interface{}) (*Response, error) {
+func (s *ServicesService) DeleteHipChatService(pid interface{}, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/hipchat", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("DELETE", u, nil)
+	req, err := s.client.NewRequest("DELETE", u, nil, options)
 	if err != nil {
 		return nil, err
 	}
@@ -161,16 +157,14 @@ type SetDroneCIServiceOptions struct {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#createedit-drone-ci-service
-func (s *ServicesService) SetDroneCIService(
-	pid interface{},
-	opt *SetDroneCIServiceOptions) (*Response, error) {
+func (s *ServicesService) SetDroneCIService(pid interface{}, opt *SetDroneCIServiceOptions, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/drone-ci", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("PUT", u, opt)
+	req, err := s.client.NewRequest("PUT", u, opt, options)
 	if err != nil {
 		return nil, err
 	}
@@ -182,14 +176,14 @@ func (s *ServicesService) SetDroneCIService(
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#delete-drone-ci-service
-func (s *ServicesService) DeleteDroneCIService(pid interface{}) (*Response, error) {
+func (s *ServicesService) DeleteDroneCIService(pid interface{}, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/drone-ci", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("DELETE", u, nil)
+	req, err := s.client.NewRequest("DELETE", u, nil, options)
 	if err != nil {
 		return nil, err
 	}
@@ -214,14 +208,14 @@ type DroneCIService struct {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#get-drone-ci-service-settings
-func (s *ServicesService) GetDroneCIService(pid interface{}) (*DroneCIService, *Response, error) {
+func (s *ServicesService) GetDroneCIService(pid interface{}, options ...OptionFunc) (*DroneCIService, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/drone-ci", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("GET", u, nil)
+	req, err := s.client.NewRequest("GET", u, nil, options)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -250,16 +244,14 @@ type SetSlackServiceOptions struct {
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#edit-slack-service
-func (s *ServicesService) SetSlackService(
-	pid interface{},
-	opt *SetSlackServiceOptions) (*Response, error) {
+func (s *ServicesService) SetSlackService(pid interface{}, opt *SetSlackServiceOptions, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/slack", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("PUT", u, opt)
+	req, err := s.client.NewRequest("PUT", u, opt, options)
 	if err != nil {
 		return nil, err
 	}
@@ -271,14 +263,14 @@ func (s *ServicesService) SetSlackService(
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ce/api/services.html#delete-slack-service
-func (s *ServicesService) DeleteSlackService(pid interface{}) (*Response, error) {
+func (s *ServicesService) DeleteSlackService(pid interface{}, options ...OptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, err
 	}
 	u := fmt.Sprintf("projects/%s/services/slack", url.QueryEscape(project))
 
-	req, err := s.client.NewRequest("DELETE", u, nil)
+	req, err := s.client.NewRequest("DELETE", u, nil, options)
 	if err != nil {
 		return nil, err
 	}

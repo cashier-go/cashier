@@ -13,7 +13,7 @@ import (
 // IssuesService handles communication with the issue related
 // methods of the GitHub API.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/
+// GitHub API docs: https://developer.github.com/v3/issues/
 type IssuesService service
 
 // Issue represents a GitHub issue on a repository.
@@ -68,22 +68,22 @@ type IssueRequest struct {
 // IssueListOptions specifies the optional parameters to the IssuesService.List
 // and IssuesService.ListByOrg methods.
 type IssueListOptions struct {
-	// Filter specifies which issues to list.  Possible values are: assigned,
-	// created, mentioned, subscribed, all.  Default is "assigned".
+	// Filter specifies which issues to list. Possible values are: assigned,
+	// created, mentioned, subscribed, all. Default is "assigned".
 	Filter string `url:"filter,omitempty"`
 
-	// State filters issues based on their state.  Possible values are: open,
-	// closed, all.  Default is "open".
+	// State filters issues based on their state. Possible values are: open,
+	// closed, all. Default is "open".
 	State string `url:"state,omitempty"`
 
 	// Labels filters issues based on their label.
 	Labels []string `url:"labels,comma,omitempty"`
 
-	// Sort specifies how to sort issues.  Possible values are: created, updated,
-	// and comments.  Default value is "created".
+	// Sort specifies how to sort issues. Possible values are: created, updated,
+	// and comments. Default value is "created".
 	Sort string `url:"sort,omitempty"`
 
-	// Direction in which to sort issues.  Possible values are: asc, desc.
+	// Direction in which to sort issues. Possible values are: asc, desc.
 	// Default is "desc".
 	Direction string `url:"direction,omitempty"`
 
@@ -102,12 +102,12 @@ type PullRequestLinks struct {
 	PatchURL *string `json:"patch_url,omitempty"`
 }
 
-// List the issues for the authenticated user.  If all is true, list issues
+// List the issues for the authenticated user. If all is true, list issues
 // across all the user's visible repositories including owned, member, and
 // organization repositories; if false, list only owned and member
 // repositories.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/#list-issues
+// GitHub API docs: https://developer.github.com/v3/issues/#list-issues
 func (s *IssuesService) List(all bool, opt *IssueListOptions) ([]*Issue, *Response, error) {
 	var u string
 	if all {
@@ -121,7 +121,7 @@ func (s *IssuesService) List(all bool, opt *IssueListOptions) ([]*Issue, *Respon
 // ListByOrg fetches the issues in the specified organization for the
 // authenticated user.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/#list-issues
+// GitHub API docs: https://developer.github.com/v3/issues/#list-issues
 func (s *IssuesService) ListByOrg(org string, opt *IssueListOptions) ([]*Issue, *Response, error) {
 	u := fmt.Sprintf("orgs/%v/issues", org)
 	return s.listIssues(u, opt)
@@ -153,16 +153,16 @@ func (s *IssuesService) listIssues(u string, opt *IssueListOptions) ([]*Issue, *
 // IssueListByRepoOptions specifies the optional parameters to the
 // IssuesService.ListByRepo method.
 type IssueListByRepoOptions struct {
-	// Milestone limits issues for the specified milestone.  Possible values are
+	// Milestone limits issues for the specified milestone. Possible values are
 	// a milestone number, "none" for issues with no milestone, "*" for issues
 	// with any milestone.
 	Milestone string `url:"milestone,omitempty"`
 
-	// State filters issues based on their state.  Possible values are: open,
-	// closed, all.  Default is "open".
+	// State filters issues based on their state. Possible values are: open,
+	// closed, all. Default is "open".
 	State string `url:"state,omitempty"`
 
-	// Assignee filters issues based on their assignee.  Possible values are a
+	// Assignee filters issues based on their assignee. Possible values are a
 	// user name, "none" for issues that are not assigned, "*" for issues with
 	// any assigned user.
 	Assignee string `url:"assignee,omitempty"`
@@ -176,11 +176,11 @@ type IssueListByRepoOptions struct {
 	// Labels filters issues based on their label.
 	Labels []string `url:"labels,omitempty,comma"`
 
-	// Sort specifies how to sort issues.  Possible values are: created, updated,
-	// and comments.  Default value is "created".
+	// Sort specifies how to sort issues. Possible values are: created, updated,
+	// and comments. Default value is "created".
 	Sort string `url:"sort,omitempty"`
 
-	// Direction in which to sort issues.  Possible values are: asc, desc.
+	// Direction in which to sort issues. Possible values are: asc, desc.
 	// Default is "desc".
 	Direction string `url:"direction,omitempty"`
 
@@ -192,7 +192,7 @@ type IssueListByRepoOptions struct {
 
 // ListByRepo lists the issues for the specified repository.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/#list-issues-for-a-repository
+// GitHub API docs: https://developer.github.com/v3/issues/#list-issues-for-a-repository
 func (s *IssuesService) ListByRepo(owner string, repo string, opt *IssueListByRepoOptions) ([]*Issue, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues", owner, repo)
 	u, err := addOptions(u, opt)
@@ -219,7 +219,7 @@ func (s *IssuesService) ListByRepo(owner string, repo string, opt *IssueListByRe
 
 // Get a single issue.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/#get-a-single-issue
+// GitHub API docs: https://developer.github.com/v3/issues/#get-a-single-issue
 func (s *IssuesService) Get(owner string, repo string, number int) (*Issue, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/%d", owner, repo, number)
 	req, err := s.client.NewRequest("GET", u, nil)
@@ -241,7 +241,7 @@ func (s *IssuesService) Get(owner string, repo string, number int) (*Issue, *Res
 
 // Create a new issue on the specified repository.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/#create-an-issue
+// GitHub API docs: https://developer.github.com/v3/issues/#create-an-issue
 func (s *IssuesService) Create(owner string, repo string, issue *IssueRequest) (*Issue, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues", owner, repo)
 	req, err := s.client.NewRequest("POST", u, issue)
@@ -260,7 +260,7 @@ func (s *IssuesService) Create(owner string, repo string, issue *IssueRequest) (
 
 // Edit an issue.
 //
-// GitHub API docs: http://developer.github.com/v3/issues/#edit-an-issue
+// GitHub API docs: https://developer.github.com/v3/issues/#edit-an-issue
 func (s *IssuesService) Edit(owner string, repo string, number int, issue *IssueRequest) (*Issue, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/%d", owner, repo, number)
 	req, err := s.client.NewRequest("PATCH", u, issue)
