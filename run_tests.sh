@@ -6,8 +6,8 @@
 
 set -xue
 
-go install -v ./cmd/cashier ./cmd/cashierd
-go list ./... |grep -v vendor/ |xargs go test
+go install -race -v ./cmd/cashier ./cmd/cashierd
+go list ./... |grep -v vendor/ |xargs go test -race
 gofmt -d $(find * -type f -name '*.go' -not -path 'vendor/*')
 go list ./... |grep -v vendor/ |xargs go vet
 if ! type -f golint > /dev/null; then
