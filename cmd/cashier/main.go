@@ -29,6 +29,8 @@ var (
 
 func main() {
 	pflag.Parse()
+	log.SetPrefix("cashier: ")
+	log.SetFlags(0)
 	var err error
 
 	c, err := client.ReadConfig(*cfg)
