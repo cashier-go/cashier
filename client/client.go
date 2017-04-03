@@ -88,10 +88,10 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Bad response from server: %s", resp.Status)
 	}
-	defer resp.Body.Close()
 	c := &lib.SignResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(c); err != nil {
 		return nil, errors.Wrap(err, "unable to decode server response")
