@@ -11,3 +11,5 @@ CREATE TABLE `issued_certs` (
   `raw_key` text,
   PRIMARY KEY (`key_id`)
 );
+CREATE INDEX `idx_expires_at` ON `issued_certs` (`expires_at`);
+CREATE INDEX `idx_revoked_expires_at` ON `issued_certs` (`revoked`, `expires_at`);
