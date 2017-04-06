@@ -45,9 +45,11 @@ func testStore(t *testing.T, db CertStorer) {
 	defer db.Close()
 
 	r := &CertRecord{
-		KeyID:     "a",
-		CreatedAt: time.Now().UTC(),
-		Expires:   time.Now().UTC().Add(1 * time.Minute),
+		KeyID:      "a",
+		Principals: []string{"b"},
+		CreatedAt:  time.Now().UTC(),
+		Expires:    time.Now().UTC().Add(1 * time.Minute),
+		Raw:        "AAAAAA",
 	}
 	if err := db.SetRecord(r); err != nil {
 		t.Error(err)
