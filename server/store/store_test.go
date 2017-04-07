@@ -48,14 +48,28 @@ func testStore(t *testing.T, db CertStorer) {
 		KeyID:      "a",
 		Principals: []string{"b"},
 		CreatedAt:  time.Now().UTC(),
-		Expires:    time.Now().UTC().Add(1 * time.Minute),
+		Expires:    time.Now().UTC().Add(-1 * time.Second),
 		Raw:        "AAAAAA",
 	}
 	if err := db.SetRecord(r); err != nil {
 		t.Error(err)
 	}
-	if _, err := db.List(true); err != nil {
+
+	// includeExpired = false should return 0 results
+	recs, err := db.List(false)
+	if err != nil {
 		t.Error(err)
+	}
+	if len(recs) > 0 {
+		t.Errorf("Expected 0 results, got %d", len(recs))
+	}
+	// includeExpired = false should return 1 result
+	recs, err = db.List(true)
+	if err != nil {
+		t.Error(err)
+	}
+	if recs[0].KeyID != r.KeyID {
+		t.Error("key mismatch")
 	}
 
 	c, _, _, _, _ := ssh.ParseAuthorizedKey(testdata.Cert)
@@ -66,8 +80,12 @@ func testStore(t *testing.T, db CertStorer) {
 		t.Error(err)
 	}
 
-	if _, err := db.Get("key"); err != nil {
+	ret, err := db.Get("key")
+	if err != nil {
 		t.Error(err)
+	}
+	if ret.KeyID != cert.KeyId {
+		t.Error("key mismatch")
 	}
 	if err := db.Revoke("key"); err != nil {
 		t.Error(err)

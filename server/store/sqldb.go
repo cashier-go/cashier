@@ -120,8 +120,14 @@ func (db *SQLStore) List(includeExpired bool) ([]*CertRecord, error) {
 		return nil, err
 	}
 	recs := []*CertRecord{}
-	if err := db.listAll.Select(&recs); err != nil {
-		return nil, err
+	if includeExpired {
+		if err := db.listAll.Select(&recs); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := db.listCurrent.Select(&recs, time.Now()); err != nil {
+			return nil, err
+		}
 	}
 	return recs, nil
 }
