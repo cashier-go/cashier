@@ -25,7 +25,6 @@ var (
 )
 
 func TestCert(t *testing.T) {
-	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
 		ValidUntil: time.Now().Add(1 * time.Hour),
@@ -54,7 +53,6 @@ func TestCert(t *testing.T) {
 }
 
 func TestRevocationList(t *testing.T) {
-	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
 		ValidUntil: time.Now().Add(1 * time.Hour),
@@ -82,7 +80,6 @@ func TestRevocationList(t *testing.T) {
 }
 
 func TestPermissions(t *testing.T) {
-	t.Parallel()
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
 		ValidUntil: time.Now().Add(1 * time.Hour),

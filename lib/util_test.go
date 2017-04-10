@@ -9,7 +9,6 @@ import (
 )
 
 func TestGetPublicKey(t *testing.T) {
-	t.Parallel()
 	c, _, _, _, _ := ssh.ParseAuthorizedKey(testdata.Cert)
 	if !reflect.DeepEqual(GetPublicKey(c.(*ssh.Certificate)), testdata.Cert) {
 		t.Fail()

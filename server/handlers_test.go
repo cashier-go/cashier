@@ -49,7 +49,6 @@ func newContext(t *testing.T) *appContext {
 }
 
 func TestLoginHandler(t *testing.T) {
-	t.Parallel()
 	req, _ := http.NewRequest("GET", "/auth/login", nil)
 	resp := httptest.NewRecorder()
 	loginHandler(newContext(t), resp, req)
@@ -59,7 +58,6 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestCallbackHandler(t *testing.T) {
-	t.Parallel()
 	req, _ := http.NewRequest("GET", "/auth/callback", nil)
 	req.Form = url.Values{"state": []string{"state"}, "code": []string{"abcdef"}}
 	resp := httptest.NewRecorder()
@@ -72,7 +70,6 @@ func TestCallbackHandler(t *testing.T) {
 }
 
 func TestRootHandler(t *testing.T) {
-	t.Parallel()
 	req, _ := http.NewRequest("GET", "/", nil)
 	resp := httptest.NewRecorder()
 	ctx := newContext(t)
@@ -88,7 +85,6 @@ func TestRootHandler(t *testing.T) {
 }
 
 func TestRootHandlerNoSession(t *testing.T) {
-	t.Parallel()
 	req, _ := http.NewRequest("GET", "/", nil)
 	resp := httptest.NewRecorder()
 	ctx := newContext(t)
@@ -99,7 +95,6 @@ func TestRootHandlerNoSession(t *testing.T) {
 }
 
 func TestSignRevoke(t *testing.T) {
-	t.Parallel()
 	s, _ := json.Marshal(&lib.SignRequest{
 		Key:        string(testdata.Pub),
 		ValidUntil: time.Now().UTC().Add(1 * time.Hour),
