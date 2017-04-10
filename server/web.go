@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -248,6 +249,11 @@ func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (i
 	return http.StatusSeeOther, nil
 }
 
+func healthcheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "ok")
+}
+
 // appHandler is a handler which uses appContext to manage state.
 type appHandler struct {
 	*appContext
@@ -304,6 +310,7 @@ func runHTTPServer(conf *config.Server, l net.Listener) {
 	r.Methods("GET").Path("/admin/certs").Handler(CSRF(appHandler{ctx, listAllCertsHandler}))
 	r.Methods("GET").Path("/admin/certs.json").Handler(appHandler{ctx, listCertsJSONHandler})
 	r.Methods("GET").Path("/metrics").Handler(promhttp.Handler())
+	r.Methods("GET").Path("/healthcheck").HandlerFunc(healthcheck)
 	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
 	h := handlers.LoggingHandler(logfile, r)
 	s := &http.Server{
