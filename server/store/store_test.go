@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"database/sql"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -159,4 +160,21 @@ func TestSQLiteStore(t *testing.T) {
 		t.Error(err)
 	}
 	testStore(t, db)
+}
+
+func TestMarshalCert(t *testing.T) {
+	a := assert.New(t)
+	c := &CertRecord{
+		KeyID:      "id",
+		Principals: []string{"user"},
+		CreatedAt:  time.Date(2017, time.April, 10, 13, 0, 0, 0, time.UTC),
+		Expires:    time.Date(2017, time.April, 11, 10, 0, 0, 0, time.UTC),
+		Raw:        "ABCDEF",
+	}
+	b, err := json.Marshal(c)
+	if err != nil {
+		t.Error(err)
+	}
+	want := `{"key_id":"id","principals":["user"],"revoked":false,"created_at":"2017-04-10 13:00:00 +0000","expires":"2017-04-11 10:00:00 +0000"}`
+	a.JSONEq(want, string(b))
 }

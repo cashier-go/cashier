@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -41,6 +42,20 @@ type CertRecord struct {
 	Expires    time.Time         `json:"expires" db:"expires_at"`
 	Revoked    bool              `json:"revoked" db:"revoked"`
 	Raw        string            `json:"-" db:"raw_key"`
+}
+
+func (c *CertRecord) MarshalJSON() ([]byte, error) {
+	type Alias CertRecord
+	f := "2006-01-02 15:04:05 -0700"
+	return json.Marshal(&struct {
+		*Alias
+		CreatedAt string `json:"created_at"`
+		Expires   string `json:"expires"`
+	}{
+		Alias:     (*Alias)(c),
+		CreatedAt: c.CreatedAt.Format(f),
+		Expires:   c.Expires.Format(f),
+	})
 }
 
 func parseTime(t uint64) time.Time {
