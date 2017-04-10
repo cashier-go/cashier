@@ -44,6 +44,9 @@ type CertRecord struct {
 	Raw        string            `json:"-" db:"raw_key"`
 }
 
+// MarshalJSON implements the json.Marshaler interface for the CreatedAt and
+// Expires fields.
+// The resulting string looks like "2017-04-11 10:00:00 +0000"
 func (c *CertRecord) MarshalJSON() ([]byte, error) {
 	type Alias CertRecord
 	f := "2006-01-02 15:04:05 -0700"
