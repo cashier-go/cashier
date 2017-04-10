@@ -4,11 +4,12 @@
 // license that can be found in the LICENSE file.
 
 // Repository contents API methods.
-// https://developer.github.com/v3/repos/contents/
+// GitHub API docs: https://developer.github.com/v3/repos/contents/
 
 package github
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -87,7 +88,7 @@ func (r *RepositoryContent) GetContent() (string, error) {
 // GetReadme gets the Readme file for the repository.
 //
 // GitHub API docs: https://developer.github.com/v3/repos/contents/#get-the-readme
-func (s *RepositoriesService) GetReadme(owner, repo string, opt *RepositoryContentGetOptions) (*RepositoryContent, *Response, error) {
+func (s *RepositoriesService) GetReadme(ctx context.Context, owner, repo string, opt *RepositoryContentGetOptions) (*RepositoryContent, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/readme", owner, repo)
 	u, err := addOptions(u, opt)
 	if err != nil {
@@ -98,7 +99,7 @@ func (s *RepositoriesService) GetReadme(owner, repo string, opt *RepositoryConte
 		return nil, nil, err
 	}
 	readme := new(RepositoryContent)
-	resp, err := s.client.Do(req, readme)
+	resp, err := s.client.Do(ctx, req, readme)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -109,10 +110,10 @@ func (s *RepositoriesService) GetReadme(owner, repo string, opt *RepositoryConte
 // specified file. This function will work with files of any size, as opposed
 // to GetContents which is limited to 1 Mb files. It is the caller's
 // responsibility to close the ReadCloser.
-func (s *RepositoriesService) DownloadContents(owner, repo, filepath string, opt *RepositoryContentGetOptions) (io.ReadCloser, error) {
+func (s *RepositoriesService) DownloadContents(ctx context.Context, owner, repo, filepath string, opt *RepositoryContentGetOptions) (io.ReadCloser, error) {
 	dir := path.Dir(filepath)
 	filename := path.Base(filepath)
-	_, dirContents, _, err := s.GetContents(owner, repo, dir, opt)
+	_, dirContents, _, err := s.GetContents(ctx, owner, repo, dir, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ func (s *RepositoriesService) DownloadContents(owner, repo, filepath string, opt
 // value and the other will be nil.
 //
 // GitHub API docs: https://developer.github.com/v3/repos/contents/#get-contents
-func (s *RepositoriesService) GetContents(owner, repo, path string, opt *RepositoryContentGetOptions) (fileContent *RepositoryContent, directoryContent []*RepositoryContent, resp *Response, err error) {
+func (s *RepositoriesService) GetContents(ctx context.Context, owner, repo, path string, opt *RepositoryContentGetOptions) (fileContent *RepositoryContent, directoryContent []*RepositoryContent, resp *Response, err error) {
 	escapedPath := (&url.URL{Path: path}).String()
 	u := fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, escapedPath)
 	u, err = addOptions(u, opt)
@@ -151,17 +152,17 @@ func (s *RepositoriesService) GetContents(owner, repo, path string, opt *Reposit
 		return nil, nil, nil, err
 	}
 	var rawJSON json.RawMessage
-	resp, err = s.client.Do(req, &rawJSON)
+	resp, err = s.client.Do(ctx, req, &rawJSON)
 	if err != nil {
 		return nil, nil, resp, err
 	}
 	fileUnmarshalError := json.Unmarshal(rawJSON, &fileContent)
 	if fileUnmarshalError == nil {
-		return fileContent, nil, resp, fileUnmarshalError
+		return fileContent, nil, resp, nil
 	}
 	directoryUnmarshalError := json.Unmarshal(rawJSON, &directoryContent)
 	if directoryUnmarshalError == nil {
-		return nil, directoryContent, resp, directoryUnmarshalError
+		return nil, directoryContent, resp, nil
 	}
 	return nil, nil, resp, fmt.Errorf("unmarshalling failed for both file and directory content: %s and %s ", fileUnmarshalError, directoryUnmarshalError)
 }
@@ -170,14 +171,14 @@ func (s *RepositoriesService) GetContents(owner, repo, path string, opt *Reposit
 // the commit and file metadata.
 //
 // GitHub API docs: https://developer.github.com/v3/repos/contents/#create-a-file
-func (s *RepositoriesService) CreateFile(owner, repo, path string, opt *RepositoryContentFileOptions) (*RepositoryContentResponse, *Response, error) {
+func (s *RepositoriesService) CreateFile(ctx context.Context, owner, repo, path string, opt *RepositoryContentFileOptions) (*RepositoryContentResponse, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, path)
 	req, err := s.client.NewRequest("PUT", u, opt)
 	if err != nil {
 		return nil, nil, err
 	}
 	createResponse := new(RepositoryContentResponse)
-	resp, err := s.client.Do(req, createResponse)
+	resp, err := s.client.Do(ctx, req, createResponse)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -188,14 +189,14 @@ func (s *RepositoriesService) CreateFile(owner, repo, path string, opt *Reposito
 // commit and file metadata. Requires the blob SHA of the file being updated.
 //
 // GitHub API docs: https://developer.github.com/v3/repos/contents/#update-a-file
-func (s *RepositoriesService) UpdateFile(owner, repo, path string, opt *RepositoryContentFileOptions) (*RepositoryContentResponse, *Response, error) {
+func (s *RepositoriesService) UpdateFile(ctx context.Context, owner, repo, path string, opt *RepositoryContentFileOptions) (*RepositoryContentResponse, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, path)
 	req, err := s.client.NewRequest("PUT", u, opt)
 	if err != nil {
 		return nil, nil, err
 	}
 	updateResponse := new(RepositoryContentResponse)
-	resp, err := s.client.Do(req, updateResponse)
+	resp, err := s.client.Do(ctx, req, updateResponse)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -206,14 +207,14 @@ func (s *RepositoriesService) UpdateFile(owner, repo, path string, opt *Reposito
 // Requires the blob SHA of the file to be deleted.
 //
 // GitHub API docs: https://developer.github.com/v3/repos/contents/#delete-a-file
-func (s *RepositoriesService) DeleteFile(owner, repo, path string, opt *RepositoryContentFileOptions) (*RepositoryContentResponse, *Response, error) {
+func (s *RepositoriesService) DeleteFile(ctx context.Context, owner, repo, path string, opt *RepositoryContentFileOptions) (*RepositoryContentResponse, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, path)
 	req, err := s.client.NewRequest("DELETE", u, opt)
 	if err != nil {
 		return nil, nil, err
 	}
 	deleteResponse := new(RepositoryContentResponse)
-	resp, err := s.client.Do(req, deleteResponse)
+	resp, err := s.client.Do(ctx, req, deleteResponse)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -236,7 +237,7 @@ const (
 // or github.Zipball constant.
 //
 // GitHub API docs: https://developer.github.com/v3/repos/contents/#get-archive-link
-func (s *RepositoriesService) GetArchiveLink(owner, repo string, archiveformat archiveFormat, opt *RepositoryContentGetOptions) (*url.URL, *Response, error) {
+func (s *RepositoriesService) GetArchiveLink(ctx context.Context, owner, repo string, archiveformat archiveFormat, opt *RepositoryContentGetOptions) (*url.URL, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/%s", owner, repo, archiveformat)
 	if opt != nil && opt.Ref != "" {
 		u += fmt.Sprintf("/%s", opt.Ref)
@@ -247,6 +248,7 @@ func (s *RepositoriesService) GetArchiveLink(owner, repo string, archiveformat a
 	}
 	var resp *http.Response
 	// Use http.DefaultTransport if no custom Transport is configured
+	ctx, req = withContext(ctx, req)
 	if s.client.client.Transport == nil {
 		resp, err = http.DefaultTransport.RoundTrip(req)
 	} else {

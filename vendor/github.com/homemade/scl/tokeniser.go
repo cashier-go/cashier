@@ -32,7 +32,7 @@ func (t *tokeniser) resetComment() {
 
 func (t *tokeniser) stripComments(l *scannerLine) string {
 
-	lastQuote := rune(0)
+	lastQuote := []rune{rune(0)}
 	slash := rune(47)
 	slashCount := 0
 
@@ -43,15 +43,15 @@ func (t *tokeniser) stripComments(l *scannerLine) string {
 			c := rune(v)
 
 			switch {
-			case c == lastQuote:
-				lastQuote = rune(0)
+			case c == lastQuote[0]:
+				lastQuote = lastQuote[1:]
 				slashCount = 0
 
 			case unicode.In(c, unicode.Quotation_Mark):
-				lastQuote = c
+				lastQuote = append([]rune{c}, lastQuote...)
 				slashCount = 0
 
-			case c == slash && lastQuote == rune(0):
+			case c == slash && lastQuote[0] == rune(0):
 
 				slashCount++
 				if slashCount == 2 {

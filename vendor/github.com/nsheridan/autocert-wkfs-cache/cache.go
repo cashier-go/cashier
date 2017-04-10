@@ -1,13 +1,13 @@
 package wkfscache
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
 	"go4.org/wkfs"
 
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/net/context"
 )
 
 type Cache string

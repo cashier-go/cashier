@@ -3,10 +3,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:generate go run gen-accessors.go
+
 package github
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,7 +27,7 @@ import (
 )
 
 const (
-	libraryVersion = "3"
+	libraryVersion = "6"
 	defaultBaseURL = "https://api.github.com/"
 	uploadBaseURL  = "https://uploads.github.com/"
 	userAgent      = "go-github/" + libraryVersion
@@ -86,14 +89,14 @@ const (
 	// https://developer.github.com/changes/2016-09-14-Integrations-Early-Access/
 	mediaTypeIntegrationPreview = "application/vnd.github.machine-man-preview+json"
 
-	// https://developer.github.com/changes/2016-11-28-preview-org-membership/
-	mediaTypeOrgMembershipPreview = "application/vnd.github.korra-preview+json"
-
 	// https://developer.github.com/changes/2017-01-05-commit-search-api/
 	mediaTypeCommitSearchPreview = "application/vnd.github.cloak-preview+json"
 
 	// https://developer.github.com/changes/2016-12-14-reviews-api/
 	mediaTypePullRequestReviewsPreview = "application/vnd.github.black-cat-preview+json"
+
+	// https://developer.github.com/changes/2017-02-28-user-blocking-apis-and-webhook/
+	mediaTypeBlockUsersPreview = "application/vnd.github.giant-sentry-fist-preview+json"
 )
 
 // A Client manages communication with the GitHub API.
@@ -383,7 +386,12 @@ func parseRate(r *http.Response) Rate {
 // interface, the raw response body will be written to v, without attempting to
 // first decode it. If rate limit is exceeded and reset time is in the future,
 // Do returns *RateLimitError immediately without making a network API call.
-func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
+//
+// The provided ctx must be non-nil. If it is canceled or times out,
+// ctx.Err() will be returned.
+func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Response, error) {
+	ctx, req = withContext(ctx, req)
+
 	rateLimitCategory := category(req.URL.Path)
 
 	// If we've hit rate limit, don't make further requests before Reset time.
@@ -393,12 +401,22 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
+		// If we got an error, and the context has been canceled,
+		// the context's error is probably more useful.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		// If the error type is *url.Error, sanitize its URL before returning.
 		if e, ok := err.(*url.Error); ok {
 			if url, err := url.Parse(e.URL); err == nil {
 				e.URL = sanitizeURL(url).String()
 				return nil, e
 			}
 		}
+
 		return nil, err
 	}
 
@@ -711,7 +729,7 @@ func category(path string) rateLimitCategory {
 }
 
 // RateLimits returns the rate limits for the current client.
-func (c *Client) RateLimits() (*RateLimits, *Response, error) {
+func (c *Client) RateLimits(ctx context.Context) (*RateLimits, *Response, error) {
 	req, err := c.NewRequest("GET", "rate_limit", nil)
 	if err != nil {
 		return nil, nil, err
@@ -720,7 +738,7 @@ func (c *Client) RateLimits() (*RateLimits, *Response, error) {
 	response := new(struct {
 		Resources *RateLimits `json:"resources"`
 	})
-	resp, err := c.Do(req, response)
+	resp, err := c.Do(ctx, req, response)
 	if err != nil {
 		return nil, nil, err
 	}

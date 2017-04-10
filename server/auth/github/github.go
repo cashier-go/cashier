@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -78,7 +79,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		return true
 	}
 	client := githubapi.NewClient(c.newClient(token))
-	member, _, err := client.Organizations.IsMember(c.organization, c.Username(token))
+	member, _, err := client.Organizations.IsMember(context.TODO(), c.organization, c.Username(token))
 	if err != nil {
 		return false
 	}
@@ -120,7 +121,7 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 // Username retrieves the username portion of the user's email address.
 func (c *Config) Username(token *oauth2.Token) string {
 	client := githubapi.NewClient(c.newClient(token))
-	u, _, err := client.Users.Get("")
+	u, _, err := client.Users.Get(context.TODO(), "")
 	if err != nil {
 		return ""
 	}
