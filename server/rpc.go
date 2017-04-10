@@ -53,8 +53,8 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 		if !authprovider.Valid(token) {
 			return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
 		}
-		authprovider.Revoke(token)
 		ctx = context.WithValue(ctx, usernameKey, authprovider.Username(token))
+		authprovider.Revoke(token)
 	default:
 		return nil, grpc.Errorf(codes.InvalidArgument, "unknown argument")
 	}
