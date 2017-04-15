@@ -57,13 +57,12 @@ func (ms *MemoryStore) List(includeExpired bool) ([]*CertRecord, error) {
 }
 
 // Revoke an issued cert by id.
-func (ms *MemoryStore) Revoke(id string) error {
-	r, err := ms.Get(id)
-	if err != nil {
-		return err
+func (ms *MemoryStore) Revoke(ids []string) error {
+	ms.Lock()
+	defer ms.Unlock()
+	for _, id := range ids {
+		ms.certs[id].Revoked = true
 	}
-	r.Revoked = true
-	ms.SetRecord(r)
 	return nil
 }
 

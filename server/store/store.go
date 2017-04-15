@@ -29,7 +29,7 @@ type CertStorer interface {
 	SetCert(cert *ssh.Certificate) error
 	SetRecord(record *CertRecord) error
 	List(includeExpired bool) ([]*CertRecord, error)
-	Revoke(id string) error
+	Revoke(id []string) error
 	GetRevoked() ([]*CertRecord, error)
 	Close() error
 }

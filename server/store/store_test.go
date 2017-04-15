@@ -87,7 +87,7 @@ func testStore(t *testing.T, db CertStorer) {
 	if ret.KeyID != cert.KeyId {
 		t.Error("key mismatch")
 	}
-	if err := db.Revoke("key"); err != nil {
+	if err := db.Revoke([]string{"key"}); err != nil {
 		t.Error(err)
 	}
 

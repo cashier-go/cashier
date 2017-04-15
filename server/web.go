@@ -240,10 +240,8 @@ func revokeCertHandler(a *appContext, w http.ResponseWriter, r *http.Request) (i
 		return a.login(w, r)
 	}
 	r.ParseForm()
-	for _, id := range r.Form["cert_id"] {
-		if err := certstore.Revoke(id); err != nil {
-			return http.StatusInternalServerError, errors.Wrap(err, "unable to revoke")
-		}
+	if err := certstore.Revoke(r.Form["cert_id"]); err != nil {
+		return http.StatusInternalServerError, errors.Wrap(err, "unable to revoke certs")
 	}
 	http.Redirect(w, r, "/admin/certs", http.StatusSeeOther)
 	return http.StatusSeeOther, nil

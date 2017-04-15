@@ -10,6 +10,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/nsheridan/cashier/server/config"
+	"github.com/pkg/errors"
 )
 
 var _ CertStorer = (*SQLStore)(nil)
@@ -22,7 +23,6 @@ type SQLStore struct {
 	set         *sqlx.Stmt
 	listAll     *sqlx.Stmt
 	listCurrent *sqlx.Stmt
-	revoke      *sqlx.Stmt
 	revoked     *sqlx.Stmt
 }
 
@@ -75,9 +75,6 @@ func NewSQLStore(c config.Database) (*SQLStore, error) {
 	}
 	if db.listCurrent, err = conn.Preparex("SELECT * FROM issued_certs WHERE ? <= expires_at"); err != nil {
 		return nil, fmt.Errorf("SQLStore: prepare listCurrent: %v", err)
-	}
-	if db.revoke, err = conn.Preparex("UPDATE issued_certs SET revoked = 1 WHERE key_id = ?"); err != nil {
-		return nil, fmt.Errorf("SQLStore: prepare revoke: %v", err)
 	}
 	if db.revoked, err = conn.Preparex("SELECT * FROM issued_certs WHERE revoked = 1 AND ? <= expires_at"); err != nil {
 		return nil, fmt.Errorf("SQLStore: prepare revoked: %v", err)
@@ -133,14 +130,13 @@ func (db *SQLStore) List(includeExpired bool) ([]*CertRecord, error) {
 }
 
 // Revoke an issued cert by id.
-func (db *SQLStore) Revoke(id string) error {
+func (db *SQLStore) Revoke(ids []string) error {
 	if err := db.conn.Ping(); err != nil {
-		return err
+		return errors.Wrap(err, "unable to connect to database")
 	}
-	if _, err := db.revoke.Exec(id); err != nil {
-		return err
-	}
-	return nil
+	q, args, err := sqlx.In("UPDATE issued_certs SET revoked = 1 WHERE key_id IN (?)", ids)
+	_, err = db.conn.Query(q, args...)
+	return err
 }
 
 // GetRevoked returns all revoked certs
