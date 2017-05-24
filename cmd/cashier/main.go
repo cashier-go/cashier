@@ -72,5 +72,8 @@ func main() {
 	if err := client.SavePublicFiles(c.PublicFilePrefix, cert, pub); err != nil {
 		log.Fatalln(err)
 	}
+	if err := client.SavePrivateFiles(c.PublicFilePrefix, cert, priv); err != nil {
+		log.Fatalln(err)
+	}
 	fmt.Println("Credentials added.")
 }
