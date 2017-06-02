@@ -23,7 +23,7 @@ var (
 	keysize          = pflag.Int("key_size", 0, "Size of key to generate. Ignored for ed25519 keys. (default 2048 for rsa keys, 256 for ecdsa keys)")
 	validity         = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
 	keytype          = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
-	publicFilePrefix = pflag.String("public_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
+	publicFilePrefix = pflag.String("key_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
 	useGRPC          = pflag.Bool("use_grpc", false, "Use grpc (experimental)")
 )
 
