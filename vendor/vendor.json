@@ -453,6 +453,12 @@
 			"revisionTime": "2016-04-24T11:30:07Z"
 		},
 		{
+			"checksumSHA1": "lafP5ecnlvfzv3oYf63Ibhcl8As=",
+			"path": "github.com/mikesmitty/edkey",
+			"revision": "3356ea4e686a1d47ae5d2d4c3cbc1832ce2df626",
+			"revisionTime": "2017-02-22T07:25:05Z"
+		},
+		{
 			"checksumSHA1": "V/quM7+em2ByJbWBLOsEwnY3j/Q=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "b8bc1bf767474819792c23f32d8286a45736f1c6",

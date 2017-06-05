@@ -6,12 +6,16 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 
 	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/mikesmitty/edkey"
 )
 
 // Key is a private key.
@@ -31,6 +35,24 @@ var defaultOptions = options{
 
 // A KeyOption is used to generate keys of different types and sizes.
 type KeyOption func(*options)
+
+func pemBlockForKey(priv interface{}) (*pem.Block, error) {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}, nil
+	case *ecdsa.PrivateKey:
+		b, err := x509.MarshalECPrivateKey(k)
+		if err != nil {
+			return nil, err
+		}
+		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
+	case *ed25519.PrivateKey:
+		b := edkey.MarshalED25519PrivateKey(*k)
+		return &pem.Block{Type: "OPENSSH PRIVATE KEY", Bytes: b}, nil
+	default:
+		return nil, fmt.Errorf("Unable to create PEM blck from key")
+	}
+}
 
 // KeyType sets the type of key to generate.
 // Valid types are: "rsa", "ecdsa", "ed25519".

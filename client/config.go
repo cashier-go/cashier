@@ -13,7 +13,7 @@ type Config struct {
 	Keysize                int    `mapstructure:"key_size"`
 	Validity               string `mapstructure:"validity"`
 	ValidateTLSCertificate bool   `mapstructure:"validate_tls_certificate"`
-	PublicFilePrefix       string `mapstructure:"public_file_prefix"`
+	PublicFilePrefix       string `mapstructure:"key_file_prefix"`
 }
 
 func setDefaults() {
@@ -21,7 +21,7 @@ func setDefaults() {
 	viper.BindPFlag("key_type", pflag.Lookup("key_type"))
 	viper.BindPFlag("key_size", pflag.Lookup("key_size"))
 	viper.BindPFlag("validity", pflag.Lookup("validity"))
-	viper.BindPFlag("public_file_prefix", pflag.Lookup("public_file_prefix"))
+	viper.BindPFlag("key_file_prefix", pflag.Lookup("key_file_prefix"))
 	viper.SetDefault("validateTLSCertificate", true)
 }
 

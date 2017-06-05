@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,11 +34,27 @@ func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) er
 	pubTxt := ssh.MarshalAuthorizedKey(pub)
 	certPubTxt := []byte(cert.Type() + " " + base64.StdEncoding.EncodeToString(cert.Marshal()))
 
-	if err := ioutil.WriteFile(prefix+".pub", pubTxt, 0644); err != nil {
+	_prefix := prefix + "/id_" + cert.KeyId
+
+	if err := ioutil.WriteFile(_prefix+".pub", pubTxt, 0644); err != nil {
 		return err
 	}
-	err := ioutil.WriteFile(prefix+"-cert.pub", certPubTxt, 0644)
+	err := ioutil.WriteFile(_prefix+"-cert.pub", certPubTxt, 0644)
 
+	return err
+}
+
+// SavePrivateFiles installs the private part of the key.
+func SavePrivateFiles(prefix string, cert *ssh.Certificate, key Key) error {
+	if prefix == "" {
+		return nil
+	}
+	_prefix := prefix + "/id_" + cert.KeyId
+	pemBlock, err := pemBlockForKey(key);
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(_prefix, pem.EncodeToMemory(pemBlock), 0600)
 	return err
 }
 
