@@ -37,6 +37,11 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 	return nil
 }
 
+// TODO: Implement me
+func (c *Config) Principals(token *oauth2.Token) []string {
+	return []string{}
+}
+
 // StartSession retrieves an authentication endpoint.
 func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{

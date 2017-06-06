@@ -54,7 +54,7 @@ func (s *KeySigner) setPermissions(cert *ssh.Certificate) {
 }
 
 // SignUserKeyFromRPC returns a signed ssh certificate.
-func (s *KeySigner) SignUserKeyFromRPC(req *proto.SignRequest, username string) (*ssh.Certificate, error) {
+func (s *KeySigner) SignUserKeyFromRPC(req *proto.SignRequest, username string, principals []string) (*ssh.Certificate, error) {
 	valid, err := ptypes.Timestamp(req.GetValidUntil())
 	if err != nil {
 		return nil, err
@@ -63,11 +63,11 @@ func (s *KeySigner) SignUserKeyFromRPC(req *proto.SignRequest, username string) 
 		Key:        string(req.GetKey()),
 		ValidUntil: valid,
 	}
-	return s.SignUserKey(r, username)
+	return s.SignUserKey(r, username, principals)
 }
 
 // SignUserKey returns a signed ssh certificate.
-func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Certificate, error) {
+func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string, principals []string) (*ssh.Certificate, error) {
 	pubkey, _, _, _, err := ssh.ParseAuthorizedKey([]byte(req.Key))
 	if err != nil {
 		return nil, err
@@ -85,6 +85,7 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Cer
 		ValidPrincipals: []string{username},
 	}
 	cert.ValidPrincipals = append(cert.ValidPrincipals, s.principals...)
+	cert.ValidPrincipals = append(cert.ValidPrincipals, principals...)
 	s.setPermissions(cert)
 	if err := cert.SignCert(rand.Reader, s.ca); err != nil {
 		return nil, err
