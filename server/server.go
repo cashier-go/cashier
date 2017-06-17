@@ -7,7 +7,6 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
-	"github.com/soheilhy/cmux"
 
 	"go4.org/wkfs"
 	"golang.org/x/crypto/acme/autocert"
@@ -108,10 +107,5 @@ func Run(conf *config.Config) {
 	}
 
 	log.Printf("Starting server on %s", laddr)
-	cm := cmux.New(l)
-	httpl := cm.Match(cmux.HTTP1Fast())
-	grpcl := cm.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
-	go runHTTPServer(conf.Server, httpl)
-	go runGRPCServer(grpcl)
-	log.Fatal(cm.Serve())
+	runHTTPServer(conf.Server, l)
 }
