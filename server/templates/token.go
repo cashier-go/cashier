@@ -20,7 +20,7 @@ const Token = `
 		border: solid 1px #ccc;
 		font-family: 'Source Code Pro', monospace;
 		font-weight: bold;
-		height: auto;
+		height: 120px;
 		margin: 12px 12px 12px 12px;
 		padding: 24px 12px 12px 12px;
 		resize: none;
