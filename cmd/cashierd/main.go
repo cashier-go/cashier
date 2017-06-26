@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/nsheridan/cashier/server"
 	"github.com/nsheridan/cashier/server/config"
@@ -31,6 +33,9 @@ func main() {
 		SecretKey: conf.AWS.SecretKey,
 	})
 	vaultfs.Register(conf.Vault)
+
+	// Ensure that RNG is seeded
+	rand.Seed(time.Now().UnixNano())
 
 	// Start the servers
 	server.Run(conf)
