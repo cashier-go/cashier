@@ -109,7 +109,7 @@ Exception to this: the `http_logfile` option **ONLY** writes to local files.
 - `letsencrypt_cachedir`: string. Directory to cache the LetsEncrypt certificate. See the [note](#a-note-on-files) on files above.
 - `address` : string. IP address to listen on. If unset the server listens on all addresses.
 - `port` : int. Port to listen on.
-- `user` : string. User to which the server drops privileges to.
+- `user` : string. User to which the server drops privileges to. *Note* Dropping privileges might not work as expected as some [threads may retain their privileges due to the limitations of the Go runtime](https://github.com/golang/go/issues/1435).
 - `cookie_secret`: string. Authentication key for the session cookie. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/cookie_secret`.
 - `csrf_secret`: string. Authentication key for CSRF protection. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/csrf_secret`.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). The only valid destination for logs is a local file path.
