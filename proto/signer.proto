@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 message SignRequest {
   bytes key = 1;
   google.protobuf.Timestamp valid_until = 2;
+  string message = 3;
 }
 
 message SignResponse {

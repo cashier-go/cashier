@@ -28,6 +28,7 @@ func TestCert(t *testing.T) {
 	r := &lib.SignRequest{
 		Key:        string(testdata.Pub),
 		ValidUntil: time.Now().Add(1 * time.Hour),
+		Message:    "hello world",
 	}
 	cert, err := signer.SignUserKey(r, "gopher1")
 	if err != nil {

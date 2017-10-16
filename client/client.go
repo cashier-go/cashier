@@ -50,7 +50,7 @@ func SavePrivateFiles(prefix string, cert *ssh.Certificate, key Key) error {
 		return nil
 	}
 	_prefix := prefix + "/id_" + cert.KeyId
-	pemBlock, err := pemBlockForKey(key);
+	pemBlock, err := pemBlockForKey(key)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 }
 
 // Sign sends the public key to the CA to be signed.
-func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, error) {
+func Sign(pub ssh.PublicKey, token string, message string, conf *Config) (*ssh.Certificate, error) {
 	validity, err := time.ParseDuration(conf.Validity)
 	if err != nil {
 		return nil, err
@@ -125,6 +125,7 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 	s, err := json.Marshal(&lib.SignRequest{
 		Key:        string(lib.GetPublicKey(pub)),
 		ValidUntil: time.Now().Add(validity),
+		Message:    message,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create sign request")
@@ -148,7 +149,7 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 }
 
 // RPCSign sends the public key to the CA to be signed.
-func RPCSign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, error) {
+func RPCSign(pub ssh.PublicKey, token string, message string, conf *Config) (*ssh.Certificate, error) {
 	var opts []grpc.DialOption
 	var srv string
 	if strings.HasPrefix(conf.CA, "https://") {
@@ -175,6 +176,7 @@ func RPCSign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, e
 	req := &proto.SignRequest{
 		Key:        lib.GetPublicKey(pub),
 		ValidUntil: ts,
+		Message:    message,
 	}
 	md := metadata.New(map[string]string{
 		"security": "authorization",

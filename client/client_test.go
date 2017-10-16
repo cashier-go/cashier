@@ -79,7 +79,7 @@ func TestSignGood(t *testing.T) {
 		CA:       ts.URL,
 		Validity: "24h",
 	}
-	cert, err := Sign(k, "token", c)
+	cert, err := Sign(k, "token", "message", c)
 	if cert == nil && err != nil {
 		t.Error(err)
 	}
@@ -107,7 +107,7 @@ func TestSignBad(t *testing.T) {
 		CA:       ts.URL,
 		Validity: "24h",
 	}
-	cert, err := Sign(k, "token", c)
+	cert, err := Sign(k, "token", "message", c)
 	if cert != nil && err == nil {
 		t.Error(err)
 	}
