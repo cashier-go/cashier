@@ -31,10 +31,11 @@ var (
 
 // KeySigner does the work of signing a ssh public key with the CA key.
 type KeySigner struct {
-	ca          ssh.Signer
-	validity    time.Duration
-	principals  []string
-	permissions []string
+	ca               ssh.Signer
+	validity         time.Duration
+	principals       []string
+	permissions      []string
+	validityOverride bool
 }
 
 func (s *KeySigner) setPermissions(cert *ssh.Certificate) {
@@ -74,6 +75,9 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Cer
 	}
 	expires := time.Now().UTC().Add(s.validity)
 	if req.ValidUntil.After(expires) {
+		req.ValidUntil = expires
+	}
+	if s.validityOverride {
 		req.ValidUntil = expires
 	}
 	cert := &ssh.Certificate{
@@ -123,10 +127,12 @@ func New(conf *config.SSH) (*KeySigner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error parsing duration '%s': %v", conf.MaxAge, err)
 	}
+
 	return &KeySigner{
-		ca:          key,
-		validity:    validity,
-		principals:  conf.AdditionalPrincipals,
-		permissions: conf.Permissions,
+		ca:               key,
+		validity:         validity,
+		principals:       conf.AdditionalPrincipals,
+		permissions:      conf.Permissions,
+		validityOverride: conf.ValidityOverride,
 	}, nil
 }
