@@ -6,6 +6,7 @@ import "time"
 type SignRequest struct {
 	Key        string    `json:"key"`
 	ValidUntil time.Time `json:"valid_until"`
+	Message    string    `json:"message"`
 }
 
 // SignResponse is sent by the server.

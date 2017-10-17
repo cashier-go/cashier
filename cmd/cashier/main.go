@@ -50,12 +50,15 @@ func main() {
 	fmt.Print("Enter token: ")
 	var token string
 	fmt.Scanln(&token)
+	var message string
+	fmt.Print("Enter message: ")
+	fmt.Scanln(&message)
 
 	var cert *ssh.Certificate
 	if *useGRPC {
-		cert, err = client.RPCSign(pub, token, c)
+		cert, err = client.RPCSign(pub, token, message, c)
 	} else {
-		cert, err = client.Sign(pub, token, c)
+		cert, err = client.Sign(pub, token, message, c)
 	}
 	if err != nil {
 		log.Fatalln(err)

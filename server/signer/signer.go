@@ -62,6 +62,7 @@ func (s *KeySigner) SignUserKeyFromRPC(req *proto.SignRequest, username string) 
 	r := &lib.SignRequest{
 		Key:        string(req.GetKey()),
 		ValidUntil: valid,
+		Message:    string(req.GetMessage()),
 	}
 	return s.SignUserKey(r, username)
 }
@@ -88,6 +89,9 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Cer
 	s.setPermissions(cert)
 	if err := cert.SignCert(rand.Reader, s.ca); err != nil {
 		return nil, err
+	}
+	if req.Message != "" {
+		log.Printf("Message from %s: %s", username, req.Message)
 	}
 	log.Printf("Issued cert id: %s principals: %s fp: %s valid until: %s\n", cert.KeyId, cert.ValidPrincipals, ssh.FingerprintSHA256(pubkey), time.Unix(int64(cert.ValidBefore), 0).UTC())
 	return cert, nil
