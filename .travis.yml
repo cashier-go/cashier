@@ -6,8 +6,8 @@ env:
   - MYSQL_TEST="true"
 
 go:
-  - 1.7.5
-  - 1.8
+  - 1.8.4
+  - 1.9.1
   - tip
 
 matrix:
