@@ -1,33 +1,19 @@
 package toml
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
 
-/*
-TomlTree structural types and corresponding marshal types
--------------------------------------------------------------------------------
-*TomlTree                        (*)struct, (*)map[string]interface{}
-[]*TomlTree                      (*)[](*)struct, (*)[](*)map[string]interface{}
-[]interface{} (as interface{})   (*)[]primitive, (*)[]([]interface{})
-interface{}                      (*)primitive
-
-TomlTree primitive types and  corresponding marshal types
------------------------------------------------------------
-uint64     uint, uint8-uint64, pointers to same
-int64      int, int8-uint64, pointers to same
-float64    float32, float64, pointers to same
-string     string, pointers to same
-bool       bool, pointers to same
-time.Time  time.Time{}, pointers to same
-*/
-
 type tomlOpts struct {
 	name      string
+	comment   string
+	commented bool
 	include   bool
 	omitempty bool
 }
@@ -35,7 +21,7 @@ type tomlOpts struct {
 var timeType = reflect.TypeOf(time.Time{})
 var marshalerType = reflect.TypeOf(new(Marshaler)).Elem()
 
-// Check if the given marshall type maps to a TomlTree primitive
+// Check if the given marshall type maps to a Tree primitive
 func isPrimitive(mtype reflect.Type) bool {
 	switch mtype.Kind() {
 	case reflect.Ptr:
@@ -57,7 +43,7 @@ func isPrimitive(mtype reflect.Type) bool {
 	}
 }
 
-// Check if the given marshall type maps to a TomlTree slice
+// Check if the given marshall type maps to a Tree slice
 func isTreeSlice(mtype reflect.Type) bool {
 	switch mtype.Kind() {
 	case reflect.Slice:
@@ -67,7 +53,7 @@ func isTreeSlice(mtype reflect.Type) bool {
 	}
 }
 
-// Check if the given marshall type maps to a non-TomlTree slice
+// Check if the given marshall type maps to a non-Tree slice
 func isOtherSlice(mtype reflect.Type) bool {
 	switch mtype.Kind() {
 	case reflect.Ptr:
@@ -79,7 +65,7 @@ func isOtherSlice(mtype reflect.Type) bool {
 	}
 }
 
-// Check if the given marshall type maps to a TomlTree
+// Check if the given marshall type maps to a Tree
 func isTree(mtype reflect.Type) bool {
 	switch mtype.Kind() {
 	case reflect.Map:
@@ -111,9 +97,32 @@ encoder, except that there is no concept of a Marshaler interface or MarshalTOML
 function for sub-structs, and currently only definite types can be marshaled
 (i.e. no `interface{}`).
 
+The following struct annotations are supported:
+
+  toml:"Field"      Overrides the field's name to output.
+  omitempty         When set, empty values and groups are not emitted.
+  comment:"comment" Emits a # comment on the same line. This supports new lines.
+  commented:"true"  Emits the value as commented.
+
 Note that pointers are automatically assigned the "omitempty" option, as TOML
 explicity does not handle null values (saying instead the label should be
 dropped).
+
+Tree structural types and corresponding marshal types:
+
+  *Tree                            (*)struct, (*)map[string]interface{}
+  []*Tree                          (*)[](*)struct, (*)[](*)map[string]interface{}
+  []interface{} (as interface{})   (*)[]primitive, (*)[]([]interface{})
+  interface{}                      (*)primitive
+
+Tree primitive types and corresponding marshal types:
+
+  uint64     uint, uint8-uint64, pointers to same
+  int64      int, int8-uint64, pointers to same
+  float64    float32, float64, pointers to same
+  string     string, pointers to same
+  bool       bool, pointers to same
+  time.Time  time.Time{}, pointers to same
 */
 func Marshal(v interface{}) ([]byte, error) {
 	mtype := reflect.TypeOf(v)
@@ -133,11 +142,11 @@ func Marshal(v interface{}) ([]byte, error) {
 }
 
 // Convert given marshal struct or map value to toml tree
-func valueToTree(mtype reflect.Type, mval reflect.Value) (*TomlTree, error) {
+func valueToTree(mtype reflect.Type, mval reflect.Value) (*Tree, error) {
 	if mtype.Kind() == reflect.Ptr {
 		return valueToTree(mtype.Elem(), mval.Elem())
 	}
-	tval := newTomlTree()
+	tval := newTree()
 	switch mtype.Kind() {
 	case reflect.Struct:
 		for i := 0; i < mtype.NumField(); i++ {
@@ -148,7 +157,7 @@ func valueToTree(mtype reflect.Type, mval reflect.Value) (*TomlTree, error) {
 				if err != nil {
 					return nil, err
 				}
-				tval.Set(opts.name, val)
+				tval.Set(opts.name, opts.comment, opts.commented, val)
 			}
 		}
 	case reflect.Map:
@@ -158,15 +167,15 @@ func valueToTree(mtype reflect.Type, mval reflect.Value) (*TomlTree, error) {
 			if err != nil {
 				return nil, err
 			}
-			tval.Set(key.String(), val)
+			tval.Set(key.String(), "", false, val)
 		}
 	}
 	return tval, nil
 }
 
 // Convert given marshal slice to slice of Toml trees
-func valueToTreeSlice(mtype reflect.Type, mval reflect.Value) ([]*TomlTree, error) {
-	tval := make([]*TomlTree, mval.Len(), mval.Len())
+func valueToTreeSlice(mtype reflect.Type, mval reflect.Value) ([]*Tree, error) {
+	tval := make([]*Tree, mval.Len(), mval.Len())
 	for i := 0; i < mval.Len(); i++ {
 		val, err := valueToTree(mtype.Elem(), mval.Index(i))
 		if err != nil {
@@ -224,22 +233,13 @@ func valueToToml(mtype reflect.Type, mval reflect.Value) (interface{}, error) {
 	}
 }
 
-/*
-Unmarshal parses the TOML-encoded data and stores the result in the value
-pointed to by v. Behavior is similar to the Go json encoder, except that there
-is no concept of an Unmarshaler interface or UnmarshalTOML function for
-sub-structs, and currently only definite types can be unmarshaled to (i.e. no
-`interface{}`).
-*/
-func Unmarshal(data []byte, v interface{}) error {
+// Unmarshal attempts to unmarshal the Tree into a Go struct pointed by v.
+// Neither Unmarshaler interfaces nor UnmarshalTOML functions are supported for
+// sub-structs, and only definite types can be unmarshaled.
+func (t *Tree) Unmarshal(v interface{}) error {
 	mtype := reflect.TypeOf(v)
 	if mtype.Kind() != reflect.Ptr || mtype.Elem().Kind() != reflect.Struct {
 		return errors.New("Only a pointer to struct can be unmarshaled from TOML")
-	}
-
-	t, err := Load(string(data))
-	if err != nil {
-		return err
 	}
 
 	sval, err := valueFromTree(mtype.Elem(), t)
@@ -250,8 +250,27 @@ func Unmarshal(data []byte, v interface{}) error {
 	return nil
 }
 
+// Unmarshal parses the TOML-encoded data and stores the result in the value
+// pointed to by v. Behavior is similar to the Go json encoder, except that there
+// is no concept of an Unmarshaler interface or UnmarshalTOML function for
+// sub-structs, and currently only definite types can be unmarshaled to (i.e. no
+// `interface{}`).
+//
+// The following struct annotations are supported:
+//
+//   toml:"Field" Overrides the field's name to map to.
+//
+// See Marshal() documentation for types mapping table.
+func Unmarshal(data []byte, v interface{}) error {
+	t, err := LoadReader(bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	return t.Unmarshal(v)
+}
+
 // Convert toml tree to marshal struct or map, using marshal type
-func valueFromTree(mtype reflect.Type, tval *TomlTree) (reflect.Value, error) {
+func valueFromTree(mtype reflect.Type, tval *Tree) (reflect.Value, error) {
 	if mtype.Kind() == reflect.Ptr {
 		return unwrapPointer(mtype, tval)
 	}
@@ -263,15 +282,20 @@ func valueFromTree(mtype reflect.Type, tval *TomlTree) (reflect.Value, error) {
 			mtypef := mtype.Field(i)
 			opts := tomlOptions(mtypef)
 			if opts.include {
-				key := opts.name
-				exists := tval.Has(key)
-				if exists {
+				baseKey := opts.name
+				keysToTry := []string{baseKey, strings.ToLower(baseKey), strings.ToTitle(baseKey)}
+				for _, key := range keysToTry {
+					exists := tval.Has(key)
+					if !exists {
+						continue
+					}
 					val := tval.Get(key)
 					mvalf, err := valueFromToml(mtypef.Type, val)
 					if err != nil {
 						return mval, formatError(err, tval.GetPosition(key))
 					}
 					mval.Field(i).Set(mvalf)
+					break
 				}
 			}
 		}
@@ -290,7 +314,7 @@ func valueFromTree(mtype reflect.Type, tval *TomlTree) (reflect.Value, error) {
 }
 
 // Convert toml value to marshal struct/map slice, using marshal type
-func valueFromTreeSlice(mtype reflect.Type, tval []*TomlTree) (reflect.Value, error) {
+func valueFromTreeSlice(mtype reflect.Type, tval []*Tree) (reflect.Value, error) {
 	mval := reflect.MakeSlice(mtype, len(tval), len(tval))
 	for i := 0; i < len(tval); i++ {
 		val, err := valueFromTree(mtype.Elem(), tval[i])
@@ -322,9 +346,9 @@ func valueFromToml(mtype reflect.Type, tval interface{}) (reflect.Value, error) 
 	}
 	switch {
 	case isTree(mtype):
-		return valueFromTree(mtype, tval.(*TomlTree))
+		return valueFromTree(mtype, tval.(*Tree))
 	case isTreeSlice(mtype):
-		return valueFromTreeSlice(mtype, tval.([]*TomlTree))
+		return valueFromTreeSlice(mtype, tval.([]*Tree))
 	case isOtherSlice(mtype):
 		return valueFromOtherSlice(mtype, tval.([]interface{}))
 	default:
@@ -438,7 +462,12 @@ func unwrapPointer(mtype reflect.Type, tval interface{}) (reflect.Value, error) 
 func tomlOptions(vf reflect.StructField) tomlOpts {
 	tag := vf.Tag.Get("toml")
 	parse := strings.Split(tag, ",")
-	result := tomlOpts{vf.Name, true, false}
+	var comment string
+	if c := vf.Tag.Get("comment"); c != "" {
+		comment = c
+	}
+	commented, _ := strconv.ParseBool(vf.Tag.Get("commented"))
+	result := tomlOpts{name: vf.Name, comment: comment, commented: commented, include: true, omitempty: false}
 	if parse[0] != "" {
 		if parse[0] == "-" && len(parse) == 1 {
 			result.include = false
