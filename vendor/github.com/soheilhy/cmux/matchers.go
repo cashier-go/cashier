@@ -16,6 +16,7 @@ package cmux
 
 import (
 	"bufio"
+	"crypto/tls"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -37,6 +38,11 @@ func PrefixMatcher(strs ...string) Matcher {
 	return pt.matchPrefix
 }
 
+func prefixByteMatcher(list ...[]byte) Matcher {
+	pt := newPatriciaTree(list...)
+	return pt.matchPrefix
+}
+
 var defaultHTTPMethods = []string{
 	"OPTIONS",
 	"GET",
@@ -55,6 +61,27 @@ var defaultHTTPMethods = []string{
 // matcher, use HTTP1 instead.
 func HTTP1Fast(extMethods ...string) Matcher {
 	return PrefixMatcher(append(defaultHTTPMethods, extMethods...)...)
+}
+
+// TLS matches HTTPS requests.
+//
+// By default, any TLS handshake packet is matched. An optional whitelist
+// of versions can be passed in to restrict the matcher, for example:
+//  TLS(tls.VersionTLS11, tls.VersionTLS12)
+func TLS(versions ...int) Matcher {
+	if len(versions) == 0 {
+		versions = []int{
+			tls.VersionSSL30,
+			tls.VersionTLS10,
+			tls.VersionTLS11,
+			tls.VersionTLS12,
+		}
+	}
+	prefixes := [][]byte{}
+	for _, v := range versions {
+		prefixes = append(prefixes, []byte{22, byte(v >> 8 & 0xff), byte(v & 0xff)})
+	}
+	return prefixByteMatcher(prefixes...)
 }
 
 const maxHTTPRead = 4096
@@ -100,15 +127,41 @@ func HTTP2() Matcher {
 // request of an HTTP 1 connection.
 func HTTP1HeaderField(name, value string) Matcher {
 	return func(r io.Reader) bool {
-		return matchHTTP1Field(r, name, value)
+		return matchHTTP1Field(r, name, func(gotValue string) bool {
+			return gotValue == value
+		})
 	}
 }
 
-// HTTP2HeaderField resturns a matcher matching the header fields of the first
+// HTTP1HeaderFieldPrefix returns a matcher matching the header fields of the
+// first request of an HTTP 1 connection. If the header with key name has a
+// value prefixed with valuePrefix, this will match.
+func HTTP1HeaderFieldPrefix(name, valuePrefix string) Matcher {
+	return func(r io.Reader) bool {
+		return matchHTTP1Field(r, name, func(gotValue string) bool {
+			return strings.HasPrefix(gotValue, valuePrefix)
+		})
+	}
+}
+
+// HTTP2HeaderField returns a matcher matching the header fields of the first
 // headers frame.
 func HTTP2HeaderField(name, value string) Matcher {
 	return func(r io.Reader) bool {
-		return matchHTTP2Field(ioutil.Discard, r, name, value)
+		return matchHTTP2Field(ioutil.Discard, r, name, func(gotValue string) bool {
+			return gotValue == value
+		})
+	}
+}
+
+// HTTP2HeaderFieldPrefix returns a matcher matching the header fields of the
+// first headers frame. If the header with key name has a value prefixed with
+// valuePrefix, this will match.
+func HTTP2HeaderFieldPrefix(name, valuePrefix string) Matcher {
+	return func(r io.Reader) bool {
+		return matchHTTP2Field(ioutil.Discard, r, name, func(gotValue string) bool {
+			return strings.HasPrefix(gotValue, valuePrefix)
+		})
 	}
 }
 
@@ -117,29 +170,54 @@ func HTTP2HeaderField(name, value string) Matcher {
 // does not block on receiving a SETTING frame.
 func HTTP2MatchHeaderFieldSendSettings(name, value string) MatchWriter {
 	return func(w io.Writer, r io.Reader) bool {
-		return matchHTTP2Field(w, r, name, value)
+		return matchHTTP2Field(w, r, name, func(gotValue string) bool {
+			return gotValue == value
+		})
+	}
+}
+
+// HTTP2MatchHeaderFieldPrefixSendSettings matches the header field prefix
+// and writes the settings to the server. Prefer HTTP2HeaderFieldPrefix over
+// this one, if the client does not block on receiving a SETTING frame.
+func HTTP2MatchHeaderFieldPrefixSendSettings(name, valuePrefix string) MatchWriter {
+	return func(w io.Writer, r io.Reader) bool {
+		return matchHTTP2Field(w, r, name, func(gotValue string) bool {
+			return strings.HasPrefix(gotValue, valuePrefix)
+		})
 	}
 }
 
 func hasHTTP2Preface(r io.Reader) bool {
 	var b [len(http2.ClientPreface)]byte
-	if _, err := io.ReadFull(r, b[:]); err != nil {
-		return false
-	}
+	last := 0
 
-	return string(b[:]) == http2.ClientPreface
+	for {
+		n, err := r.Read(b[last:])
+		if err != nil {
+			return false
+		}
+
+		last += n
+		eq := string(b[:last]) == http2.ClientPreface[:last]
+		if last == len(http2.ClientPreface) {
+			return eq
+		}
+		if !eq {
+			return false
+		}
+	}
 }
 
-func matchHTTP1Field(r io.Reader, name, value string) (matched bool) {
+func matchHTTP1Field(r io.Reader, name string, matches func(string) bool) (matched bool) {
 	req, err := http.ReadRequest(bufio.NewReader(r))
 	if err != nil {
 		return false
 	}
 
-	return req.Header.Get(name) == value
+	return matches(req.Header.Get(name))
 }
 
-func matchHTTP2Field(w io.Writer, r io.Reader, name, value string) (matched bool) {
+func matchHTTP2Field(w io.Writer, r io.Reader, name string, matches func(string) bool) (matched bool) {
 	if !hasHTTP2Preface(r) {
 		return false
 	}
@@ -149,7 +227,7 @@ func matchHTTP2Field(w io.Writer, r io.Reader, name, value string) (matched bool
 	hdec := hpack.NewDecoder(uint32(4<<10), func(hf hpack.HeaderField) {
 		if hf.Name == name {
 			done = true
-			if hf.Value == value {
+			if matches(hf.Value) {
 				matched = true
 			}
 		}

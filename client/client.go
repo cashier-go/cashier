@@ -182,7 +182,7 @@ func RPCSign(pub ssh.PublicKey, token string, message string, conf *Config) (*ss
 		"security": "authorization",
 		"payload":  token,
 	})
-	r, err := stub.Sign(metadata.NewContext(context.TODO(), md), req)
+	r, err := stub.Sign(metadata.NewOutgoingContext(context.TODO(), md), req)
 	if err != nil {
 		return nil, err
 	}

@@ -41,7 +41,7 @@ func (s *rpcServer) Sign(ctx context.Context, req *proto.SignRequest) (*proto.Si
 }
 
 func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	md, ok := metadata.FromContext(ctx)
+	md, ok := metadata.FromOutgoingContext(ctx)
 	if !ok {
 		return nil, grpc.Errorf(codes.Unauthenticated, "request not authenticated")
 	}

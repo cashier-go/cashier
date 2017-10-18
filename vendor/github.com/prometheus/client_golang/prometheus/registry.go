@@ -20,6 +20,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/golang/protobuf/proto"
 
@@ -80,7 +81,7 @@ func NewPedanticRegistry() *Registry {
 
 // Registerer is the interface for the part of a registry in charge of
 // registering and unregistering. Users of custom registries should use
-// Registerer as type for registration purposes (rather then the Registry type
+// Registerer as type for registration purposes (rather than the Registry type
 // directly). In that way, they are free to use custom Registerer implementation
 // (e.g. for testing purposes).
 type Registerer interface {
@@ -655,7 +656,7 @@ func normalizeMetricFamilies(metricFamiliesByName map[string]*dto.MetricFamily) 
 
 // checkMetricConsistency checks if the provided Metric is consistent with the
 // provided MetricFamily. It also hashed the Metric labels and the MetricFamily
-// name. If the resulting hash is alread in the provided metricHashes, an error
+// name. If the resulting hash is already in the provided metricHashes, an error
 // is returned. If not, it is added to metricHashes. The provided dimHashes maps
 // MetricFamily names to their dimHash (hashed sorted label names). If dimHashes
 // doesn't yet contain a hash for the provided MetricFamily, it is
@@ -677,6 +678,12 @@ func checkMetricConsistency(
 			"collected metric %s %s is not a %s",
 			metricFamily.GetName(), dtoMetric, metricFamily.GetType(),
 		)
+	}
+
+	for _, labelPair := range dtoMetric.GetLabel() {
+		if !utf8.ValidString(*labelPair.Value) {
+			return fmt.Errorf("collected metric's label %s is not utf8: %#v", *labelPair.Name, *labelPair.Value)
+		}
 	}
 
 	// Is the metric unique (i.e. no other metric with the same name and the same label values)?
