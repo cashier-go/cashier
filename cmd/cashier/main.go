@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -50,9 +51,13 @@ func main() {
 	fmt.Print("Enter token: ")
 	var token string
 	fmt.Scanln(&token)
+
 	var message string
 	fmt.Print("Enter message: ")
-	fmt.Scanln(&message)
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		message = scanner.Text()
+	}
 
 	var cert *ssh.Certificate
 	if *useGRPC {
