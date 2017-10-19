@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -94,6 +95,7 @@ func (ms *MemoryStore) clear() {
 
 // NewMemoryStore returns an in-memory CertStorer.
 func NewMemoryStore() *MemoryStore {
+	log.Println("WARNING: Using memory store to record issued certs.")
 	return &MemoryStore{
 		certs: make(map[string]*CertRecord),
 	}
