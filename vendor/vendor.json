@@ -879,6 +879,12 @@
 			"revisionTime": "2017-09-28T00:25:42Z"
 		},
 		{
+			"checksumSHA1": "aoeqnmNuZdqxHG0/8bhKNLfRaY4=",
+			"path": "golang.org/x/oauth2/microsoft",
+			"revision": "b9780ec78894ab900c062d58ee3076cd9b2a4501",
+			"revisionTime": "2017-02-14T22:24:16Z"
+		},
+		{
 			"checksumSHA1": "FUo16zuO20jOcdCUu0IgiF51koE=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "8dbc5d05d6edcc104950cc299a1ce6641235bc86",
