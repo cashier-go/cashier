@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/graphrbac/1.6/graphrbac"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/metrics"
@@ -89,11 +90,28 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 	if err == nil {
 		metrics.M.AuthExchange.WithLabelValues("microsoft").Inc()
 	}
+	/*
+		Need to get the User Principle Name here.  This can be done as follows.
+		1. id_token = t.Extra("id_token")  // yields JWT claim.
+		2. claim = jwt.Parse(id_token, some function?)
+		3. claim.Something?("upn")
+
+		Or maybe there are these operations on the signed in user:
+		https://msdn.microsoft.com/en-us/library/azure/ad/graph/api/signed-in-user-operations
+		How to do this via the Azure SDK for Go: https://github.com/Azure/azure-rest-api-specs/issues/2647
+
+		Reference:
+		Azure Oauth flow: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code
+		OAuth token: https://godoc.org/golang.org/x/oauth2#Token
+		JWT lib: https://godoc.org/github.com/dgrijalva/jwt-go#example-Parse--Hmac
+	*/
 	return t, err
 }
 
 // Email retrieves the email address of the user.
 func (c *Config) Email(token *oauth2.Token) string {
+	//uclient := graphrbac.NewUsersClient("myorganization")
+
 	return "nobody@nowhere"
 }
 
