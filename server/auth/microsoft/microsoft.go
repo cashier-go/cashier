@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
+	//"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/metrics"
@@ -44,6 +44,7 @@ func New(c *config.Auth) (*Config, error) {
 			ClientSecret: c.OauthClientSecret,
 			RedirectURL:  c.OauthCallbackURL,
 			Endpoint:     microsoft.AzureADEndpoint(c.ProviderOpts["tenant"]),
+			Scopes:       []string{"openid", "profile", "email"},
 		},
 		tenant:    c.ProviderOpts["tenant"],
 		whitelist: uw,
