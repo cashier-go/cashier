@@ -38,14 +38,12 @@ func NewSQLStore(c config.Database) (*SQLStore, error) {
 		if err != nil {
 			address = address + ":3306"
 		}
-		m := &mysql.Config{
-			User:      c["username"],
-			Passwd:    c["password"],
-			Net:       "tcp",
-			Addr:      address,
-			DBName:    "certs",
-			ParseTime: true,
-		}
+		m := mysql.NewConfig()
+		m.User = c["username"]
+		m.Passwd = c["password"]
+		m.Addr = address
+		m.DBName = "certs"
+		m.ParseTime = true
 		dsn = m.FormatDSN()
 	case "sqlite":
 		driver = "sqlite3"
