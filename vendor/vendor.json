@@ -961,8 +961,8 @@
 		{
 			"checksumSHA1": "91mzAbqHQ6AAK65DzB4IkLOcvtk=",
 			"path": "golang.org/x/oauth2/microsoft",
-			"revision": "ec22f46f877b4505e0117eeaab541714644fdd28",
-			"revisionTime": "2018-05-28T20:23:04Z"
+			"revision": "ef147856a6ddbb60760db74283d2424e98c87bff",
+			"revisionTime": "2018-06-20T17:47:24Z"
 		},
 		{
 			"checksumSHA1": "USMsFbKZrNd1b9oRFbjevPr6PmI=",
