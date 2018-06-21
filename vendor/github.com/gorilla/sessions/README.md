@@ -1,6 +1,6 @@
 sessions
 ========
-[![GoDoc](https://godoc.org/github.com/gorilla/sessions?status.svg)](https://godoc.org/github.com/gorilla/sessions) [![Build Status](https://travis-ci.org/gorilla/sessions.png?branch=master)](https://travis-ci.org/gorilla/sessions)
+[![GoDoc](https://godoc.org/github.com/gorilla/sessions?status.svg)](https://godoc.org/github.com/gorilla/sessions) [![Build Status](https://travis-ci.org/gorilla/sessions.svg?branch=master)](https://travis-ci.org/gorilla/sessions)
 [![Sourcegraph](https://sourcegraph.com/github.com/gorilla/sessions/-/badge.svg)](https://sourcegraph.com/github.com/gorilla/sessions?badge)
 
 
@@ -84,6 +84,8 @@ Other implementations of the `sessions.Store` interface:
 * [github.com/michaeljs1990/sqlitestore](https://github.com/michaeljs1990/sqlitestore) - SQLite
 * [github.com/wader/gormstore](https://github.com/wader/gormstore) - GORM (MySQL, PostgreSQL, SQLite)
 * [github.com/gernest/qlstore](https://github.com/gernest/qlstore) - ql
+* [github.com/quasoft/memstore](https://github.com/quasoft/memstore) - In-memory implementation for use in unit tests
+* [github.com/lafriks/xormstore](https://github.com/lafriks/xormstore) - XORM (MySQL, PostgreSQL, SQLite, Microsoft SQL Server, TiDB)
 
 ## License
 

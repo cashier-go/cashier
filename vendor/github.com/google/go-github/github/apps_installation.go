@@ -10,19 +10,6 @@ import (
 	"fmt"
 )
 
-// Installation represents a GitHub Apps installation.
-type Installation struct {
-	ID              *int    `json:"id,omitempty"`
-	Account         *User   `json:"account,omitempty"`
-	AccessTokensURL *string `json:"access_tokens_url,omitempty"`
-	RepositoriesURL *string `json:"repositories_url,omitempty"`
-	HTMLURL         *string `json:"html_url,omitempty"`
-}
-
-func (i Installation) String() string {
-	return Stringify(i)
-}
-
 // ListRepos lists the repositories that are accessible to the authenticated installation.
 //
 // GitHub API docs: https://developer.github.com/v3/apps/installations/#list-repositories
@@ -51,10 +38,40 @@ func (s *AppsService) ListRepos(ctx context.Context, opt *ListOptions) ([]*Repos
 	return r.Repositories, resp, nil
 }
 
+// ListUserRepos lists repositories that are accessible
+// to the authenticated user for an installation.
+//
+// GitHub API docs: https://developer.github.com/v3/apps/installations/#list-repositories-accessible-to-the-user-for-an-installation
+func (s *AppsService) ListUserRepos(ctx context.Context, id int64, opt *ListOptions) ([]*Repository, *Response, error) {
+	u := fmt.Sprintf("user/installations/%v/repositories", id)
+	u, err := addOptions(u, opt)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := s.client.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// TODO: remove custom Accept header when this API fully launches.
+	req.Header.Set("Accept", mediaTypeIntegrationPreview)
+
+	var r struct {
+		Repositories []*Repository `json:"repositories"`
+	}
+	resp, err := s.client.Do(ctx, req, &r)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return r.Repositories, resp, nil
+}
+
 // AddRepository adds a single repository to an installation.
 //
 // GitHub API docs: https://developer.github.com/v3/apps/installations/#add-repository-to-installation
-func (s *AppsService) AddRepository(ctx context.Context, instID, repoID int) (*Repository, *Response, error) {
+func (s *AppsService) AddRepository(ctx context.Context, instID, repoID int64) (*Repository, *Response, error) {
 	u := fmt.Sprintf("apps/installations/%v/repositories/%v", instID, repoID)
 	req, err := s.client.NewRequest("PUT", u, nil)
 	if err != nil {
@@ -73,7 +90,7 @@ func (s *AppsService) AddRepository(ctx context.Context, instID, repoID int) (*R
 // RemoveRepository removes a single repository from an installation.
 //
 // GitHub docs: https://developer.github.com/v3/apps/installations/#remove-repository-from-installation
-func (s *AppsService) RemoveRepository(ctx context.Context, instID, repoID int) (*Response, error) {
+func (s *AppsService) RemoveRepository(ctx context.Context, instID, repoID int64) (*Response, error) {
 	u := fmt.Sprintf("apps/installations/%v/repositories/%v", instID, repoID)
 	req, err := s.client.NewRequest("DELETE", u, nil)
 	if err != nil {
