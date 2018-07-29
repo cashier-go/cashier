@@ -44,7 +44,7 @@ func New(c *config.Auth) (*Config, error) {
 			ClientSecret: c.OauthClientSecret,
 			RedirectURL:  c.OauthCallbackURL,
 			Endpoint:     microsoft.AzureADEndpoint(c.ProviderOpts["tenant"]),
-			Scopes:       []string{"openid", "profile", "email"},
+			Scopes:       []string{"user.Read"},
 		},
 		tenant:    c.ProviderOpts["tenant"],
 		whitelist: uw,
