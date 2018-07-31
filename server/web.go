@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -181,6 +182,29 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 	return http.StatusFound, nil
 }
 
+func chunkString(s string, chunkSize int) string {
+	if len(s) <= chunkSize {
+		return s
+	}
+
+	var buffer bytes.Buffer
+	runes := []rune(s)
+
+	for i := 0; i < len(runes); i += chunkSize {
+		end := i + chunkSize
+		if end > len(runes) {
+			end = len(runes)
+		}
+		buffer.WriteString(string(runes[i:end]))
+		buffer.WriteString("+++\n")
+	}
+	chunks := buffer.String()
+	if len(chunks) > 0 {
+		chunks = chunks[:len(chunks)-4]
+	}
+	return chunks
+}
+
 // rootHandler starts the auth process. If the client is authenticated it renders the token to the user.
 func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	if !a.isLoggedIn(w, r) {
@@ -190,6 +214,7 @@ func rootHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	page := struct {
 		Token string
 	}{tok.AccessToken}
+	page.Token = chunkString(page.Token, 250)
 
 	tmpl := template.Must(template.New("token.html").Parse(templates.Token))
 	tmpl.Execute(w, page)

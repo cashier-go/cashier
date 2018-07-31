@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/user"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/nsheridan/cashier/client"
@@ -49,12 +51,16 @@ func main() {
 	}
 
 	fmt.Print("Enter token: ")
-	var token string
-	fmt.Scanln(&token)
+	scanner := bufio.NewScanner(os.Stdin)
+	var buffer bytes.Buffer
+	for scanner.Scan(); strings.HasSuffix(scanner.Text(), "+++"); scanner.Scan() {
+		buffer.WriteString(scanner.Text()[:len(scanner.Text())-4])
+	}
+	buffer.WriteString(scanner.Text())
+	token := buffer.String()
 
 	var message string
 	fmt.Print("Enter message: ")
-	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
 		message = scanner.Text()
 	}
