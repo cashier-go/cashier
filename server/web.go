@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gobuffalo/packr"
+
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -26,7 +28,6 @@ import (
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/static"
 	"github.com/nsheridan/cashier/server/templates"
 )
 
@@ -309,7 +310,8 @@ func runHTTPServer(conf *config.Server, l net.Listener) {
 	r.Methods("GET").Path("/admin/certs.json").Handler(appHandler{ctx, listCertsJSONHandler})
 	r.Methods("GET").Path("/metrics").Handler(promhttp.Handler())
 	r.Methods("GET").Path("/healthcheck").HandlerFunc(healthcheck)
-	r.PathPrefix("/").Handler(http.FileServer(static.FS(false)))
+	box := packr.NewBox("static")
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 	h := handlers.LoggingHandler(logfile, r)
 	s := &http.Server{
 		Handler: h,
