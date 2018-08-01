@@ -15,7 +15,7 @@ matrix:
     - go: tip
 
 before_install:
-  - go get -v github.com/golang/lint/golint
+  - make dep
 
 install:
   - go version
@@ -25,4 +25,4 @@ before_script:
 
 sudo: false
 script:
-  - ./run_tests.sh
+  - make test
