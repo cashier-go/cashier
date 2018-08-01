@@ -3,13 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/user"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/nsheridan/cashier/client"
@@ -53,11 +53,14 @@ func main() {
 	fmt.Print("Enter token: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	var buffer bytes.Buffer
-	for scanner.Scan(); strings.HasSuffix(scanner.Text(), "+++"); scanner.Scan() {
-		buffer.WriteString(scanner.Text()[:len(scanner.Text())-4])
+	for scanner.Scan(); scanner.Text() == ".\n"; scanner.Scan() {
+		buffer.WriteString(scanner.Text())
 	}
-	buffer.WriteString(scanner.Text())
-	token := buffer.String()
+	tokenBytes, err := base64.StdEncoding.DecodeString(buffer.String())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	token := string(tokenBytes)
 
 	var message string
 	fmt.Print("Enter message: ")
