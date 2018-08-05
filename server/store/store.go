@@ -9,7 +9,6 @@ import (
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/store/types"
 )
 
 // New returns a new configured database.
@@ -37,12 +36,12 @@ type CertStorer interface {
 
 // A CertRecord is a representation of a ssh certificate used by a CertStorer.
 type CertRecord struct {
-	KeyID      string            `json:"key_id" db:"key_id"`
-	Principals types.StringSlice `json:"principals" db:"principals"`
-	CreatedAt  time.Time         `json:"created_at" db:"created_at"`
-	Expires    time.Time         `json:"expires" db:"expires_at"`
-	Revoked    bool              `json:"revoked" db:"revoked"`
-	Raw        string            `json:"-" db:"raw_key"`
+	KeyID      string      `json:"key_id" db:"key_id"`
+	Principals StringSlice `json:"principals" db:"principals"`
+	CreatedAt  time.Time   `json:"created_at" db:"created_at"`
+	Expires    time.Time   `json:"expires" db:"expires_at"`
+	Revoked    bool        `json:"revoked" db:"revoked"`
+	Raw        string      `json:"-" db:"raw_key"`
 }
 
 // MarshalJSON implements the json.Marshaler interface for the CreatedAt and
@@ -69,7 +68,7 @@ func parseTime(t uint64) time.Time {
 func parseCertificate(cert *ssh.Certificate) *CertRecord {
 	return &CertRecord{
 		KeyID:      cert.KeyId,
-		Principals: types.StringSlice(cert.ValidPrincipals),
+		Principals: StringSlice(cert.ValidPrincipals),
 		CreatedAt:  parseTime(cert.ValidAfter),
 		Expires:    parseTime(cert.ValidBefore),
 		Raw:        string(lib.GetPublicKey(cert)),
