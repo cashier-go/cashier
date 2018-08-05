@@ -655,6 +655,18 @@
 			"revisionTime": "2018-06-12T22:21:13Z"
 		},
 		{
+			"checksumSHA1": "N11d95+f/kzeTCb408INaeNcPCE=",
+			"path": "github.com/rubenv/sql-migrate",
+			"revision": "3f452fc0ebebbb784fdab91f7bc79a31dcacab5c",
+			"revisionTime": "2018-07-04T11:13:56Z"
+		},
+		{
+			"checksumSHA1": "rkHieYOGBsxJaDbC7vl/e4KSatw=",
+			"path": "github.com/rubenv/sql-migrate/sqlparse",
+			"revision": "3f452fc0ebebbb784fdab91f7bc79a31dcacab5c",
+			"revisionTime": "2018-07-04T11:13:56Z"
+		},
+		{
 			"checksumSHA1": "6JP37UqrI0H80Gpk0Y2P+KXgn5M=",
 			"path": "github.com/ryanuber/go-glob",
 			"revision": "256dc444b735e061061cf46c809487313d5b0065",
@@ -1337,6 +1349,12 @@
 			"path": "google.golang.org/grpc/transport",
 			"revision": "b519e3d28d377e55a0d44c9b83e6aee4d02d731d",
 			"revisionTime": "2018-06-20T19:19:01Z"
+		},
+		{
+			"checksumSHA1": "xunNOgG8P6Xh4SM+LPQ1zMDXa8Q=",
+			"path": "gopkg.in/gorp.v1",
+			"revision": "c87af80f3cc5036b55b83d77171e156791085e2e",
+			"revisionTime": "2015-02-04T08:55:30Z"
 		},
 		{
 			"checksumSHA1": "ZSWoOPUNRr5+3dhkLK3C4cZAQPk=",

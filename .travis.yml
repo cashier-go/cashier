@@ -18,12 +18,10 @@ matrix:
 
 before_install:
   - make dep
+  - mysql -e 'CREATE DATABASE certs;'
 
 install:
   - go version
-
-before_script:
-  - mysql < db/seed.sql
 
 sudo: false
 script:
