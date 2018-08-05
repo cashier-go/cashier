@@ -3,12 +3,10 @@ package store
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/user"
-	"strings"
 	"testing"
 	"time"
 
@@ -135,21 +133,6 @@ func TestSQLiteStore(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-
-	seed, err := ioutil.ReadFile("../../db/seed.sql")
-	if err != nil {
-		t.Error(err)
-	}
-	stmts := strings.Split(string(seed), ";")
-	d, _ := sql.Open("sqlite3", f.Name())
-	for _, stmt := range stmts {
-		if !strings.Contains(stmt, "CREATE TABLE") {
-			continue
-		}
-		d.Exec(stmt)
-	}
-	d.Close()
-
 	config := map[string]string{"type": "sqlite", "filename": f.Name()}
 	db, err := NewSQLStore(config)
 	if err != nil {
