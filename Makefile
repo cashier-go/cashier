@@ -12,6 +12,8 @@ test: dep
 	go vet ./...
 	go list ./... |egrep -v 'vendor/|proto$$' |xargs -L1 golint -set_exit_status
 	gofmt -d $(SRC_FILES)
+	$(MAKE) generate
+	@[ -z "`git status --porcelain`" ] || (echo "unexpected files: `git status --porcelain`" && exit 1)
 
 build: cashier cashierd
 
@@ -30,4 +32,4 @@ clean:
 dep:
 	go get -u github.com/golang/lint/golint
 
-.PHONY: dep generate test cashier cashierd
+.PHONY: all build dep generate test cashier cashierd clean
