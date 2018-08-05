@@ -101,7 +101,7 @@ func testStore(t *testing.T, db CertStorer) {
 }
 
 func TestMemoryStore(t *testing.T) {
-	db := NewMemoryStore()
+	db := newMemoryStore()
 	testStore(t, db)
 }
 
@@ -120,7 +120,7 @@ func TestMySQLStore(t *testing.T) {
 	} else {
 		sqlConfig["username"] = u.Username
 	}
-	db, err := NewSQLStore(sqlConfig)
+	db, err := newSQLStore(sqlConfig)
 	if err != nil {
 		t.Error(err)
 	}
@@ -134,7 +134,7 @@ func TestSQLiteStore(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 	config := map[string]string{"type": "sqlite", "filename": f.Name()}
-	db, err := NewSQLStore(config)
+	db, err := newSQLStore(config)
 	if err != nil {
 		t.Error(err)
 	}

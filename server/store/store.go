@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -15,11 +16,11 @@ import (
 func New(c config.Database) (CertStorer, error) {
 	switch c["type"] {
 	case "mysql", "sqlite":
-		return NewSQLStore(c)
+		return newSQLStore(c)
 	case "mem":
-		return NewMemoryStore(), nil
+		return newMemoryStore(), nil
 	}
-	return NewMemoryStore(), nil
+	return nil, fmt.Errorf("unable to create store with driver %s", c["type"])
 }
 
 // CertStorer records issued certs in a persistent store for audit and

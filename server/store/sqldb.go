@@ -18,10 +18,10 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 )
 
-var _ CertStorer = (*SQLStore)(nil)
+var _ CertStorer = (*sqlStore)(nil)
 
-// SQLStore is an sql-based CertStorer
-type SQLStore struct {
+// sqlStore is an sql-based CertStorer
+type sqlStore struct {
 	conn *sqlx.DB
 
 	get         *sqlx.Stmt
@@ -31,8 +31,8 @@ type SQLStore struct {
 	revoked     *sqlx.Stmt
 }
 
-// NewSQLStore returns a *sql.DB CertStorer.
-func NewSQLStore(c config.Database) (*SQLStore, error) {
+// newSQLStore returns a *sql.DB CertStorer.
+func newSQLStore(c config.Database) (*sqlStore, error) {
 	var driver string
 	var dsn string
 	switch c["type"] {
@@ -61,30 +61,30 @@ func NewSQLStore(c config.Database) (*SQLStore, error) {
 
 	conn, err := sqlx.Connect(driver, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("SQLStore: could not get a connection: %v", err)
+		return nil, fmt.Errorf("sqlStore: could not get a connection: %v", err)
 	}
 	if err := autoMigrate(driver, conn); err != nil {
-		return nil, fmt.Errorf("SQLStore: could not update schema: %v", err)
+		return nil, fmt.Errorf("sqlStore: could not update schema: %v", err)
 	}
 
-	db := &SQLStore{
+	db := &sqlStore{
 		conn: conn,
 	}
 
 	if db.set, err = conn.Preparex("INSERT INTO issued_certs (key_id, principals, created_at, expires_at, raw_key) VALUES (?, ?, ?, ?, ?)"); err != nil {
-		return nil, fmt.Errorf("SQLStore: prepare set: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare set: %v", err)
 	}
 	if db.get, err = conn.Preparex("SELECT * FROM issued_certs WHERE key_id = ?"); err != nil {
-		return nil, fmt.Errorf("SQLStore: prepare get: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare get: %v", err)
 	}
 	if db.listAll, err = conn.Preparex("SELECT * FROM issued_certs"); err != nil {
-		return nil, fmt.Errorf("SQLStore: prepare listAll: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare listAll: %v", err)
 	}
 	if db.listCurrent, err = conn.Preparex("SELECT * FROM issued_certs WHERE expires_at >= ?"); err != nil {
-		return nil, fmt.Errorf("SQLStore: prepare listCurrent: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare listCurrent: %v", err)
 	}
 	if db.revoked, err = conn.Preparex("SELECT * FROM issued_certs WHERE revoked = 1 AND ? <= expires_at"); err != nil {
-		return nil, fmt.Errorf("SQLStore: prepare revoked: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare revoked: %v", err)
 	}
 	return db, nil
 }
@@ -114,7 +114,7 @@ type rowScanner interface {
 }
 
 // Get a single *CertRecord
-func (db *SQLStore) Get(id string) (*CertRecord, error) {
+func (db *sqlStore) Get(id string) (*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
 		return nil, errors.Wrap(err, "unable to connect to database")
 	}
@@ -123,12 +123,12 @@ func (db *SQLStore) Get(id string) (*CertRecord, error) {
 }
 
 // SetCert parses a *ssh.Certificate and records it
-func (db *SQLStore) SetCert(cert *ssh.Certificate) error {
+func (db *sqlStore) SetCert(cert *ssh.Certificate) error {
 	return db.SetRecord(parseCertificate(cert))
 }
 
 // SetRecord records a *CertRecord
-func (db *SQLStore) SetRecord(rec *CertRecord) error {
+func (db *sqlStore) SetRecord(rec *CertRecord) error {
 	if err := db.conn.Ping(); err != nil {
 		return errors.Wrap(err, "unable to connect to database")
 	}
@@ -138,7 +138,7 @@ func (db *SQLStore) SetRecord(rec *CertRecord) error {
 
 // List returns all recorded certs.
 // By default only active certs are returned.
-func (db *SQLStore) List(includeExpired bool) ([]*CertRecord, error) {
+func (db *sqlStore) List(includeExpired bool) ([]*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
 		return nil, errors.Wrap(err, "unable to connect to database")
 	}
@@ -156,7 +156,7 @@ func (db *SQLStore) List(includeExpired bool) ([]*CertRecord, error) {
 }
 
 // Revoke an issued cert by id.
-func (db *SQLStore) Revoke(ids []string) error {
+func (db *sqlStore) Revoke(ids []string) error {
 	if err := db.conn.Ping(); err != nil {
 		return errors.Wrap(err, "unable to connect to database")
 	}
@@ -166,7 +166,7 @@ func (db *SQLStore) Revoke(ids []string) error {
 }
 
 // GetRevoked returns all revoked certs
-func (db *SQLStore) GetRevoked() ([]*CertRecord, error) {
+func (db *sqlStore) GetRevoked() ([]*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
 		return nil, errors.Wrap(err, "unable to connect to database")
 	}
@@ -178,6 +178,6 @@ func (db *SQLStore) GetRevoked() ([]*CertRecord, error) {
 }
 
 // Close the connection to the database
-func (db *SQLStore) Close() error {
+func (db *sqlStore) Close() error {
 	return db.conn.Close()
 }

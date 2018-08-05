@@ -38,7 +38,7 @@ func init() {
 		MaxAge:     "1h",
 	})
 	authprovider = testprovider.New()
-	certstore = store.NewMemoryStore()
+	certstore, _ = store.New(map[string]string{"type": "mem"})
 	ctx = &appContext{
 		cookiestore: sessions.NewCookieStore([]byte("secret")),
 		authsession: &auth.Session{AuthURL: "https://www.example.com/auth"},
