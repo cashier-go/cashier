@@ -21,13 +21,18 @@ type rpcServer struct{}
 type key int
 
 const usernameKey key = 0
+const principalsKey key = 1
 
 func (s *rpcServer) Sign(ctx context.Context, req *proto.SignRequest) (*proto.SignResponse, error) {
 	username, ok := ctx.Value(usernameKey).(string)
 	if !ok {
 		return nil, grpc.Errorf(codes.InvalidArgument, "Error reading username")
 	}
-	cert, err := keysigner.SignUserKeyFromRPC(req, username)
+	principals, ok := ctx.Value(principalsKey).([]string)
+	if !ok {
+		return nil, grpc.Errorf(codes.InvalidArgument, "Error reading principals")
+	}
+	cert, err := keysigner.SignUserKeyFromRPC(req, username, principals)
 	if err != nil {
 		return nil, grpc.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -54,6 +59,7 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 			return nil, grpc.Errorf(codes.PermissionDenied, "access denied")
 		}
 		ctx = context.WithValue(ctx, usernameKey, authprovider.Username(token))
+		ctx = context.WithValue(ctx, principalsKey, authprovider.Principals(token))
 		authprovider.Revoke(token)
 	default:
 		return nil, grpc.Errorf(codes.InvalidArgument, "unknown argument")

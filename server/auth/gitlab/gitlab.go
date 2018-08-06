@@ -113,6 +113,25 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 	return nil
 }
 
+// Adds a user's group memberships as principals
+func (c *Config) Principals(token *oauth2.Token) []string {
+	res := []string{}
+	if !token.Valid() {
+		return res
+	}
+	// Return the user's groups as principals
+	client := gitlabapi.NewOAuthClient(nil, token.AccessToken)
+	client.SetBaseURL(c.baseurl)
+	groups, _, err := client.Groups.SearchGroup(c.group)
+	if err != nil {
+		return res
+	}
+	for _, g := range groups {
+		res = append(res, g.Path)
+	}
+	return res
+}
+
 // StartSession retrieves an authentication endpoint from Gitlab.
 func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{
