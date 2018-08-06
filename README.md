@@ -116,11 +116,12 @@ Exception to this: the `http_logfile` option **ONLY** writes to local files.
 
 The database is used to record issued certificates for audit and revocation purposes.
 
-- `type` : string. One of `mysql`, `sqlite` or `mem`. Default: `mem`.
+- `type` : string. One of `mysql`, `sqlite` or `mem`.
 - `address` : string. (`mysql` only) Hostname and optional port of the database server.
 - `username` : string. Database username.
 - `password` : string. Database password. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/mysql_password`.
 - `filename` : string. (`sqlite` only). Path to sqlite database.
+- `dbname`: string (`mysql` only). Name of database to use.
 
 Examples:
 ```
@@ -130,6 +131,7 @@ server {
     address = "my-db-host.corp"
     username = "user"
     password = "passwd"
+    dbname = "cashier_production"
   }
 
   database {
@@ -143,8 +145,7 @@ server {
 }
 ```
 
-Prior to using MySQL or SQLite you need to create the database and tables using [the provided seed file](db/seed.sql).  
-e.g. `mysql < db/seed.sql`.  
+Cashierd **will not** create the database for you - you need to create this. On startup cashierd will execute any schema changes.
 Obviously you should setup a role user for running in prodution.
 
 ## auth
