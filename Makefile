@@ -29,8 +29,12 @@ cashierd: generate
 clean:
 	rm -f cashier cashierd
 
+# usage: make migration name=whatever
+migration:
+	go run ./generate/migration/migration.go $(name)
+
 dep:
 	go get -u github.com/golang/lint/golint
 	go get -u golang.org/x/tools/cmd/goimports
 
-.PHONY: all build dep generate test cashier cashierd clean
+.PHONY: all build dep generate test cashier cashierd clean migration
