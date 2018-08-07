@@ -36,6 +36,7 @@ type CertStorer interface {
 
 // A CertRecord is a representation of a ssh certificate used by a CertStorer.
 type CertRecord struct {
+	ID         int         `json:"-" db:"id"`
 	KeyID      string      `json:"key_id" db:"key_id"`
 	Principals StringSlice `json:"principals" db:"principals"`
 	CreatedAt  time.Time   `json:"created_at" db:"created_at"`

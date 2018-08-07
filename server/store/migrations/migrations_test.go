@@ -75,6 +75,7 @@ func runMigrations(t *testing.T, db *sql.DB, directory string) {
 	assert.NoError(t, err)
 	// Verify that reversing migrations works
 	n, err = migrate.Exec(db, directory, m, migrate.Down)
+	assert.NoError(t, err)
 	assert.Len(t, files, n)
 }
 
