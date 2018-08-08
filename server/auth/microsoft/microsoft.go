@@ -1,11 +1,12 @@
 package microsoft
 
 import (
+	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
-	//"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/metrics"
@@ -23,6 +24,7 @@ const (
 type Config struct {
 	config    *oauth2.Config
 	tenant    string
+	groups    map[string]bool
 	whitelist map[string]bool
 }
 
@@ -30,12 +32,18 @@ var _ auth.Provider = (*Config)(nil)
 
 // New creates a new Microsoft provider from a configuration.
 func New(c *config.Auth) (*Config, error) {
-	uw := make(map[string]bool)
+	whitelist := make(map[string]bool)
 	for _, u := range c.UsersWhitelist {
-		uw[u] = true
+		whitelist[u] = true
 	}
-	if c.ProviderOpts["tenant"] == "" && len(uw) == 0 {
+	if c.ProviderOpts["tenant"] == "" && len(whitelist) == 0 {
 		return nil, errors.New("either Office 365 tenant or users whitelist must be specified")
+	}
+	groupMap := make(map[string]bool)
+	if groups, ok := c.ProviderOpts["groups"]; ok {
+		for _, group := range strings.Split(groups, ",") {
+			groupMap[strings.Trim(group, " ")] = true
+		}
 	}
 
 	return &Config{
@@ -44,16 +52,112 @@ func New(c *config.Auth) (*Config, error) {
 			ClientSecret: c.OauthClientSecret,
 			RedirectURL:  c.OauthCallbackURL,
 			Endpoint:     microsoft.AzureADEndpoint(c.ProviderOpts["tenant"]),
-			Scopes:       []string{"user.Read"},
+			Scopes:       []string{"user.Read.All", "Directory.Read.All"},
 		},
 		tenant:    c.ProviderOpts["tenant"],
-		whitelist: uw,
+		whitelist: whitelist,
+		groups:    groupMap,
 	}, nil
 }
 
 // A new oauth2 http client.
 func (c *Config) newClient(token *oauth2.Token) *http.Client {
 	return c.config.Client(oauth2.NoContext, token)
+}
+
+// Gets a response for an graph api call.
+func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[string]interface{} {
+	client := c.newClient(token)
+	var url strings.Builder
+	url.WriteString("https://graph.microsoft.com/v1.0")
+	for _, pathElement := range pathElements {
+		url.WriteString(pathElement)
+	}
+	resp, err := client.Get(url.String())
+	if err != nil {
+		log.Printf("Failed to get response for %s (%s)", url.String(), err)
+		return nil
+	}
+	defer resp.Body.Close()
+	var document map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&document); err != nil {
+		log.Printf("Failed to get document for %s (%s)", url.String(), err)
+		return nil
+	}
+	return document
+}
+
+// Get info from the "/me" endpoint of the Microsoft Graph API (MSG-API).
+// https://developer.microsoft.com/en-us/graph/docs/concepts/v1-overview
+func (c *Config) getMe(token *oauth2.Token, item string) string {
+	document := c.getDocument(token, "/me")
+	if len(document) == 0 {
+		log.Printf("Document empty for getMe(%s)", item)
+		return ""
+	}
+	if value, ok := document[item].(string); ok {
+		return value
+	}
+	log.Printf("Couldn't find item for getMe(%s)", item)
+	return ""
+}
+
+// Check against verified domains from "/organization" endpoint of MSG-API.
+func (c *Config) verifyTenant(token *oauth2.Token) bool {
+	document := c.getDocument(token, "/organization")
+	if len(document) == 0 {
+		log.Printf("Document empty for verifyTenant")
+		return false
+	}
+	var value []interface{}
+	var ok bool
+	if value, ok = document["value"].([]interface{}); !ok {
+		log.Printf("No value for verifyTenant")
+		return false
+	}
+	for _, valueEntry := range value {
+		if value, ok = valueEntry.(map[string]interface{})["verifiedDomains"].([]interface{}); !ok {
+			continue
+		}
+		for _, val := range value {
+			domain := val.(map[string]interface{})["name"].(string)
+			if domain == c.tenant {
+				return true
+			}
+		}
+	}
+	log.Printf("No valid tenant for verifyTenant")
+	return false
+}
+
+// Check against groups from /users/{id}/memberOf endpoint of MSG-API.
+func (c *Config) verifyGroups(token *oauth2.Token) bool {
+	id := c.getMe(token, "id")
+	if id == "" {
+		log.Printf("Empty id for verifyGroup")
+		return false
+	}
+	document := c.getDocument(token, "/users/", id, "/memberOf")
+	if len(document) == 0 {
+		log.Printf("Empty document for verifyGroup")
+		return false
+	}
+	var value []interface{}
+	var ok bool
+	if value, ok = document["value"].([]interface{}); !ok {
+		log.Printf("Missing value for verifyGroup: %v", document)
+		return false
+	}
+	for _, valueEntry := range value {
+		if group, ok := valueEntry.(map[string]interface{})["displayName"].(string); ok {
+			log.Printf("Checking %s with (%s) in verifyGroup", group, c.groups)
+			if c.groups[group] {
+				return true
+			}
+		}
+	}
+	log.Printf("No valid group for verifyGroup")
+	return false
 }
 
 // Name returns the name of the provider.
@@ -70,7 +174,15 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		return false
 	}
 	metrics.M.AuthValid.WithLabelValues("microsoft").Inc()
-	return true
+	if c.tenant != "" {
+		if c.verifyTenant(token) {
+			if len(c.groups) > 0 {
+				return c.verifyGroups(token)
+			}
+			return true
+		}
+	}
+	return false
 }
 
 // Revoke disables the access token.
@@ -91,29 +203,12 @@ func (c *Config) Exchange(code string) (*oauth2.Token, error) {
 	if err == nil {
 		metrics.M.AuthExchange.WithLabelValues("microsoft").Inc()
 	}
-	/*
-		Need to get the User Principle Name here.  This can be done as follows.
-		1. id_token = t.Extra("id_token")  // yields JWT claim.
-		2. claim = jwt.Parse(id_token, some function?)
-		3. claim.Something?("upn")
-
-		Or maybe there are these operations on the signed in user:
-		https://msdn.microsoft.com/en-us/library/azure/ad/graph/api/signed-in-user-operations
-		How to do this via the Azure SDK for Go: https://github.com/Azure/azure-rest-api-specs/issues/2647
-
-		Reference:
-		Azure Oauth flow: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code
-		OAuth token: https://godoc.org/golang.org/x/oauth2#Token
-		JWT lib: https://godoc.org/github.com/dgrijalva/jwt-go#example-Parse--Hmac
-	*/
 	return t, err
 }
 
 // Email retrieves the email address of the user.
 func (c *Config) Email(token *oauth2.Token) string {
-	//uclient := graphrbac.NewUsersClient("myorganization")
-
-	return "nobody@nowhere"
+	return c.getMe(token, "mail")
 }
 
 // Username retrieves the username portion of the user's email address.

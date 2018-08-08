@@ -53,7 +53,7 @@ func main() {
 	fmt.Print("Enter token: ")
 	scanner := bufio.NewScanner(os.Stdin)
 	var buffer bytes.Buffer
-	for scanner.Scan(); scanner.Text() == ".\n"; scanner.Scan() {
+	for scanner.Scan(); scanner.Text() != "."; scanner.Scan() {
 		buffer.WriteString(scanner.Text())
 	}
 	tokenBytes, err := base64.StdEncoding.DecodeString(buffer.String())
