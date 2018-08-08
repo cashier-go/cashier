@@ -44,6 +44,9 @@ func TestCert(t *testing.T) {
 		t.Errorf("Expected %s, got %s", cert.ValidPrincipals, principals)
 	}
 	k1, _, _, _, err := ssh.ParseAuthorizedKey([]byte(r.Key))
+	if err != nil {
+		t.Errorf("Unable to parse key: %v", err)
+	}
 	k2 := cert.Key
 	if !bytes.Equal(k1.Marshal(), k2.Marshal()) {
 		t.Error("Cert key doesn't match public key")

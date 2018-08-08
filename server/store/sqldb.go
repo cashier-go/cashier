@@ -108,11 +108,6 @@ func autoMigrate(driver string, conn *sqlx.DB) error {
 	return nil
 }
 
-// rowScanner is implemented by sql.Row and sql.Rows
-type rowScanner interface {
-	Scan(dest ...interface{}) error
-}
-
 // Get a single *CertRecord
 func (db *sqlStore) Get(id string) (*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
@@ -161,6 +156,10 @@ func (db *sqlStore) Revoke(ids []string) error {
 		return errors.Wrap(err, "unable to connect to database")
 	}
 	q, args, err := sqlx.In("UPDATE issued_certs SET revoked = 1 WHERE key_id IN (?)", ids)
+	if err != nil {
+		return err
+	}
+	q = db.conn.Rebind(q)
 	_, err = db.conn.Query(q, args...)
 	return err
 }

@@ -28,7 +28,8 @@ func (s *StringSlice) Scan(value interface{}) error {
 		return nil
 	}
 	var err error
-	if v, err := driver.String.ConvertValue(value); err == nil {
+	v, err := driver.String.ConvertValue(value)
+	if err == nil {
 		if v, ok := v.([]byte); ok {
 			err = json.Unmarshal(v, s)
 		}
