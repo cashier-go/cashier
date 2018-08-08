@@ -16,20 +16,22 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSQLiteMigrations(t *testing.T) {
 	subdir := "sqlite3"
 	db, err := sql.Open(subdir, ":memory:")
-	assert.NoError(t, err)
-	defer db.Close()
+	require.NoError(t, err, "Unable to open sqlite connection")
 	runMigrations(t, db, subdir)
+	db.Close()
 }
 
 func TestMySQLMigrations(t *testing.T) {
 	if os.Getenv("MYSQL_TEST") == "" {
 		t.Skip("No MYSQL_TEST environment variable")
 	}
+	r := require.New(t)
 	subdir := "mysql"
 	dsn := mysql.NewConfig()
 	dsn.Net = "tcp"
@@ -43,39 +45,45 @@ func TestMySQLMigrations(t *testing.T) {
 		dsn.User = u.Username
 	}
 	db, err := sql.Open(subdir, dsn.FormatDSN())
-	assert.NoError(t, err)
+	r.NoError(err, "Unable to open mysql connection")
 
 	rnd := make([]byte, 4)
 	rand.Read(rnd)
 	suffix := fmt.Sprintf("_%x", string(rnd))
 	_, err = db.Exec("CREATE DATABASE migrations_test" + suffix)
-	assert.NoError(t, err)
+	r.NoError(err)
 	_, err = db.Exec("USE migrations_test" + suffix)
-	assert.NoError(t, err)
+	r.NoError(err)
 	runMigrations(t, db, subdir)
 	db.Exec("DROP DATABASE IF EXISTS migrations_test" + suffix)
 	db.Close()
 }
 
 func runMigrations(t *testing.T, db *sql.DB, directory string) {
+	a := assert.New(t)
+	r := require.New(t)
 	m := &migrate.FileMigrationSource{
 		Dir: directory,
 	}
 	files, err := filepath.Glob(path.Join(directory, "*.sql"))
 	// Verify that there is at least one migration to run
-	assert.NotEmpty(t, files)
-	assert.NoError(t, err)
+	r.NoError(err, "No migrations to run")
+	r.NotEmpty(files)
 	// Verify that migrating up works
 	n, err := migrate.Exec(db, directory, m, migrate.Up)
-	assert.Len(t, files, n)
-	assert.NoError(t, err)
+	if a.NoError(err) {
+		a.Len(files, n)
+	}
 	// Verify that a subsequent run has no migrations
 	n, err = migrate.Exec(db, directory, m, migrate.Up)
-	assert.Equal(t, 0, n)
-	assert.NoError(t, err)
+	if a.NoError(err) {
+		a.Equal(0, n)
+	}
 	// Verify that reversing migrations works
 	n, err = migrate.Exec(db, directory, m, migrate.Down)
-	assert.Len(t, files, n)
+	if a.NoError(err) {
+		a.Len(files, n)
+	}
 }
 
 // Test that all migration directories contain the same set of migrations files.

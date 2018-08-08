@@ -1,0 +1,32 @@
+-- +migrate Up
+CREATE TABLE `issued_certs_new` (
+  `id` INTEGER PRIMARY KEY,
+  `key_id` varchar(255) UNIQUE NOT NULL,
+  `principals` varchar(255) DEFAULT '[]',
+  `created_at` datetime DEFAULT '1970-01-01 00:00:01',
+  `expires_at` datetime DEFAULT '1970-01-01 00:00:01',
+  `revoked` tinyint(1) DEFAULT '0',
+  `raw_key` text
+);
+INSERT INTO `issued_certs_new` (key_id, principals, created_at, expires_at, revoked, raw_key)
+  SELECT key_id, principals, created_at, expires_at, revoked, raw_key FROM `issued_certs`;
+DROP TABLE `issued_certs`;
+ALTER TABLE `issued_certs_new` RENAME TO `issued_certs`;
+CREATE INDEX `idx_expires_at` ON `issued_certs` (`expires_at`);
+
+-- +migrate Down
+CREATE TABLE IF NOT EXISTS `issued_certs_old` (
+  `key_id` varchar(255) NOT NULL,
+  `principals` varchar(255) DEFAULT "[]",
+  `created_at` datetime DEFAULT '1970-01-01 00:00:01',
+  `expires_at` datetime DEFAULT '1970-01-01 00:00:01',
+  `revoked` tinyint(1) DEFAULT 0,
+  `raw_key` text,
+  PRIMARY KEY (`key_id`)
+);
+
+INSERT INTO `issued_certs_old` (key_id, principals, created_at, expires_at, revoked, raw_key)
+  SELECT key_id, principals, created_at, expires_at, revoked, raw_key FROM `issued_certs`;
+DROP TABLE `issued_certs`;
+ALTER TABLE `issued_certs_old` RENAME TO `issued_certs`;
+CREATE INDEX `idx_expires_at` ON `issued_certs` (`expires_at`);

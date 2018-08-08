@@ -727,6 +727,12 @@
 			"revisionTime": "2018-05-06T18:05:49Z"
 		},
 		{
+			"checksumSHA1": "wnEANt4k5X/KGwoFyfSSnpxULm4=",
+			"path": "github.com/stretchr/testify/require",
+			"revision": "f35b8ab0b5a2cef36673838d662e249dd9c94686",
+			"revisionTime": "2018-05-06T18:05:49Z"
+		},
+		{
 			"checksumSHA1": "Mqb+Cn1S2ZN/nOfn8FDaAiXTdhU=",
 			"path": "github.com/stripe/krl",
 			"revision": "fd565ec6f8e236d6b63b953f3aecb2f2cca80605",

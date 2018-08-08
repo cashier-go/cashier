@@ -248,9 +248,12 @@ func listCertsJSONHandler(a *appContext, w http.ResponseWriter, r *http.Request)
 	}
 	includeExpired, _ := strconv.ParseBool(r.URL.Query().Get("all"))
 	certs, err := certstore.List(includeExpired)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
 	j, err := json.Marshal(certs)
 	if err != nil {
-		return http.StatusInternalServerError, errors.New(http.StatusText(http.StatusInternalServerError))
+		return http.StatusInternalServerError, err
 	}
 	w.Write(j)
 	return http.StatusOK, nil
