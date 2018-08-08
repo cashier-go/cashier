@@ -36,16 +36,16 @@ func main() {
 
 	c, err := client.ReadConfig(*cfg)
 	if err != nil {
-		log.Printf("Error parsing config file: %v\n", err)
-	}
-	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
-	if err := browser.OpenURL(c.CA); err != nil {
-		fmt.Println("Error launching web browser. Go to the link in your web browser")
+		log.Printf("Configuration error: %v\n", err)
 	}
 	fmt.Println("Generating new key pair")
 	priv, pub, err := client.GenerateKey(client.KeyType(c.Keytype), client.KeySize(c.Keysize))
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
+	}
+	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
+	if err := browser.OpenURL(c.CA); err != nil {
+		fmt.Println("Error launching web browser. Go to the link in your web browser")
 	}
 
 	fmt.Print("Enter token: ")
