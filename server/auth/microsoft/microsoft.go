@@ -180,7 +180,9 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 // StartSession retrieves an authentication endpoint from Microsoft.
 func (c *Config) StartSession(state string) *auth.Session {
 	return &auth.Session{
-		AuthURL: c.config.AuthCodeURL(state, oauth2.SetAuthURLParam("hd", c.tenant)),
+		AuthURL: c.config.AuthCodeURL(state,
+			oauth2.SetAuthURLParam("hd", c.tenant),
+			oauth2.SetAuthURLParam("prompt", "login")),
 	}
 }
 
