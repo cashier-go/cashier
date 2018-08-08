@@ -13,23 +13,29 @@ import (
 	"time"
 
 	"github.com/nsheridan/cashier/client"
+	"github.com/nsheridan/cashier/lib"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/agent"
 )
 
 var (
-	u, _             = user.Current()
-	cfg              = pflag.String("config", path.Join(u.HomeDir, ".cashier.conf"), "Path to config file")
-	ca               = pflag.String("ca", "http://localhost:10000", "CA server")
-	keysize          = pflag.Int("key_size", 0, "Size of key to generate. Ignored for ed25519 keys. (default 2048 for rsa keys, 256 for ecdsa keys)")
-	validity         = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
-	keytype          = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
-	publicFilePrefix = pflag.String("key_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
+	u, _    = user.Current()
+	cfg     = pflag.String("config", path.Join(u.HomeDir, ".cashier.conf"), "Path to config file")
+	_       = pflag.String("ca", "http://localhost:10000", "CA server")
+	_       = pflag.Int("key_size", 0, "Size of key to generate. Ignored for ed25519 keys. (default 2048 for rsa keys, 256 for ecdsa keys)")
+	_       = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
+	_       = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
+	_       = pflag.String("key_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
+	version = pflag.Bool("version", false, "Print version and exit")
 )
 
 func main() {
 	pflag.Parse()
+	if *version {
+		fmt.Printf("%s\n", lib.Version)
+		os.Exit(0)
+	}
 	log.SetPrefix("cashier: ")
 	log.SetFlags(0)
 	var err error
