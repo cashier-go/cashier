@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -67,12 +68,8 @@ func (c *Config) newClient(token *oauth2.Token) *http.Client {
 // Gets a response for an graph api call.
 func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[string]interface{} {
 	client := c.newClient(token)
-	var url strings.Builder
-	url.WriteString("https://graph.microsoft.com/v1.0")
-	for _, pathElement := range pathElements {
-		url.WriteString(pathElement)
-	}
-	resp, err := client.Get(url.String())
+	url := "https://" + path.Join("graph.microsoft.com/v1.0", path.Join(pathElements...))
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil
 	}
