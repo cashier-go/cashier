@@ -1,8 +1,5 @@
-CREATE DATABASE IF NOT EXISTS `certs`;
-
-USE `certs`;
-
-CREATE TABLE `issued_certs` (
+-- +migrate Up
+CREATE TABLE IF NOT EXISTS `issued_certs` (
   `key_id` varchar(255) NOT NULL,
   `principals` varchar(255) DEFAULT "[]",
   `created_at` datetime DEFAULT '1970-01-01 00:00:01',
@@ -13,3 +10,6 @@ CREATE TABLE `issued_certs` (
 );
 CREATE INDEX `idx_expires_at` ON `issued_certs` (`expires_at`);
 CREATE INDEX `idx_revoked_expires_at` ON `issued_certs` (`revoked`, `expires_at`);
+
+-- +migrate Down
+DROP TABLE `issued_certs`;

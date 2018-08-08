@@ -1,9 +1,12 @@
-FROM golang:1.7-alpine
+FROM golang:latest as build
+LABEL maintainer="nsheridan@gmail.com"
+ARG SRC_DIR=/go/src/github.com/nsheridan/cashier
+WORKDIR ${SRC_DIR}
+ADD . ${SRC_DIR}
+RUN CGO_ENABLED=0 GOOS=linux go install -a -installsuffix static ./cmd/cashierd
 
-ADD . /go/src/github.com/nsheridan/cashier
-RUN apk add --update build-base
-RUN go install github.com/nsheridan/cashier/cmd/cashierd
-
-VOLUME /cashier
+FROM scratch
+LABEL maintainer="nsheridan@gmail.com"
 WORKDIR /cashier
-ENTRYPOINT /go/bin/cashierd
+COPY --from=build /go/bin/cashierd /
+ENTRYPOINT ["/cashierd"]

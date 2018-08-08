@@ -4,9 +4,8 @@
 
 - [Cashier](#cashier)
 	- [How it works](#how-it-works)
-- [Quick start](#quick-start)
-	- [Installation using Go tools](#installation-using-go-tools)
-	- [Using docker](#using-docker)
+- [Installing](#installing)
+  - [Docker](#docker)
 - [Requirements](#requirements)
 	- [Server](#server)
 	- [Client](#client)
@@ -19,7 +18,7 @@
 	- [aws](#aws)
 	- [vault](#vault)
 - [Usage](#usage)
-	- [Using cashier](#using-cashier)
+	- [Using cashier client](#using-cashier-client)
 	- [Configuring SSH](#configuring-ssh)
 	- [Revoking certificates](#revoking-certificates)
 - [Future Work](#future-work)
@@ -60,33 +59,31 @@ The client receives the certificate and loads it and the private key into the ss
 
 The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the agent.
 
-# Quick start
-## Installation using Go tools
-1. Use the Go tools to install cashier. The binaries `cashierd` and `cashier` will be installed in your $GOPATH.
-```
-go get -u github.com/nsheridan/cashier/cmd/cashier
-go get -u github.com/nsheridan/cashier/cmd/cashierd
-```
-2. Create a signing key with `ssh-keygen` and a [cashierd.conf](example-server.conf)
-3. Run the cashier server with `cashierd` and the cli with `cashier`.
+# Installing
+Stable versions can be obtained from [the release page](https://github.com/nsheridan/cashier/releases). Releases contain both static and dynamically linked executables. Statically linked executables do not have sqlite support.
 
-## Using docker
-1. Create a signing key with `ssh-keygen` and a [cashierd.conf](example-server.conf)
-2. Run
+Note that installing using standard Go tools is possible, but the master branch should be considered unstable.
+
+The server requires a configuration file ([sample config](example-server.conf)).
+
+See [the configuration section](#configuration) for more detail.
+
+## Docker
+A [docker image is available](https://hub.docker.com/r/nsheridan/cashier). Example usage:
 ```
-docker run -it --rm -p 10000:10000 --name cashier -v $(pwd):/cashier nsheridan/cashier
+docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier nsheridan/cashier
 ```
 
 # Requirements
 ## Server
-Go 1.7 or later, though it may work with earlier versions.
+Go 1.10 or later, though it may work with earlier versions.
 
 ## Client
-- Go 1.7 or later
+- Go 1.10 or later, though it may work with earlier versions.
 - OpenSSH 5.6 or newer.
-- A working SSH agent.
+- A working SSH agent (note that the GPG agent does not handle certificates)
 
-Note: I have only tested this on Linux & OSX.
+Note: Cashier has only been tested on macOS and Linux.
 
 # Configuration
 Configuration is divided into different sections: `server`, `auth`, `ssh`, and `aws`.
@@ -119,11 +116,12 @@ Exception to this: the `http_logfile` option **ONLY** writes to local files.
 
 The database is used to record issued certificates for audit and revocation purposes.
 
-- `type` : string. One of `mysql`, `sqlite` or `mem`. Default: `mem`.
+- `type` : string. One of `mysql`, `sqlite` or `mem`.
 - `address` : string. (`mysql` only) Hostname and optional port of the database server.
 - `username` : string. Database username.
 - `password` : string. Database password. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/mysql_password`.
 - `filename` : string. (`sqlite` only). Path to sqlite database.
+- `dbname`: string (`mysql` only). Name of database to use.
 
 Examples:
 ```
@@ -133,6 +131,7 @@ server {
     address = "my-db-host.corp"
     username = "user"
     password = "passwd"
+    dbname = "cashier_production"
   }
 
   database {
@@ -146,8 +145,7 @@ server {
 }
 ```
 
-Prior to using MySQL or SQLite you need to create the database and tables using [the provided seed file](db/seed.sql).  
-e.g. `mysql < db/seed.sql`.  
+Cashierd **will not** create the database for you - you need to create this. On startup cashierd will execute any schema changes.
 Obviously you should setup a role user for running in prodution.
 
 ## auth
@@ -183,12 +181,12 @@ Supported options:
 | Gitlab   | allusers | Allow all valid users to get signed keys. Only allowed if siteurl set. |
 | Gitlab   | group | If `allusers` and this are unset then you must whitelist individual users using `users_whitelist`. Otherwise the user must be a member of this group. |
 | Gitlab   | siteurl | Optional. The url of the Gitlab site. Default: `https://gitlab.com/api/v3/` |
-| Google   |       domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`.                                           |
+| Google   | domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`. |
 | Microsoft | groups | Comma separated list of valid groups. |
 | Microsoft | tenant | The domain name of the Office 365 account. |
 
 ## ssh
-- `signing_key`: string. Path to the signing ssh private key you created earlier. See the [note](#a-note-on-files) on files above.
+- `signing_key`: string. Path to the certificate signing ssh private key. Use `ssh-keygen` to create the key and store it somewhere safe. See also the [note](#a-note-on-files) on files above.
 - `additional_principals`: array of string. By default certificates will have one principal set - the username portion of the requester's email address. If `additional_principals` is set, these will be added to the certificate e.g. if your production machines use shared user accounts.
 - `max_age`: string. If set the server will not issue certificates with an expiration value longer than this, regardless of what the client requests. Must be a valid Go [`time.Duration`](https://golang.org/pkg/time/#ParseDuration) string.
 - `permissions`: array of string. Specify the actions the certificate can perform. See the [`-O` option to `ssh-keygen(1)`](http://man.openbsd.org/OpenBSD-current/man1/ssh-keygen.1) for a complete list. e.g. `permissions = ["permit-pty", "permit-port-forwarding", force-command=/bin/ls", "source-address=192.168.0.0/24"]`
@@ -213,10 +211,10 @@ Cashier comes in two parts, a [cli](cmd/cashier) and a [server](cmd/cashierd).
 The server is configured using a HCL configuration file - [example](example-server.conf).
 
 For the server you need the following:
-- A new ssh private key. Generate one in the usual way using `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
+- A new ssh private key. Generate one using `ssh-keygen` - e.g. `ssh-keygen -f ssh_ca` - this is your CA signing key. At this time Cashier supports RSA, ECDSA and Ed25519 keys. *Important* This key should be kept safe - *ANY* ssh key signed with this key will be able to access your machines.
 - OAuth (Google or GitHub) credentials. You may also need to set the callback URL when creating these.
 
-## Using cashier
+## Using cashier client
 Once the server is up and running you'll need to configure your client.  
 The client is configured using either a [HCL](https://github.com/hashicorp/hcl) configuration file - [example](example-client.conf) - or command-line flags.
 

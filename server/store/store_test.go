@@ -3,16 +3,13 @@ package store
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/user"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/nsheridan/cashier/server/store/types"
 	"github.com/nsheridan/cashier/testdata"
 	"github.com/stretchr/testify/assert"
 
@@ -26,7 +23,7 @@ func TestParseCertificate(t *testing.T) {
 	pub, _ := ssh.NewPublicKey(r.Public())
 	c := &ssh.Certificate{
 		KeyId:           "id",
-		ValidPrincipals: types.StringSlice{"principal"},
+		ValidPrincipals: StringSlice{"principal"},
 		ValidBefore:     now,
 		CertType:        ssh.UserCert,
 		Key:             pub,
@@ -103,7 +100,7 @@ func testStore(t *testing.T, db CertStorer) {
 }
 
 func TestMemoryStore(t *testing.T) {
-	db := NewMemoryStore()
+	db := newMemoryStore()
 	testStore(t, db)
 }
 
@@ -122,7 +119,7 @@ func TestMySQLStore(t *testing.T) {
 	} else {
 		sqlConfig["username"] = u.Username
 	}
-	db, err := NewSQLStore(sqlConfig)
+	db, err := newSQLStore(sqlConfig)
 	if err != nil {
 		t.Error(err)
 	}
@@ -135,23 +132,8 @@ func TestSQLiteStore(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-
-	seed, err := ioutil.ReadFile("../../db/seed.sql")
-	if err != nil {
-		t.Error(err)
-	}
-	stmts := strings.Split(string(seed), ";")
-	d, _ := sql.Open("sqlite3", f.Name())
-	for _, stmt := range stmts {
-		if !strings.Contains(stmt, "CREATE TABLE") {
-			continue
-		}
-		d.Exec(stmt)
-	}
-	d.Close()
-
 	config := map[string]string{"type": "sqlite", "filename": f.Name()}
-	db, err := NewSQLStore(config)
+	db, err := newSQLStore(config)
 	if err != nil {
 		t.Error(err)
 	}

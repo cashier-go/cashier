@@ -6,6 +6,7 @@ env:
   - MYSQL_TEST="true"
 
 go:
+  - 1.11beta3
   - 1.10.3
   - 1.9.7
   - tip
@@ -13,16 +14,15 @@ go:
 matrix:
   allow_failures:
     - go: tip
+    - go: 1.11beta3
 
 before_install:
-  - go get -v github.com/golang/lint/golint
+  - make dep
+  - mysql -e 'CREATE DATABASE certs;'
 
 install:
   - go version
 
-before_script:
-  - mysql < db/seed.sql
-
 sudo: false
 script:
-  - ./run_tests.sh
+  - make test
