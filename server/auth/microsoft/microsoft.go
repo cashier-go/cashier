@@ -3,7 +3,6 @@ package microsoft
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
@@ -75,13 +74,11 @@ func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[st
 	}
 	resp, err := client.Get(url.String())
 	if err != nil {
-		log.Printf("Failed to get response for %s (%s)", url.String(), err)
 		return nil
 	}
 	defer resp.Body.Close()
 	var document map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&document); err != nil {
-		log.Printf("Failed to get document for %s (%s)", url.String(), err)
 		return nil
 	}
 	return document
@@ -92,13 +89,11 @@ func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[st
 func (c *Config) getMe(token *oauth2.Token, item string) string {
 	document := c.getDocument(token, "/me")
 	if len(document) == 0 {
-		log.Printf("Document empty for getMe(%s)", item)
 		return ""
 	}
 	if value, ok := document[item].(string); ok {
 		return value
 	}
-	log.Printf("Couldn't find item for getMe(%s)", item)
 	return ""
 }
 
@@ -106,13 +101,11 @@ func (c *Config) getMe(token *oauth2.Token, item string) string {
 func (c *Config) verifyTenant(token *oauth2.Token) bool {
 	document := c.getDocument(token, "/organization")
 	if len(document) == 0 {
-		log.Printf("Document empty for verifyTenant")
 		return false
 	}
 	var value []interface{}
 	var ok bool
 	if value, ok = document["value"].([]interface{}); !ok {
-		log.Printf("No value for verifyTenant")
 		return false
 	}
 	for _, valueEntry := range value {
@@ -126,7 +119,6 @@ func (c *Config) verifyTenant(token *oauth2.Token) bool {
 			}
 		}
 	}
-	log.Printf("No valid tenant for verifyTenant")
 	return false
 }
 
@@ -134,29 +126,24 @@ func (c *Config) verifyTenant(token *oauth2.Token) bool {
 func (c *Config) verifyGroups(token *oauth2.Token) bool {
 	id := c.getMe(token, "id")
 	if id == "" {
-		log.Printf("Empty id for verifyGroup")
 		return false
 	}
 	document := c.getDocument(token, "/users/", id, "/memberOf")
 	if len(document) == 0 {
-		log.Printf("Empty document for verifyGroup")
 		return false
 	}
 	var value []interface{}
 	var ok bool
 	if value, ok = document["value"].([]interface{}); !ok {
-		log.Printf("Missing value for verifyGroup: %v", document)
 		return false
 	}
 	for _, valueEntry := range value {
 		if group, ok := valueEntry.(map[string]interface{})["displayName"].(string); ok {
-			log.Printf("Checking %s with (%s) in verifyGroup", group, c.groups)
 			if c.groups[group] {
 				return true
 			}
 		}
 	}
-	log.Printf("No valid group for verifyGroup")
 	return false
 }
 
