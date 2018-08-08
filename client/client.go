@@ -142,6 +142,7 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 	s := &lib.SignRequest{
 		Key:        string(lib.GetPublicKey(pub)),
 		ValidUntil: time.Now().Add(validity),
+		Version:    lib.Version,
 	}
 	resp := &lib.SignResponse{}
 	for {

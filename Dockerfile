@@ -3,7 +3,7 @@ LABEL maintainer="nsheridan@gmail.com"
 ARG SRC_DIR=/go/src/github.com/nsheridan/cashier
 WORKDIR ${SRC_DIR}
 ADD . ${SRC_DIR}
-RUN CGO_ENABLED=0 GOOS=linux go install -a -installsuffix static ./cmd/cashierd
+RUN CGO_ENABLED=0 GOOS=linux make install-cashierd
 
 FROM scratch
 LABEL maintainer="nsheridan@gmail.com"

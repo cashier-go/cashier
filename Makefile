@@ -1,8 +1,12 @@
 CASHIER_CMD := ./cmd/cashier
-CASHIER_BIN := ./cashier
-CASHIERD_BIN := ./cashierd
 CASHIERD_CMD := ./cmd/cashierd
 SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*' -not -name 'a_*-packr.go')
+VERSION_PKG := "github.com/nsheridan/cashier/lib.Version"
+VERSION := $(shell git describe --tags --always --dirty)
+
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
+CGO_ENABLED ?= $(shell go env CGO_ENABLED)
 
 all: test build
 
@@ -20,11 +24,11 @@ build: cashier cashierd
 generate:
 	go generate -x ./...
 
-cashier:
-	go build -o cashier $(CASHIER_CMD)
+%-cmd:
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go build -ldflags="-X $(VERSION_PKG)=$(VERSION)" -o $* ./cmd/$*
 
-cashierd: generate
-	go build -o cashierd $(CASHIERD_CMD)
+install-%: generate
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -x -ldflags="-X $(VERSION_PKG)=$(VERSION)" ./cmd/$*
 
 clean:
 	rm -f cashier cashierd
@@ -36,5 +40,8 @@ migration:
 dep:
 	go get -u golang.org/x/lint/golint
 	go get -u golang.org/x/tools/cmd/goimports
+
+version:
+	@echo $(VERSION)
 
 .PHONY: all build dep generate test cashier cashierd clean migration

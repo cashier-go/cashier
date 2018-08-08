@@ -286,6 +286,14 @@ func newState() string {
 	return hex.EncodeToString(k)
 }
 
+// mwVersion is middleware to add a X-Cashier-Version header to the response.
+func mwVersion(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Cashier-Version", lib.Version)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func runHTTPServer(conf *config.Server, l net.Listener) {
 	var err error
 	ctx := &appContext{
@@ -310,6 +318,7 @@ func runHTTPServer(conf *config.Server, l net.Listener) {
 
 	CSRF := csrf.Protect([]byte(conf.CSRFSecret), csrf.Secure(conf.UseTLS))
 	r := mux.NewRouter()
+	r.Use(mwVersion)
 	r.Methods("GET").Path("/").Handler(appHandler{ctx, rootHandler})
 	r.Methods("GET").Path("/auth/login").Handler(appHandler{ctx, loginHandler})
 	r.Methods("GET").Path("/auth/callback").Handler(appHandler{ctx, callbackHandler})
