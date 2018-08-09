@@ -25,6 +25,7 @@ var (
 	validity         = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
 	keytype          = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
 	publicFilePrefix = pflag.String("key_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
+	messageFlag      = pflag.String("message", "", "Message once the token is accepted.")
 	useGRPC          = pflag.Bool("use_grpc", false, "Use grpc (experimental)")
 )
 
@@ -53,10 +54,14 @@ func main() {
 	fmt.Scanln(&token)
 
 	var message string
-	fmt.Print("Enter message: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		message = scanner.Text()
+	if len(c.Message) == 0 {
+		fmt.Print("Enter message: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			message = scanner.Text()
+		}
+	} else {
+		message = c.Message
 	}
 
 	var cert *ssh.Certificate
