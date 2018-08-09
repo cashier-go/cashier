@@ -85,9 +85,6 @@ func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[st
 // https://developer.microsoft.com/en-us/graph/docs/concepts/v1-overview
 func (c *Config) getMe(token *oauth2.Token, item string) string {
 	document := c.getDocument(token, "/me")
-	if len(document) == 0 {
-		return ""
-	}
 	if value, ok := document[item].(string); ok {
 		return value
 	}
@@ -97,9 +94,19 @@ func (c *Config) getMe(token *oauth2.Token, item string) string {
 // Check against verified domains from "/organization" endpoint of MSG-API.
 func (c *Config) verifyTenant(token *oauth2.Token) bool {
 	document := c.getDocument(token, "/organization")
-	if len(document) == 0 {
-		return false
-	}
+	// The domains for an organisation are in an array of structs under
+	// verifiedDomains, which is in a struct which is in turn an array
+	// of such structs under value in the document.  Which in json looks
+	// like this:
+	// { "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#organization",
+	//   "value": [ {
+	//      ...
+	//      "verifiedDomains": [ {
+	//                    ...
+	//                    "name": "M365x214355.onmicrosoft.com",
+	//            } ]
+	//   } ]
+	//}
 	var value []interface{}
 	var ok bool
 	if value, ok = document["value"].([]interface{}); !ok {
@@ -121,14 +128,7 @@ func (c *Config) verifyTenant(token *oauth2.Token) bool {
 
 // Check against groups from /users/{id}/memberOf endpoint of MSG-API.
 func (c *Config) verifyGroups(token *oauth2.Token) bool {
-	id := c.getMe(token, "id")
-	if id == "" {
-		return false
-	}
-	document := c.getDocument(token, "/users/", id, "/memberOf")
-	if len(document) == 0 {
-		return false
-	}
+	document := c.getDocument(token, "/users/me/memberOf")
 	var value []interface{}
 	var ok bool
 	if value, ok = document["value"].([]interface{}); !ok {
