@@ -769,6 +769,12 @@
 			"revisionTime": "2018-08-23T19:26:17Z"
 		},
 		{
+			"checksumSHA1": "VNhImVFfxO7x8Kp1BrM2zgp4vi0=",
+			"path": "github.com/xanzy/ssh-agent",
+			"revision": "640f0ab560aeb89d523bb6ac322b1244d5c3796c",
+			"revisionTime": "2018-07-03T18:17:07Z"
+		},
+		{
 			"checksumSHA1": "clOSf6IVJZq9qMftP/c3skDkJcQ=",
 			"path": "go.opencensus.io",
 			"revision": "71e2e3e3082a525f158c187a70a4dbb59aa522b9",
