@@ -221,6 +221,7 @@ The client is configured using either a [HCL](https://github.com/hashicorp/hcl) 
 - `--key_size`    Key size. Ignored for ed25519 keys (default 2048).
 - `--key_type`    Type of private key to generate - rsa, ecdsa or ed25519 (default "rsa").
 - `--key_file_prefix` Prefix for filename for SSH keys and cert (optional, no default). The public key is put in a file with `id_<id>.pub` appended to it; the public cert file in a file with `id_<id>-cert.pub` appended to it. The private key is stored in a file with `id_<id>` appended to it. <id> is taken from the id stored on the server.
+- `--message`     Fills in the message field.
 - `--validity`    Key validity (default 24h).
 
 Running the `cashier` cli tool will open a browser window at the configured CA address.
