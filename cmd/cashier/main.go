@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -50,14 +49,7 @@ func main() {
 	var token string
 	fmt.Scanln(&token)
 
-	var message string
-	fmt.Print("Enter message: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	if scanner.Scan() {
-		message = scanner.Text()
-	}
-
-	cert, err := client.Sign(pub, token, message, c)
+	cert, err := client.Sign(pub, token, c)
 	if err != nil {
 		log.Fatalln(err)
 	}
