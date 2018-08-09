@@ -41,7 +41,7 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	return tls.X509KeyPair(cert, key)
 }
 
-// Run the HTTP and RPC servers.
+// Run the HTTP server.
 func Run(conf *config.Config) {
 	var err error
 	keysigner, err = signer.New(conf.SSH)
