@@ -1,5 +1,6 @@
 /*
- * Copyright 2016 gRPC authors.
+ *
+ * Copyright 2018 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +16,20 @@
  *
  */
 
-// Package internal contains gRPC-internal code, to avoid polluting
-// the godoc of the top-level grpc package.  It must not import any grpc
-// symbols to avoid circular dependencies.
-package internal
+// Package envconfig contains grpc settings configured by environment variables.
+package envconfig
+
+import (
+	"os"
+	"strings"
+)
+
+const (
+	prefix   = "GRPC_GO_"
+	retryStr = prefix + "RETRY"
+)
 
 var (
-	// WithContextDialer is exported by clientconn.go
-	WithContextDialer interface{} // func(context.Context, string) (net.Conn, error) grpc.DialOption
-	// WithResolverBuilder is exported by clientconn.go
-	WithResolverBuilder interface{} // func (resolver.Builder) grpc.DialOption
+	// Retry is set if retry is explicitly enabled via "GRPC_GO_RETRY=on".
+	Retry = strings.EqualFold(os.Getenv(retryStr), "on")
 )

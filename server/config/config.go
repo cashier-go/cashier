@@ -37,6 +37,7 @@ type Server struct {
 	CSRFSecret            string   `hcl:"csrf_secret"`
 	HTTPLogFile           string   `hcl:"http_logfile"`
 	Database              Database `hcl:"database"`
+	RequireReason         bool     `hcl:"require_reason"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.

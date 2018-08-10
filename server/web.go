@@ -35,8 +35,9 @@ import (
 
 // appContext contains local context - cookiestore, authsession etc.
 type appContext struct {
-	cookiestore *sessions.CookieStore
-	authsession *auth.Session
+	cookiestore   *sessions.CookieStore
+	authsession   *auth.Session
+	requireReason bool
 }
 
 // getAuthTokenCookie retrieves a cookie from the request.
@@ -143,6 +144,12 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 	if err != nil {
 		return http.StatusBadRequest, errors.Wrap(err, "unable to extract key from request")
 	}
+
+	if a.requireReason && req.Message == "" {
+		w.Header().Add("X-Need-Reason", "required")
+		return http.StatusForbidden, errors.New(http.StatusText(http.StatusForbidden))
+	}
+
 	username := authprovider.Username(token)
 	authprovider.Revoke(token) // We don't need this anymore.
 	cert, err := keysigner.SignUserKey(req, username)
@@ -286,7 +293,6 @@ type appHandler struct {
 func (ah appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status, err := ah.h(ah.appContext, w, r)
 	if err != nil {
-		log.Printf("HTTP %d: %q", status, err)
 		http.Error(w, err.Error(), status)
 	}
 }
@@ -303,7 +309,8 @@ func newState() string {
 func runHTTPServer(conf *config.Server, l net.Listener) {
 	var err error
 	ctx := &appContext{
-		cookiestore: sessions.NewCookieStore([]byte(conf.CookieSecret)),
+		cookiestore:   sessions.NewCookieStore([]byte(conf.CookieSecret)),
+		requireReason: conf.RequireReason,
 	}
 	ctx.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,
@@ -333,6 +340,7 @@ func runHTTPServer(conf *config.Server, l net.Listener) {
 	r.Methods("GET").Path("/admin/certs.json").Handler(appHandler{ctx, listCertsJSONHandler})
 	r.Methods("GET").Path("/metrics").Handler(promhttp.Handler())
 	r.Methods("GET").Path("/healthcheck").HandlerFunc(healthcheck)
+
 	box := packr.NewBox("static")
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(box)))
 	h := handlers.LoggingHandler(logfile, r)

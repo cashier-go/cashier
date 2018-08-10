@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
@@ -10,20 +11,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
-	"github.com/golang/protobuf/ptypes"
 	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/proto"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
-	"golang.org/x/net/context"
+)
+
+var (
+	errNeedsReason = errors.New("reason required")
 )
 
 // SavePublicFiles installs the public part of the cert and key.
@@ -84,7 +84,11 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key) error {
 }
 
 // send the signing request to the CA.
-func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignResponse, error) {
+func send(sr *lib.SignRequest, token, ca string, ValidateTLSCertificate bool) (*lib.SignResponse, error) {
+	s, err := json.Marshal(sr)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create sign request")
+	}
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: !ValidateTLSCertificate},
 	}
@@ -106,33 +110,51 @@ func send(s []byte, token, ca string, ValidateTLSCertificate bool) (*lib.SignRes
 		return nil, err
 	}
 	defer resp.Body.Close()
+	signResponse := &lib.SignResponse{}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Bad response from server: %s", resp.Status)
+		if resp.StatusCode == http.StatusForbidden && strings.HasPrefix(resp.Header.Get("X-Need-Reason"), "required") {
+			return signResponse, errNeedsReason
+		}
+		return signResponse, fmt.Errorf("bad response from server: %s", resp.Status)
 	}
-	c := &lib.SignResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(c); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(signResponse); err != nil {
 		return nil, errors.Wrap(err, "unable to decode server response")
 	}
-	return c, nil
+	return signResponse, nil
+}
+
+func promptForReason() (message string) {
+	fmt.Print("Enter message: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		message = scanner.Text()
+	}
+	return message
 }
 
 // Sign sends the public key to the CA to be signed.
-func Sign(pub ssh.PublicKey, token string, message string, conf *Config) (*ssh.Certificate, error) {
+func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, error) {
+	var err error
 	validity, err := time.ParseDuration(conf.Validity)
 	if err != nil {
 		return nil, err
 	}
-	s, err := json.Marshal(&lib.SignRequest{
+	s := &lib.SignRequest{
 		Key:        string(lib.GetPublicKey(pub)),
 		ValidUntil: time.Now().Add(validity),
-		Message:    message,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create sign request")
 	}
-	resp, err := send(s, token, conf.CA, conf.ValidateTLSCertificate)
-	if err != nil {
-		return nil, errors.Wrap(err, "error sending request to CA")
+	resp := &lib.SignResponse{}
+	for {
+		resp, err = send(s, token, conf.CA, conf.ValidateTLSCertificate)
+		if err == nil {
+			break
+		}
+		if err != nil && err == errNeedsReason {
+			s.Message = promptForReason()
+			continue
+		} else if err != nil {
+			return nil, errors.Wrap(err, "error sending request to CA")
+		}
 	}
 	if resp.Status != "ok" {
 		return nil, fmt.Errorf("bad response from CA: %s", resp.Response)
@@ -144,55 +166,6 @@ func Sign(pub ssh.PublicKey, token string, message string, conf *Config) (*ssh.C
 	cert, ok := k.(*ssh.Certificate)
 	if !ok {
 		return nil, fmt.Errorf("did not receive a valid certificate from server")
-	}
-	return cert, nil
-}
-
-// RPCSign sends the public key to the CA to be signed.
-func RPCSign(pub ssh.PublicKey, token string, message string, conf *Config) (*ssh.Certificate, error) {
-	var opts []grpc.DialOption
-	var srv string
-	if strings.HasPrefix(conf.CA, "https://") {
-		srv = strings.TrimPrefix(conf.CA, "https://")
-	} else {
-		srv = strings.TrimPrefix(conf.CA, "http://")
-		opts = append(opts, grpc.WithInsecure())
-	}
-	conn, err := grpc.Dial(srv, opts...)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	stub := proto.NewSignerClient(conn)
-	lifetime, err := time.ParseDuration(conf.Validity)
-	if err != nil {
-		return nil, err
-	}
-	deadline := time.Now().Add(lifetime)
-	ts, err := ptypes.TimestampProto(deadline)
-	if err != nil {
-		return nil, err
-	}
-	req := &proto.SignRequest{
-		Key:        lib.GetPublicKey(pub),
-		ValidUntil: ts,
-		Message:    message,
-	}
-	md := metadata.New(map[string]string{
-		"security": "authorization",
-		"payload":  token,
-	})
-	r, err := stub.Sign(metadata.NewOutgoingContext(context.TODO(), md), req)
-	if err != nil {
-		return nil, err
-	}
-	k, _, _, _, err := ssh.ParseAuthorizedKey(r.Cert)
-	if err != nil {
-		return nil, err
-	}
-	cert, ok := k.(*ssh.Certificate)
-	if !ok {
-		return nil, errors.New("did not receive a valid certificate from server")
 	}
 	return cert, nil
 }

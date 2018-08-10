@@ -15,7 +15,6 @@ import (
 	"github.com/nsheridan/cashier/client"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
-	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
 
@@ -27,7 +26,6 @@ var (
 	validity         = pflag.Duration("validity", time.Hour*24, "Key lifetime. May be overridden by the CA at signing time")
 	keytype          = pflag.String("key_type", "", "Type of private key to generate - rsa, ecdsa or ed25519. (default \"rsa\")")
 	publicFilePrefix = pflag.String("key_file_prefix", "", "Prefix for filename for public key and cert (optional, no default)")
-	useGRPC          = pflag.Bool("use_grpc", false, "Use grpc (experimental)")
 )
 
 func main() {
@@ -38,16 +36,16 @@ func main() {
 
 	c, err := client.ReadConfig(*cfg)
 	if err != nil {
-		log.Printf("Error parsing config file: %v\n", err)
-	}
-	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
-	if err := browser.OpenURL(c.CA); err != nil {
-		fmt.Println("Error launching web browser. Go to the link in your web browser")
+		log.Printf("Configuration error: %v\n", err)
 	}
 	fmt.Println("Generating new key pair")
 	priv, pub, err := client.GenerateKey(client.KeyType(c.Keytype), client.KeySize(c.Keysize))
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
+	}
+	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
+	if err := browser.OpenURL(c.CA); err != nil {
+		fmt.Println("Error launching web browser. Go to the link in your web browser")
 	}
 
 	fmt.Print("Enter token: ")
@@ -62,18 +60,7 @@ func main() {
 	}
 	token := string(tokenBytes)
 
-	var message string
-	fmt.Print("Enter message: ")
-	if scanner.Scan() {
-		message = scanner.Text()
-	}
-
-	var cert *ssh.Certificate
-	if *useGRPC {
-		cert, err = client.RPCSign(pub, token, message, c)
-	} else {
-		cert, err = client.Sign(pub, token, message, c)
-	}
+	cert, err := client.Sign(pub, token, c)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -59,7 +59,9 @@ func pemBlockForKey(priv interface{}) (*pem.Block, error) {
 // Default is "rsa"
 func KeyType(keyType string) KeyOption {
 	return func(o *options) {
-		o.keytype = keyType
+		if keyType != "" {
+			o.keytype = keyType
+		}
 	}
 }
 

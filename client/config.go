@@ -1,6 +1,8 @@
 package client
 
 import (
+	"os"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -28,10 +30,12 @@ func setDefaults() {
 // ReadConfig reads the client configuration from a file into a Config struct.
 func ReadConfig(path string) (*Config, error) {
 	setDefaults()
-	viper.SetConfigFile(path)
-	viper.SetConfigType("hcl")
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
+	if _, err := os.Stat(path); err == nil {
+		viper.SetConfigFile(path)
+		viper.SetConfigType("hcl")
+		if err := viper.ReadInConfig(); err != nil {
+			return nil, err
+		}
 	}
 	c := &Config{}
 	if err := viper.Unmarshal(c); err != nil {

@@ -1,5 +1,8 @@
+// +build go1.9,!appengine
+
 /*
- * Copyright 2016 gRPC authors.
+ *
+ * Copyright 2018 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +18,18 @@
  *
  */
 
-// Package internal contains gRPC-internal code, to avoid polluting
-// the godoc of the top-level grpc package.  It must not import any grpc
-// symbols to avoid circular dependencies.
-package internal
+package credentials
 
-var (
-	// WithContextDialer is exported by clientconn.go
-	WithContextDialer interface{} // func(context.Context, string) (net.Conn, error) grpc.DialOption
-	// WithResolverBuilder is exported by clientconn.go
-	WithResolverBuilder interface{} // func (resolver.Builder) grpc.DialOption
+import (
+	"errors"
+	"syscall"
 )
+
+// implements the syscall.Conn interface
+func (c tlsConn) SyscallConn() (syscall.RawConn, error) {
+	conn, ok := c.rawConn.(syscall.Conn)
+	if !ok {
+		return nil, errors.New("RawConn does not implement syscall.Conn")
+	}
+	return conn.SyscallConn()
+}
