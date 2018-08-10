@@ -60,10 +60,12 @@ func Run(conf *config.Config) {
 		if conf.Server.LetsEncryptServername != "" {
 			m := autocert.Manager{
 				Prompt:     autocert.AcceptTOS,
-				Cache:      wkfscache.Cache(conf.Server.LetsEncryptCache),
 				HostPolicy: autocert.HostWhitelist(conf.Server.LetsEncryptServername),
 			}
-			tlsConfig.GetCertificate = m.GetCertificate
+			if conf.Server.LetsEncryptCache != "" {
+				m.Cache = wkfscache.Cache(conf.Server.LetsEncryptCache)
+			}
+			tlsConfig = m.TLSConfig()
 		} else {
 			if conf.Server.TLSCert == "" || conf.Server.TLSKey == "" {
 				log.Fatal("TLS cert or key not specified in config")
