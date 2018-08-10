@@ -16,6 +16,7 @@ import (
 	"github.com/nsheridan/cashier/server/auth/github"
 	"github.com/nsheridan/cashier/server/auth/gitlab"
 	"github.com/nsheridan/cashier/server/auth/google"
+	"github.com/nsheridan/cashier/server/auth/microsoft"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/metrics"
 	"github.com/nsheridan/cashier/server/signer"
@@ -90,12 +91,14 @@ func Run(conf *config.Config) {
 	metrics.Register()
 
 	switch conf.Auth.Provider {
-	case "google":
-		authprovider, err = google.New(conf.Auth)
 	case "github":
 		authprovider, err = github.New(conf.Auth)
 	case "gitlab":
 		authprovider, err = gitlab.New(conf.Auth)
+	case "google":
+		authprovider, err = google.New(conf.Auth)
+	case "microsoft":
+		authprovider, err = microsoft.New(conf.Auth)
 	default:
 		log.Fatalf("Unknown provider %s\n", conf.Auth.Provider)
 	}

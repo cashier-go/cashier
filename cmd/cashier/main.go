@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net"
@@ -46,8 +49,16 @@ func main() {
 	}
 
 	fmt.Print("Enter token: ")
-	var token string
-	fmt.Scanln(&token)
+	scanner := bufio.NewScanner(os.Stdin)
+	var buffer bytes.Buffer
+	for scanner.Scan(); scanner.Text() != "."; scanner.Scan() {
+		buffer.WriteString(scanner.Text())
+	}
+	tokenBytes, err := base64.StdEncoding.DecodeString(buffer.String())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	token := string(tokenBytes)
 
 	cert, err := client.Sign(pub, token, c)
 	if err != nil {

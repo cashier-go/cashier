@@ -178,11 +178,13 @@ Supported options:
 
 | Provider |       Option | Notes                                                                                                                                  |
 |---------:|-------------:|----------------------------------------------------------------------------------------------------------------------------------------|
-| Google   |       domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`.                                           |
 | Github   | organization | If this is unset then you must whitelist individual users using `users_whitelist`. The oauth client and secrets should be issued by the specified organization. |
-| Gitlab   | siteurl | Optional. The url of the Gitlab site. Default: `https://gitlab.com/api/v3/` |
 | Gitlab   | allusers | Allow all valid users to get signed keys. Only allowed if siteurl set. |
 | Gitlab   | group | If `allusers` and this are unset then you must whitelist individual users using `users_whitelist`. Otherwise the user must be a member of this group. |
+| Gitlab   | siteurl | Optional. The url of the Gitlab site. Default: `https://gitlab.com/api/v3/` |
+| Google   | domain | If this is unset then you must whitelist individual email addresses using `users_whitelist`. |
+| Microsoft | groups | Comma separated list of valid groups. |
+| Microsoft | tenant | The domain name of the Office 365 account. |
 
 ## ssh
 - `signing_key`: string. Path to the certificate signing ssh private key. Use `ssh-keygen` to create the key and store it somewhere safe. See also the [note](#a-note-on-files) on files above.
