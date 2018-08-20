@@ -15,7 +15,7 @@ test: dep
 	go install -race $(CASHIER_CMD) $(CASHIERD_CMD)
 	go vet ./...
 	go list ./... |xargs -L1 golint -set_exit_status
-	goimports -d $(SRC_FILES)
+	gofmt -s -d -l -e $(SRC_FILES)
 	$(MAKE) generate
 	@[ -z "`git status --porcelain`" ] || (echo "unexpected files: `git status --porcelain`" && exit 1)
 

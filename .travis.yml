@@ -6,7 +6,7 @@ env:
   - MYSQL_TEST="true"
 
 go:
-  - 1.11beta3
+  - 1.11rc1
   - 1.10.3
   - 1.9.7
   - tip

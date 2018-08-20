@@ -89,10 +89,12 @@ func send(sr *lib.SignRequest, token, ca string, ValidateTLSCertificate bool) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create sign request")
 	}
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: !ValidateTLSCertificate},
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: !ValidateTLSCertificate},
+		},
+		Timeout: 30 * time.Second,
 	}
-	client := &http.Client{Transport: transport}
 	u, err := url.Parse(ca)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse CA url")
