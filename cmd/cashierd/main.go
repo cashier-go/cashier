@@ -40,6 +40,6 @@ func main() {
 	})
 	vaultfs.Register(conf.Vault)
 
-	// Start the servers
+	// Start the server
 	server.Run(conf)
 }
