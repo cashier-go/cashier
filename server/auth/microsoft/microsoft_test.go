@@ -57,7 +57,7 @@ func TestStartSession(t *testing.T) {
 	p, err := newMicrosoft()
 	a.NoError(err)
 	s := p.StartSession("test_state")
-	a.Contains(s.AuthURL, fmt.Sprintf("login.microsoftonline.com/%s/oauth2/v2.0/authorize", tenant))
+	a.Contains(s, fmt.Sprintf("login.microsoftonline.com/%s/oauth2/v2.0/authorize", tenant))
 }
 
 func newMicrosoft() (*Config, error) {

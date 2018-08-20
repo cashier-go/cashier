@@ -56,9 +56,9 @@ func TestGoodAllUsers(t *testing.T) {
 
 	p, _ := newGitlab()
 	s := p.StartSession("test_state")
-	a.Contains(s.AuthURL, "exampleorg/oauth/authorize")
-	a.Contains(s.AuthURL, "state=test_state")
-	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
+	a.Contains(s, "exampleorg/oauth/authorize")
+	a.Contains(s, "state=test_state")
+	a.Contains(s, fmt.Sprintf("client_id=%s", oauthClientID))
 
 	allusers = ""
 }
@@ -78,9 +78,9 @@ func TestStartSession(t *testing.T) {
 
 	p, _ := newGitlab()
 	s := p.StartSession("test_state")
-	a.Contains(s.AuthURL, "exampleorg/oauth/authorize")
-	a.Contains(s.AuthURL, "state=test_state")
-	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
+	a.Contains(s, "exampleorg/oauth/authorize")
+	a.Contains(s, "state=test_state")
+	a.Contains(s, fmt.Sprintf("client_id=%s", oauthClientID))
 }
 
 func newGitlab() (auth.Provider, error) {

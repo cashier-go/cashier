@@ -38,10 +38,8 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 }
 
 // StartSession retrieves an authentication endpoint.
-func (c *Config) StartSession(state string) *auth.Session {
-	return &auth.Session{
-		AuthURL: "https://www.example.com/auth",
-	}
+func (c *Config) StartSession(state string) string {
+	return "https://www.example.com/auth"
 }
 
 // Exchange authorizes the session and returns an access token.

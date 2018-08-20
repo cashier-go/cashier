@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/metrics"
 
@@ -114,10 +113,8 @@ func (c *Config) Revoke(token *oauth2.Token) error {
 }
 
 // StartSession retrieves an authentication endpoint from Gitlab.
-func (c *Config) StartSession(state string) *auth.Session {
-	return &auth.Session{
-		AuthURL: c.config.AuthCodeURL(state),
-	}
+func (c *Config) StartSession(state string) string {
+	return c.config.AuthCodeURL(state)
 }
 
 // Exchange authorizes the session and returns an access token.

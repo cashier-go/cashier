@@ -17,7 +17,6 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/auth/testprovider"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/signer"
@@ -41,7 +40,6 @@ func init() {
 	certstore, _ = store.New(map[string]string{"type": "mem"})
 	ctx = &appContext{
 		cookiestore: sessions.NewCookieStore([]byte("secret")),
-		authsession: &auth.Session{AuthURL: "https://www.example.com/auth"},
 	}
 }
 

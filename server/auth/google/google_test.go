@@ -57,10 +57,10 @@ func TestStartSession(t *testing.T) {
 	p, err := newGoogle()
 	a.NoError(err)
 	s := p.StartSession("test_state")
-	a.Contains(s.AuthURL, "accounts.google.com/o/oauth2/auth")
-	a.Contains(s.AuthURL, "state=test_state")
-	a.Contains(s.AuthURL, fmt.Sprintf("hd=%s", domain))
-	a.Contains(s.AuthURL, fmt.Sprintf("client_id=%s", oauthClientID))
+	a.Contains(s, "accounts.google.com/o/oauth2/auth")
+	a.Contains(s, "state=test_state")
+	a.Contains(s, fmt.Sprintf("hd=%s", domain))
+	a.Contains(s, fmt.Sprintf("client_id=%s", oauthClientID))
 }
 
 func newGoogle() (*Config, error) {

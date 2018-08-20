@@ -28,7 +28,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/templates"
 )
@@ -36,7 +35,6 @@ import (
 // appContext contains local context - cookiestore, authsession etc.
 type appContext struct {
 	cookiestore   *sessions.CookieStore
-	authsession   *auth.Session
 	requireReason bool
 }
 
@@ -172,8 +170,7 @@ func signHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, er
 func loginHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int, error) {
 	state := newState()
 	a.setAuthStateCookie(w, r, state)
-	a.authsession = authprovider.StartSession(state)
-	http.Redirect(w, r, a.authsession.AuthURL, http.StatusFound)
+	http.Redirect(w, r, authprovider.StartSession(state), http.StatusFound)
 	return http.StatusFound, nil
 }
 
@@ -183,10 +180,11 @@ func callbackHandler(a *appContext, w http.ResponseWriter, r *http.Request) (int
 		return http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized))
 	}
 	code := r.FormValue("code")
-	if err := a.authsession.Authorize(authprovider, code); err != nil {
+	token, err := authprovider.Exchange(code)
+	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	a.setAuthTokenCookie(w, r, a.authsession.Token)
+	a.setAuthTokenCookie(w, r, token)
 	http.Redirect(w, r, a.getCurrentURL(r), http.StatusFound)
 	return http.StatusFound, nil
 }
