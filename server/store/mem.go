@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"golang.org/x/crypto/ssh"
 )
 
 var _ CertStorer = (*memoryStore)(nil)
@@ -25,11 +23,6 @@ func (ms *memoryStore) Get(id string) (*CertRecord, error) {
 		return nil, fmt.Errorf("unknown cert %s", id)
 	}
 	return r, nil
-}
-
-// SetCert parses a *ssh.Certificate and records it
-func (ms *memoryStore) SetCert(cert *ssh.Certificate) error {
-	return ms.SetRecord(parseCertificate(cert))
 }
 
 // SetRecord records a *CertRecord

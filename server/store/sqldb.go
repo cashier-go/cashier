@@ -7,8 +7,6 @@ import (
 	"path"
 	"time"
 
-	"golang.org/x/crypto/ssh"
-
 	"github.com/go-sql-driver/mysql"
 	"github.com/gobuffalo/packr"
 	multierror "github.com/hashicorp/go-multierror"
@@ -71,7 +69,7 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 		conn: conn,
 	}
 
-	if db.set, err = conn.Preparex("INSERT INTO issued_certs (key_id, principals, created_at, expires_at, raw_key) VALUES (?, ?, ?, ?, ?)"); err != nil {
+	if db.set, err = conn.Preparex("INSERT INTO issued_certs (key_id, principals, created_at, expires_at, raw_key, message) VALUES (?, ?, ?, ?, ?, ?)"); err != nil {
 		return nil, fmt.Errorf("sqlStore: prepare set: %v", err)
 	}
 	if db.get, err = conn.Preparex("SELECT * FROM issued_certs WHERE key_id = ?"); err != nil {
@@ -117,17 +115,12 @@ func (db *sqlStore) Get(id string) (*CertRecord, error) {
 	return r, db.get.Get(r, id)
 }
 
-// SetCert parses a *ssh.Certificate and records it
-func (db *sqlStore) SetCert(cert *ssh.Certificate) error {
-	return db.SetRecord(parseCertificate(cert))
-}
-
 // SetRecord records a *CertRecord
 func (db *sqlStore) SetRecord(rec *CertRecord) error {
 	if err := db.conn.Ping(); err != nil {
 		return errors.Wrap(err, "unable to connect to database")
 	}
-	_, err := db.set.Exec(rec.KeyID, rec.Principals, rec.CreatedAt, rec.Expires, rec.Raw)
+	_, err := db.set.Exec(rec.KeyID, rec.Principals, rec.CreatedAt, rec.Expires, rec.Raw, rec.Message)
 	return err
 }
 

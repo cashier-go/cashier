@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/csrf"
 	"github.com/nsheridan/cashier/lib"
+	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -60,7 +61,10 @@ func (a *app) sign(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error signing key")
 		return
 	}
-	if err := a.certstore.SetCert(cert); err != nil {
+
+	rec := store.MakeRecord(cert)
+	rec.Message = req.Message
+	if err := a.certstore.SetRecord(rec); err != nil {
 		log.Printf("Error recording cert: %v", err)
 	}
 	if err := json.NewEncoder(w).Encode(&lib.SignResponse{

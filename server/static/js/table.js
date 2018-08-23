@@ -12,7 +12,8 @@ function reqListener() {
     row.insertCell(1).innerHTML = el.created_at;
     row.insertCell(2).innerHTML = el.expires;
     row.insertCell(3).innerHTML = el.principals;
-    row.insertCell(4).innerHTML = el.revoked;
+    row.insertCell(4).innerHTML = el.message;
+    row.insertCell(5).innerHTML = el.revoked;
     // Index keyid and principals.
     row.cells[0].classList = ["keyid"];
     row.cells[3].classList = ["principals"];

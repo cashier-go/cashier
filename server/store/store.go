@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/crypto/ssh"
-
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/config"
+	"golang.org/x/crypto/ssh"
 )
 
 // New returns a new configured database.
@@ -26,7 +25,6 @@ func New(c config.Database) (CertStorer, error) {
 // revocation purposes.
 type CertStorer interface {
 	Get(id string) (*CertRecord, error)
-	SetCert(cert *ssh.Certificate) error
 	SetRecord(record *CertRecord) error
 	List(includeExpired bool) ([]*CertRecord, error)
 	Revoke(id []string) error
@@ -43,6 +41,7 @@ type CertRecord struct {
 	Expires    time.Time   `json:"expires" db:"expires_at"`
 	Revoked    bool        `json:"revoked" db:"revoked"`
 	Raw        string      `json:"-" db:"raw_key"`
+	Message    string      `json:"message" db:"message"`
 }
 
 // MarshalJSON implements the json.Marshaler interface for the CreatedAt and
@@ -66,7 +65,8 @@ func parseTime(t uint64) time.Time {
 	return time.Unix(int64(t), 0)
 }
 
-func parseCertificate(cert *ssh.Certificate) *CertRecord {
+// MakeRecord converts a Certificate to a CertRecord
+func MakeRecord(cert *ssh.Certificate) *CertRecord {
 	return &CertRecord{
 		KeyID:      cert.KeyId,
 		Principals: StringSlice(cert.ValidPrincipals),

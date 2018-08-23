@@ -31,6 +31,7 @@ const Certs = `
 					<th>Created</th>
 					<th>Expires</th>
 					<th>Principals</th>
+					<th>Message</th>
 					<th>Revoked</th>
 					<th>Revoke</th>
 				</tr>
@@ -41,6 +42,7 @@ const Certs = `
 					<td></td>
 					<td></td>
 					<td class="principals"></td>
+					<td></td>
 					<td></td>
 					<td></td>
 					</tr>
