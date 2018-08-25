@@ -10,9 +10,11 @@ CGO_ENABLED ?= $(shell go env CGO_ENABLED)
 
 all: test build
 
-test: dep
-	go test ./...
+test:
+	go test -coverprofile=coverage.txt -covermode=count ./...
 	go install -race $(CASHIER_CMD) $(CASHIERD_CMD)
+
+lint: dep
 	go vet ./...
 	go list ./... |xargs -L1 golint -set_exit_status
 	gofmt -s -d -l -e $(SRC_FILES)
@@ -39,7 +41,6 @@ migration:
 
 dep:
 	go get -u golang.org/x/lint/golint
-	go get -u golang.org/x/tools/cmd/goimports
 
 version:
 	@echo $(VERSION)

@@ -9,3 +9,4 @@ signing_key*
 http.log
 .idea
 .DS_Store
+coverage.txt

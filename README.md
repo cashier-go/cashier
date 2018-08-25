@@ -76,10 +76,10 @@ docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier nsheridan/c
 
 # Requirements
 ## Server
-Go 1.9 or 1.10, though it may work with earlier versions.
+Go 1.10 or 1.11, though it may work with earlier versions.
 
 ## Client
-- Go 1.9 or 1.10 or later, though it may work with earlier versions.
+- Go 1.10 or 1.11 or later, though it may work with earlier versions.
 - OpenSSH 5.6 or newer.
 - A working SSH agent (note that the GPG agent does not handle certificates)
 
