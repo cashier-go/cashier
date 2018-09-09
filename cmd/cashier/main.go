@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/user"
 	"path"
@@ -16,7 +15,7 @@ import (
 	"github.com/nsheridan/cashier/lib"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
-	"golang.org/x/crypto/ssh/agent"
+	"github.com/xanzy/ssh-agent"
 )
 
 var (
@@ -70,12 +69,11 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	sock, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+	a, sock, err := sshagent.New()
 	if err != nil {
 		log.Fatalf("Error connecting to agent: %v\n", err)
 	}
 	defer sock.Close()
-	a := agent.NewClient(sock)
 	if err := client.InstallCert(a, cert, priv); err != nil {
 		log.Fatalln(err)
 	}
