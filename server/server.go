@@ -251,8 +251,11 @@ func (a *app) setSessionVariable(w http.ResponseWriter, r *http.Request, key, va
 
 func (a *app) authed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("Checking auth for %s.", r.URL.EscapedPath())
 		t := a.getAuthToken(r)
+		log.Printf("Token is: %v.", t)
 		if !t.Valid() || !a.authprovider.Valid(t) {
+			log.Printf("Invalid token t.Valid() = %s.", t.Valid())
 			a.setSessionVariable(w, r, "origin_url", r.URL.EscapedPath())
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return

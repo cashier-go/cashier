@@ -88,6 +88,7 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 	case "/auth/callback":
 		state := a.getSessionVariable(r, "state")
 		if r.FormValue("state") != state {
+			log.Printf("Not authorized on /auth/callback")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(http.StatusUnauthorized)))
 			break
@@ -99,11 +100,13 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 		code := r.FormValue("code")
 		token, err := a.authprovider.Exchange(code)
 		if err != nil {
+			log.Printf("Error on /auth/callback: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 			w.Write([]byte(err.Error()))
 			break
 		}
+		log.Printf("Token found on /auth/callback, redirecting to %s", originURL)
 		a.setAuthToken(w, r, token)
 		http.Redirect(w, r, originURL, http.StatusFound)
 	default:
@@ -112,7 +115,9 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) index(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Entering index handler.")
 	tok := a.getAuthToken(r)
+	log.Printf("Token found: %v\n", tok)
 	page := struct {
 		Token string
 	}{tok.AccessToken}

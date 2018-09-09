@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"errors"
+	"log"
 	"strconv"
 
 	"github.com/nsheridan/cashier/server/config"
@@ -46,6 +47,7 @@ func New(c *config.Auth) (*Config, error) {
 			return nil, errors.New("gitlab_opts if allusers is set, siteurl must be set")
 		}
 	}
+	oauth2.RegisterBrokenAuthHeaderProvider(siteURL)
 
 	return &Config{
 		config: &oauth2.Config{
@@ -75,18 +77,22 @@ func (c *Config) Name() string {
 // Valid validates the oauth token.
 func (c *Config) Valid(token *oauth2.Token) bool {
 	if !token.Valid() {
+		log.Printf("Auth fail (oauth2 Valid failure)")
 		return false
 	}
 	if c.allusers {
+		log.Printf("Auth success (allusers)")
 		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
 	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
+		log.Printf("Auth fail (not in whitelist)")
 		return false
 	}
 	if c.group == "" {
 		// There's no group and token is valid.  Can only reach
 		// here if user whitelist is set and user is in whitelist.
+		log.Printf("Auth success (no groups specified in server config)")
 		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
@@ -94,14 +100,17 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	client.SetBaseURL(c.baseurl)
 	groups, _, err := client.Groups.SearchGroup(c.group)
 	if err != nil {
+		log.Printf("Auth failure (error fetching groups: %s)", err)
 		return false
 	}
 	for _, g := range groups {
 		if g.Path == c.group {
 			metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
+			log.Printf("Auth success (in allowed group)")
 			return true
 		}
 	}
+	log.Printf("Auth failure (not in allowed groups)")
 	return false
 }
 
