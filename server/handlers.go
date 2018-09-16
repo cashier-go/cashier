@@ -115,15 +115,19 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) index(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Entering index handler.")
 	tok := a.getAuthToken(r)
-	log.Printf("Token found: %v\n", tok)
-	page := struct {
-		Token string
-	}{tok.AccessToken}
-	page.Token = encodeString(page.Token)
-	tmpl := template.Must(template.New("token.html").Parse(templates.Token))
-	tmpl.Execute(w, page)
+	autoTokenURL := a.getSessionVariable(r, "auto_token")
+	if autoTokenURL != "" {
+		http.Redirect(w, r, fmt.Sprintf("%s?token=%s",
+			autoTokenURL, tok.AccessToken), http.StatusSeeOther)
+	} else {
+		page := struct {
+			Token string
+		}{tok.AccessToken}
+		page.Token = encodeString(page.Token)
+		tmpl := template.Must(template.New("token.html").Parse(templates.Token))
+		tmpl.Execute(w, page)
+	}
 }
 
 func (a *app) revoked(w http.ResponseWriter, r *http.Request) {

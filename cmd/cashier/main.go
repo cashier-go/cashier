@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"os/user"
 	"path"
@@ -49,22 +50,37 @@ func main() {
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
 	}
-	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
-	if err := browser.OpenURL(c.CA); err != nil {
+	authURL := c.CA
+	var listener *client.Listener
+	if c.AutoToken {
+		listener = client.StartHTTPServer()
+		if listener != nil {
+			authURL = fmt.Sprintf("%s?auto_token=%s", c.CA, url.PathEscape(listener.TargetURL))
+		}
+	}
+	fmt.Printf("Your browser has been opened to visit %s\n", authURL)
+	if err := browser.OpenURL(authURL); err != nil {
 		fmt.Println("Error launching web browser. Go to the link in your web browser")
 	}
 
-	fmt.Print("Enter token: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	var buffer bytes.Buffer
-	for scanner.Scan(); scanner.Text() != "."; scanner.Scan() {
-		buffer.WriteString(scanner.Text())
+	var token string
+	if listener != nil {
+		// TODO: Timeout?
+		token = <-listener.Token
 	}
-	tokenBytes, err := base64.StdEncoding.DecodeString(buffer.String())
-	if err != nil {
-		log.Fatalln(err)
+	if token == "" {
+		fmt.Print("Enter token: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		var buffer bytes.Buffer
+		for scanner.Scan(); scanner.Text() != "."; scanner.Scan() {
+			buffer.WriteString(scanner.Text())
+		}
+		tokenBytes, err := base64.StdEncoding.DecodeString(buffer.String())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		token = string(tokenBytes)
 	}
-	token := string(tokenBytes)
 
 	cert, err := client.Sign(pub, token, c)
 	if err != nil {

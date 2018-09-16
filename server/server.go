@@ -253,6 +253,7 @@ func (a *app) authed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t := a.getAuthToken(r)
 		if !t.Valid() || !a.authprovider.Valid(t) {
+			a.setSessionVariable(w, r, "auto_token", r.FormValue("auto_token"))
 			a.setSessionVariable(w, r, "origin_url", r.URL.EscapedPath())
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return
