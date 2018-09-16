@@ -763,20 +763,8 @@
 			"revisionTime": "2016-07-21T22:16:07Z"
 		},
 		{
-			"checksumSHA1": "JBCDUSQYhK4Bl95Yr2c5Uaiyka4=",
-			"path": "github.com/xanzy/go-gitlab",
-			"revision": "93c0833f360ae4901c1d8e64da7dc9cf79258b1b",
-			"revisionTime": "2018-08-23T19:26:17Z"
-		},
-		{
 			"checksumSHA1": "clOSf6IVJZq9qMftP/c3skDkJcQ=",
 			"path": "go.opencensus.io",
-			"revision": "71e2e3e3082a525f158c187a70a4dbb59aa522b9",
-			"revisionTime": "2018-08-23T19:16:57Z"
-		},
-		{
-			"checksumSHA1": "iASBoEMOkTso9Gu2cDR6AdZfhHE=",
-			"path": "go.opencensus.io/exporter/stackdriver/propagation",
 			"revision": "71e2e3e3082a525f158c187a70a4dbb59aa522b9",
 			"revisionTime": "2018-08-23T19:16:57Z"
 		},
