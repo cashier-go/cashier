@@ -51,11 +51,12 @@ func main() {
 		log.Fatalln("Error generating key pair: ", err)
 	}
 	authURL := c.CA
-	var listener *client.Listener
+	listener := &client.Listener{}
 	if c.AutoToken {
 		listener = client.StartHTTPServer()
 		if listener != nil {
-			authURL = fmt.Sprintf("%s?auto_token=%s", c.CA, url.PathEscape(listener.TargetURL))
+			authURL = fmt.Sprintf("%s?auto_token=%s",
+				c.CA, url.PathEscape(listener.ReceiverURL))
 		}
 	}
 	fmt.Printf("Your browser has been opened to visit %s\n", authURL)
@@ -67,6 +68,7 @@ func main() {
 	if listener != nil {
 		// TODO: Timeout?
 		token = <-listener.Token
+		listener.Shutdown()
 	}
 	if token == "" {
 		fmt.Print("Enter token: ")
