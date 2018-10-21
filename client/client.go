@@ -177,9 +177,9 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 
 // Listener type contains information for the client listener.
 type Listener struct {
-	srv         *http.Server
-	ReceiverURL string
-	Token       chan string
+	srv   *http.Server
+	Port  int
+	Token chan string
 }
 
 // StartHTTPServer starts an http server in the background.
@@ -188,9 +188,9 @@ func StartHTTPServer() *Listener {
 		srv:   &http.Server{},
 		Token: make(chan string),
 	}
-	authCallbackURL := "/auth/callback" // TODO: Random?
+	authCallbackPath := "/auth/callback" // TODO: Random?
 
-	http.HandleFunc(authCallbackURL,
+	http.HandleFunc(authCallbackPath,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Write([]byte("<html><head><title>Authorized</title></head><body>Authorized. You can now close this window.</body></html>"))
@@ -203,9 +203,7 @@ func StartHTTPServer() *Listener {
 	if err != nil {
 		return nil
 	}
-	port := l.Addr().(*net.TCPAddr).Port
-	listener.ReceiverURL = fmt.Sprintf("http://localhost:%d%s",
-		port, authCallbackURL)
+	listener.Port = l.Addr().(*net.TCPAddr).Port
 
 	go func() {
 		err := listener.srv.Serve(l)

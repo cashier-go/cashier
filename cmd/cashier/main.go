@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/url"
 	"os"
 	"os/user"
 	"path"
@@ -55,8 +54,7 @@ func main() {
 	if c.AutoToken {
 		listener = client.StartHTTPServer()
 		if listener != nil {
-			authURL = fmt.Sprintf("%s?auto_token=%s",
-				c.CA, url.PathEscape(listener.ReceiverURL))
+			authURL = fmt.Sprintf("%s?auto_token=%d", c.CA, listener.Port)
 		}
 	}
 	fmt.Printf("Your browser has been opened to visit %s\n", authURL)

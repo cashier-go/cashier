@@ -116,10 +116,11 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 
 func (a *app) index(w http.ResponseWriter, r *http.Request) {
 	tok := a.getAuthToken(r)
-	autoTokenURL := a.getSessionVariable(r, "auto_token")
-	if autoTokenURL != "" {
-		http.Redirect(w, r, fmt.Sprintf("%s?token=%s",
-			autoTokenURL, tok.AccessToken), http.StatusSeeOther)
+	autoToken := a.getSessionVariable(r, "auto_token")
+	if autoToken != "" {
+		http.Redirect(w, r,
+			fmt.Sprintf("http://localhost:%s/auth/callback?token=%s",
+				autoToken, tok.AccessToken), http.StatusSeeOther)
 	} else {
 		page := struct {
 			Token string
