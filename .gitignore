@@ -10,3 +10,5 @@ http.log
 .idea
 .DS_Store
 coverage.txt
+
+.*.swp
