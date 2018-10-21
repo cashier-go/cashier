@@ -49,7 +49,7 @@ type serviceGroupMember struct {
 	AccessLevel int    `json:"access_level"`
 }
 
-func (c *Config) logMsg(message string) {
+func (c *Config) logMsg(message error) {
 	if c.log {
 		log.Print(message)
 	}
@@ -60,26 +60,33 @@ func (c *Config) newClient(token *oauth2.Token) *http.Client {
 	return c.config.Client(oauth2.NoContext, token)
 }
 
-// Gets info on the current user.
-func (c *Config) getUser(token *oauth2.Token) *serviceUser {
+func (c *Config) getURL(token *oauth2.Token, url string) (*bytes.Buffer, error) {
 	client := c.newClient(token)
-	url := c.apiurl + "user"
 	resp, err := client.Get(url)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Failed to get groups: %s", err)
 	}
 	defer resp.Body.Close()
+	var body bytes.Buffer
+	io.Copy(&body, resp.Body)
 	if resp.StatusCode != 200 {
-		if c.log {
-			var body bytes.Buffer
-			io.Copy(&body, resp.Body)
-			log.Printf("Gitlab error(http: %d) getting user: '%s'",
-				resp.StatusCode, body.String())
-			return nil
-		}
+		return nil, fmt.Errorf("Gitlab error(http: %d) getting %s: '%s'",
+			resp.StatusCode, url, body.String())
+	}
+	return &body, nil
+}
+
+// Gets info on the current user.
+func (c *Config) getUser(token *oauth2.Token) *serviceUser {
+	url := c.apiurl + "user"
+	body, err := c.getURL(token, url)
+	if err != nil {
+		c.logMsg(err)
+		return nil
 	}
 	var user serviceUser
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+	if err := json.NewDecoder(body).Decode(&user); err != nil {
+		c.logMsg(fmt.Errorf("Failed to decode user (%s): %s", url, err))
 		return nil
 	}
 	return &user
@@ -87,27 +94,15 @@ func (c *Config) getUser(token *oauth2.Token) *serviceUser {
 
 // Gets current user group membership info.
 func (c *Config) checkGroupMembership(token *oauth2.Token, uid int, group string) bool {
-	client := c.newClient(token)
-	log.Printf("Checking group membership...")
 	url := fmt.Sprintf("%sgroups/%s/members/%d", c.apiurl, group, uid)
-	resp, err := client.Get(url)
+	body, err := c.getURL(token, url)
 	if err != nil {
-		c.logMsg(fmt.Sprintf("Failed to get groups: %s", err))
+		c.logMsg(err)
 		return false
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		if c.log {
-			var body bytes.Buffer
-			io.Copy(&body, resp.Body)
-			log.Printf("Gitlab error(http: %d) getting user membership: '%s'",
-				resp.StatusCode, body.String())
-			return false
-		}
-	}
 	var m serviceGroupMember
-	if err := json.NewDecoder(resp.Body).Decode(&m); err != nil {
-		c.logMsg(fmt.Sprintf("Failed to parse groups: %s", err))
+	if err := json.NewDecoder(body).Decode(&m); err != nil {
+		c.logMsg(fmt.Errorf("Failed to parse groups (%s): %s", url, err))
 		return false
 	}
 	return m.ID == uid
@@ -180,22 +175,22 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		return false
 	}
 	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
-		c.logMsg("Auth fail (not in whitelist)")
+		c.logMsg(errors.New("Auth fail (not in whitelist)"))
 		return false
 	}
 	if c.group == "" {
 		// There's no group and token is valid.  Can only reach
 		// here if user whitelist is set and user is in whitelist.
-		c.logMsg("Auth success (no groups specified in server config)")
+		c.logMsg(errors.New("Auth success (no groups specified in server config)"))
 		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
 	if !c.checkGroupMembership(token, u.ID, c.group) {
-		c.logMsg("Auth failure (not in allowed group)")
+		c.logMsg(errors.New("Auth failure (not in allowed group)"))
 		return false
 	}
 	metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
-	c.logMsg("Auth success (in allowed group)")
+	c.logMsg(errors.New("Auth success (in allowed group)"))
 	return true
 }
 

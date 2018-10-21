@@ -115,9 +115,7 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) index(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Entering index handler.")
 	tok := a.getAuthToken(r)
-	log.Printf("Token found: %v\n", tok)
 	page := struct {
 		Token string
 	}{tok.AccessToken}
