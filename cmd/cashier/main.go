@@ -49,14 +49,15 @@ func main() {
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
 	}
-	authURL := c.CA
 	listener := &client.Listener{}
+	port := 0
 	if c.AutoToken {
 		listener = client.StartHTTPServer()
 		if listener != nil {
-			authURL = fmt.Sprintf("%s?auto_token=%d", c.CA, listener.Port)
+			port = listener.Port
 		}
 	}
+	authURL := fmt.Sprintf("%s?auto_token=%d", c.CA, port)
 	fmt.Printf("Your browser has been opened to visit %s\n", authURL)
 	if err := browser.OpenURL(authURL); err != nil {
 		fmt.Println("Error launching web browser. Go to the link in your web browser")

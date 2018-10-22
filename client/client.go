@@ -207,8 +207,8 @@ func StartHTTPServer() *Listener {
 
 	go func() {
 		err := listener.srv.Serve(l)
-		if err == http.ErrServerClosed {
-			fmt.Printf("Httpserver: Server() error: %s", err)
+		if err != http.ErrServerClosed {
+			fmt.Printf("Httpserver: Server() error: %s\n", err)
 		}
 		return
 	}()
