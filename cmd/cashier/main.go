@@ -63,7 +63,7 @@ func main() {
 	}
 
 	var token string
-	if listener != nil {
+	if c.AutoToken && listener != nil {
 		// TODO: Timeout?
 		token = <-listener.Token
 		listener.Shutdown()
