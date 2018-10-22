@@ -252,11 +252,19 @@ func (a *app) setSessionVariable(w http.ResponseWriter, r *http.Request, key, va
 func (a *app) authed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t := a.getAuthToken(r)
+		autoToken := r.FormValue("auto_token")
 		if !t.Valid() || !a.authprovider.Valid(t) {
-			a.setSessionVariable(w, r, "auto_token", r.FormValue("auto_token"))
+			// This is the initial request - set auto_token regardless.
+			// This will handle cases where someone had an uto_token port
+			// and is not coming in without one.
+			a.setSessionVariable(w, r, "auto_token", autoToken)
 			a.setSessionVariable(w, r, "origin_url", r.URL.EscapedPath())
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return
+		}
+		// We're already authed so set it to the new value.
+		if autoToken != "" {
+			a.setSessionVariable(w, r, "auto_token", autoToken)
 		}
 		next.ServeHTTP(w, r)
 	})
