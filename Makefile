@@ -24,13 +24,13 @@ lint: dep
 build: cashier cashierd
 
 generate:
-	go generate -x ./...
+	go generate ./...
 
 %-cmd:
 	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go build -ldflags="-X $(VERSION_PKG)=$(VERSION)" -o $* ./cmd/$*
 
 install-%: generate
-	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -x -ldflags="-X $(VERSION_PKG)=$(VERSION)" ./cmd/$*
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -ldflags="-X $(VERSION_PKG)=$(VERSION)" ./cmd/$*
 
 clean:
 	rm -f cashier cashierd

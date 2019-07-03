@@ -5,7 +5,7 @@ WORKDIR ${SRC_DIR}
 ADD . ${SRC_DIR}
 RUN CGO_ENABLED=0 GOOS=linux make install-cashierd
 
-FROM scratch
+FROM gcr.io/distroless/static
 LABEL maintainer="nsheridan@gmail.com"
 WORKDIR /cashier
 COPY --from=build /go/bin/cashierd /
