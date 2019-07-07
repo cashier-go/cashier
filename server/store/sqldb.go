@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"path"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -92,7 +91,8 @@ func autoMigrate(driver string, conn *sqlx.DB) error {
 	var err error
 	migrate.SetTable("schema_migrations")
 	srcs := &migrate.PackrMigrationSource{
-		Box: packr.NewBox(path.Join("migrations", driver)),
+		Box: packr.NewBox("migrations"),
+		Dir: driver,
 	}
 	n, err := migrate.Exec(conn.DB, driver, srcs, migrate.Up)
 	if err != nil {

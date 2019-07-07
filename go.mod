@@ -31,6 +31,7 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
 	github.com/stripe/krl v0.0.0-20160721221607-fd565ec6f8e2
+	github.com/ziutek/mymysql v1.5.4 // indirect
 	go4.org v0.0.0-20190313082347-94abd6928b1d
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
