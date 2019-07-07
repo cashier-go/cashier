@@ -1,8 +1,10 @@
 FROM golang:latest as build
 LABEL maintainer="nsheridan@gmail.com"
-ARG SRC_DIR=/go/src/github.com/nsheridan/cashier
-WORKDIR ${SRC_DIR}
-ADD . ${SRC_DIR}
+WORKDIR /build
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux make install-cashierd
 
 FROM gcr.io/distroless/static
