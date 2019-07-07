@@ -1,9 +1,10 @@
 CASHIER_CMD := ./cmd/cashier
 CASHIERD_CMD := ./cmd/cashierd
 SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*' -not -name 'a_*-packr.go')
-VERSION_PKG := "github.com/nsheridan/cashier/lib.Version"
+VERSION_PKG := github.com/nsheridan/cashier/lib.Version
 VERSION := $(shell git describe --tags --always --dirty)
 
+STATIC_LINKER_FLAGS ?= -linkmode external -extldflags -static -w
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 CGO_ENABLED ?= $(shell go env CGO_ENABLED)
@@ -22,15 +23,20 @@ lint: dep
 	@[ -z "`git status --porcelain`" ] || (echo "unexpected files: `git status --porcelain`" && exit 1)
 
 build: cashier cashierd
+install: install-cashierd install-cashier
+cashier: cashier-bin
+cashierd: cashierd-bin
 
 generate:
 	go generate ./...
 
-%-cmd:
-	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go build -ldflags="-X $(VERSION_PKG)=$(VERSION)" -o $* ./cmd/$*
-
+%-bin:
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go build -ldflags="-X $(VERSION_PKG)=$(VERSION) $(STATIC_LINKER_FLAGS)" ./cmd/$*
 install-%: generate
-	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -ldflags="-X $(VERSION_PKG)=$(VERSION)" ./cmd/$*
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -ldflags="-X $(VERSION_PKG)=$(VERSION) $(STATIC_LINKER_FLAGS)" ./cmd/$*
+
+docker-image:
+	docker build -f Dockerfile .
 
 clean:
 	rm -f cashier cashierd
