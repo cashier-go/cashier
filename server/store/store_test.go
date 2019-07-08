@@ -93,6 +93,9 @@ func testStore(t *testing.T, db CertStorer) {
 	if err != nil {
 		t.Error(err)
 	}
+	if len(revoked) != 1 {
+		t.Errorf("Expected 1 revoked key, got %d", len(revoked))
+	}
 	for _, k := range revoked {
 		if k.KeyID != "key" {
 			t.Errorf("Unexpected key: %s", k.KeyID)

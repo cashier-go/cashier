@@ -145,7 +145,8 @@ func (db *sqlStore) List(includeExpired bool) ([]*CertRecord, error) {
 
 // Revoke an issued cert by id.
 func (db *sqlStore) Revoke(ids []string) error {
-	if err := db.conn.Ping(); err != nil {
+	var err error
+	if err = db.conn.Ping(); err != nil {
 		return errors.Wrap(err, "unable to connect to database")
 	}
 	q, args, err := sqlx.In("UPDATE issued_certs SET revoked = 1 WHERE key_id IN (?)", ids)
@@ -153,7 +154,7 @@ func (db *sqlStore) Revoke(ids []string) error {
 		return err
 	}
 	q = db.conn.Rebind(q)
-	_, err = db.conn.Query(q, args...)
+	_, err = db.conn.Exec(q, args...)
 	return err
 }
 

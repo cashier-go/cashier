@@ -17,9 +17,9 @@ function reqListener() {
     // Index keyid and principals.
     row.cells[0].classList = ["keyid"];
     row.cells[3].classList = ["principals"];
-    row.insertCell(5)
+    row.insertCell(6)
     if (!el.revoked) {
-      row.cells[5].innerHTML = '<input style="margin:0;" type="checkbox" value="'+ el.key_id + '" name="cert_id" id="cert_id" />';
+      row.cells[6].innerHTML = '<input style="margin:0;" type="checkbox" value="'+ el.key_id + '" name="cert_id" id="cert_id" />';
     }
     tbody.appendChild(row);
   });
