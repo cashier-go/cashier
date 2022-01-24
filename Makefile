@@ -46,7 +46,7 @@ migration:
 	go run ./generate/migration/migration.go $(name)
 
 dep:
-	go get -u golang.org/x/lint/golint
+	go install golang.org/x/lint/golint@latest
 
 version:
 	@echo $(VERSION)
