@@ -95,50 +95,74 @@ func TestRootHandlerNoSession(t *testing.T) {
 }
 
 func TestSignRevoke(t *testing.T) {
+	var resp *httptest.ResponseRecorder
+	var req *http.Request
+
+	// 1. Get a signed cert from the server
 	s, _ := json.Marshal(&lib.SignRequest{
 		Key:        string(testdata.Pub),
 		ValidUntil: time.Now().UTC().Add(4 * time.Hour),
 	})
-	req, _ := http.NewRequest("POST", "/sign", bytes.NewReader(s))
-	resp := httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/sign", bytes.NewReader(s))
+	resp = httptest.NewRecorder()
 	req.Header.Set("Authorization", "Bearer abcdef")
 	a.router.ServeHTTP(resp, req)
 	if resp.Code != http.StatusOK {
-		t.Error("Unexpected response")
+		t.Fatal("Unexpected response")
 	}
 	r := &lib.SignResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(r); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if r.Status != "ok" {
-		t.Error("Unexpected response")
+		t.Fatal("Unexpected response")
 	}
 	k, _, _, _, err := ssh.ParseAuthorizedKey([]byte(r.Response))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	cert, ok := k.(*ssh.Certificate)
 	if !ok {
-		t.Error("Did not receive a certificate")
+		t.Fatal("Did not receive a certificate")
 	}
-	// Revoke the cert and verify
-	req, _ = http.NewRequest("POST", "/admin/revoke", nil)
-	req.Form = url.Values{"cert_id": []string{cert.KeyId}}
+
+	// 2. Request the issued certs page, to obtain the necessary CSRF token
+	req, _ = http.NewRequest("GET", "/admin/certs", nil)
+	resp = httptest.NewRecorder()
 	tok := &oauth2.Token{
 		AccessToken: "authenticated",
 		Expiry:      time.Now().Add(1 * time.Hour),
 	}
-	a.certstore.Revoke([]string{cert.KeyId})
 	a.setAuthToken(resp, req, tok)
 	a.router.ServeHTTP(resp, req)
-	req, _ = http.NewRequest("GET", "/revoked", nil)
+	csrfToken := resp.Result().Header.Get("X-CSRF-Token")
+
+	// 3. Revoke the cert
+	req, _ = http.NewRequest("POST", "/admin/revoke", nil)
+	for _, cookie := range resp.Result().Cookies() {
+		req.AddCookie(cookie)
+	}
+	req.Header.Set("X-CSRF-Token", csrfToken)
+	resp = httptest.NewRecorder()
+	a.setAuthToken(resp, req, tok)
+	req.PostForm = url.Values{
+		"cert_id": []string{cert.KeyId},
+	}
 	a.router.ServeHTTP(resp, req)
-	revoked, _ := ioutil.ReadAll(resp.Body)
+
+	// 4. Retrieve the KRL and verify that the cert is revoked
+	req, _ = http.NewRequest("GET", "/revoked", nil)
+	resp = httptest.NewRecorder()
+	a.router.ServeHTTP(resp, req)
+	revoked, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 	rl, err := krl.ParseKRL(revoked)
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 	if !rl.IsRevoked(cert) {
-		t.Errorf("cert %s was not revoked", cert.KeyId)
+		t.Fatalf("cert %s was not revoked", cert.KeyId)
 	}
 }

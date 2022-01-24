@@ -142,6 +142,7 @@ func (a *app) revoked(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) getAllCerts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-CSRF-Token", csrf.Token(r))
 	tmpl := template.Must(template.New("certs.html").Parse(templates.Certs))
 	tmpl.Execute(w, map[string]interface{}{
 		csrf.TemplateTag: csrf.TemplateField(r),
