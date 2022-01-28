@@ -69,7 +69,7 @@ migration:
 
 .PHONY: dep
 dep:
-	go install golang.org/x/lint/golint@latest
+	go get -u golang.org/x/lint/golint
 
 .PHONY: version
 version:
