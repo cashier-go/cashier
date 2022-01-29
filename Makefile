@@ -1,6 +1,6 @@
 CASHIER_CMD := ./cmd/cashier
 CASHIERD_CMD := ./cmd/cashierd
-SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*' -not -name 'a_*-packr.go')
+SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*')
 VERSION_PKG := github.com/nsheridan/cashier/lib.Version
 VERSION := $(shell git describe --tags --always --dirty)
 
@@ -24,28 +24,23 @@ all: build
 .PHONY: test
 test:
 	go test -coverprofile=coverage.txt -covermode=count ./...
-	go install -race $(CASHIER_CMD) $(CASHIERD_CMD)
+	go build -race ./...
 
 .PHONY: lint
 lint: dep
 	go vet ./...
 	go list ./... |xargs -L1 golint -set_exit_status
 	gofmt -s -d -l -e $(SRC_FILES)
-	$(MAKE) generate
 	@[ -z "`git status --porcelain`" ] || (echo "unexpected files: `git status --porcelain`" && exit 1)
 
 .PHONY: build install
 build: cashier cashierd
 install: install-cashierd install-cashier
 
-.PHONY: generate
-generate:
-	go generate ./...
-
 %-bin:
 	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go build -ldflags="-X $(VERSION_PKG)=$(VERSION) $(LINKER_FLAGS)" ./cmd/$*
 
-install-%: generate
+install-%:
 	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -ldflags="-X $(VERSION_PKG)=$(VERSION) $(LINKER_FLAGS)" ./cmd/$*
 
 .PHONY: docker-all-images $(BUILD_DOCKER_ARCHS)
@@ -63,7 +58,8 @@ clean:
 	rm -f cashier cashierd
 
 .PHONY: migration
-# usage: make migration name=whatever
+# usage: make migration name=name_of_your_migration
+# e.g. `make migration name=add_index_to_reason`
 migration:
 	go run ./generate/migration/migration.go $(name)
 

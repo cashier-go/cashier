@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"crypto/tls"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/gorilla/csrf"
 
-	"github.com/gobuffalo/packr"
 	"github.com/gorilla/handlers"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -188,6 +188,9 @@ func encodeString(s string) string {
 	return buffer.String()
 }
 
+//go:embed static
+var static embed.FS
+
 // app contains local context - cookiestore, authsession etc.
 type app struct {
 	cookiestore   *sessions.CookieStore
@@ -218,8 +221,9 @@ func (a *app) routes() {
 		fmt.Fprintf(w, "ok")
 	})
 	a.router.Methods("GET").Path("/metrics").Handler(promhttp.Handler())
-	box := packr.NewBox("static")
-	a.router.PathPrefix("/static/").Handler(http.StripPrefix("/static", http.FileServer(box)))
+
+	// static files
+	a.router.PathPrefix("/static/").Handler(http.FileServer(http.FS(static)))
 }
 
 func (a *app) getAuthToken(r *http.Request) *oauth2.Token {

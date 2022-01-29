@@ -1,6 +1,6 @@
 module github.com/nsheridan/cashier
 
-go 1.12
+go 1.16
 
 require (
 	cloud.google.com/go/compute v1.1.0 // indirect
@@ -10,8 +10,6 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gobuffalo/envy v1.10.1 // indirect
-	github.com/gobuffalo/packr v1.30.1
 	github.com/gobuffalo/packr/v2 v2.8.3 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/go-github v17.0.0+incompatible
@@ -43,7 +41,6 @@ require (
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.0
-	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/rubenv/sql-migrate v1.0.0
 	github.com/sid77/drop v0.0.0-20171115104544-48930369f4db
 	github.com/spf13/afero v1.8.0 // indirect
