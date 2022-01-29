@@ -1,6 +1,6 @@
 CASHIER_CMD := ./cmd/cashier
 CASHIERD_CMD := ./cmd/cashierd
-SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*' -not -name 'a_*-packr.go')
+SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*')
 VERSION_PKG := github.com/nsheridan/cashier/lib.Version
 VERSION := $(shell git describe --tags --always --dirty)
 
@@ -58,7 +58,8 @@ clean:
 	rm -f cashier cashierd
 
 .PHONY: migration
-# usage: make migration name=whatever
+# usage: make migration name=name_of_your_migration
+# e.g. `make migration name=add_index_to_reason`
 migration:
 	go run ./generate/migration/migration.go $(name)
 

@@ -1,13 +1,14 @@
 package store
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/gobuffalo/packr"
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/jmoiron/sqlx"
 	"github.com/nsheridan/cashier/server/config"
@@ -16,6 +17,9 @@ import (
 )
 
 var _ CertStorer = (*sqlStore)(nil)
+
+//go:embed migrations
+var migrationFS embed.FS
 
 // sqlStore is an sql-based CertStorer
 type sqlStore struct {
@@ -87,12 +91,16 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 }
 
 func autoMigrate(driver string, conn *sqlx.DB) error {
+	fs.WalkDir(migrationFS, ".", func(path string, d fs.DirEntry, err error) error {
+		fmt.Println(path)
+		return nil
+	})
 	log.Print("Executing any pending schema migrations")
 	var err error
 	migrate.SetTable("schema_migrations")
-	srcs := &migrate.PackrMigrationSource{
-		Box: packr.NewBox("migrations"),
-		Dir: driver,
+	srcs := &migrate.EmbedFileSystemMigrationSource{
+		FileSystem: migrationFS,
+		Root:       "migrations/" + driver,
 	}
 	n, err := migrate.Exec(conn.DB, driver, srcs, migrate.Up)
 	if err != nil {
