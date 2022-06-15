@@ -108,6 +108,14 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("Token found on /auth/callback, redirecting to %s", originURL)
 		a.setAuthToken(w, r, token)
+
+		// if we don't check the token here, it get's into an auth loop
+		if !a.authprovider.Valid(token) {
+			log.Printf("Not authorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(http.StatusUnauthorized)))
+			break
+		}
 		http.Redirect(w, r, originURL, http.StatusFound)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

@@ -15,7 +15,7 @@ var (
 	oauthCallbackURL  = "url"
 	allusers          = ""
 	siteurl           = "https://exampleorg/"
-	group             = "exampleorg"
+	groups            = "devops,cashier"
 )
 
 func TestNew(t *testing.T) {
@@ -64,13 +64,13 @@ func TestGoodAllUsers(t *testing.T) {
 }
 
 func TestNewEmptyGroupList(t *testing.T) {
-	group = ""
+	groups = ""
 	a := assert.New(t)
 
 	_, err := newGitlab()
-	a.EqualError(err, "gitlab_opts group and the users whitelist must not be both empty if allusers isn't true")
+	a.EqualError(err, "gitlab_opts groups and the users whitelist must not be both empty if allusers isn't true")
 
-	group = "exampleorg"
+	groups = "exampleorg"
 }
 
 func TestStartSession(t *testing.T) {
@@ -89,7 +89,7 @@ func newGitlab() (auth.Provider, error) {
 		OauthClientSecret: oauthClientSecret,
 		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts: map[string]string{
-			"group":    group,
+			"groups":   groups,
 			"siteurl":  siteurl,
 			"allusers": allusers,
 		},
