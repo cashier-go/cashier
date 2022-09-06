@@ -13,10 +13,39 @@ import (
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/testdata"
+	"github.com/stretchr/testify/suite"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
+
+type ClientSuite struct {
+	suite.Suite
+}
+
+func TestClientSuite(t *testing.T) {
+	suite.Run(t, new(ClientSuite))
+}
+
+func (s *ClientSuite) TestSavePublicFiles_MissingPrefix() {
+	s.Nil(SavePublicFiles("", nil, nil))
+}
+
+func (s *ClientSuite) TestSavePublicFiles_WriteKey() {
+	c, _, _, _, _ := ssh.ParseAuthorizedKey(testdata.Cert)
+	cert := c.(*ssh.Certificate)
+	s.NotNil(cert)
+	err := SavePublicFiles("test", cert, cert.Key)
+	s.Equal(err.Error(), "open test/id_key.pub: no such file or directory")
+}
+
+func (s *ClientSuite) TestSavePrivateFiles_MissingPrefix() {
+	s.Nil(SavePrivateFiles("", nil, nil))
+}
+
+func (s *ClientSuite) TestSavePrivateFiles_InvalidKey() {
+	s.Error(SavePrivateFiles("test", &ssh.Certificate{KeyId: "key"}, nil))
+}
 
 func TestLoadCert(t *testing.T) {
 	priv, _ := ssh.ParseRawPrivateKey(testdata.Priv)
