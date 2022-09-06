@@ -7,7 +7,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=1 GOOS=linux make install-cashierd
 
-FROM gcr.io/distroless/static
+FROM gcr.io/distroless/base
 LABEL maintainer="nsheridan@gmail.com"
 WORKDIR /cashier
 COPY --from=build /go/bin/cashierd /
