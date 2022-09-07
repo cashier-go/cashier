@@ -6,6 +6,7 @@ import (
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -95,4 +96,48 @@ func newGitlab() (auth.Provider, error) {
 		},
 	}
 	return New(c)
+}
+
+func Test_providedAuthGroups(t *testing.T) {
+	tests := []struct {
+		name  string
+		input *config.Auth
+		want  []string
+	}{
+		{
+			name:  "no-spaces",
+			input: &config.Auth{ProviderOpts: map[string]string{"groups": "a,b,c"}},
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			name:  "spaces-at-edges",
+			input: &config.Auth{ProviderOpts: map[string]string{"groups": " a,b,c "}},
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			name:  "random-spaces",
+			input: &config.Auth{ProviderOpts: map[string]string{"groups": " a,  b  ,   c "}},
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			name:  "deprecated-config-only",
+			input: &config.Auth{ProviderOpts: map[string]string{"group": "a"}},
+			want:  []string{"a"},
+		},
+		{
+			name:  "deprecated-config-alongside-groups",
+			input: &config.Auth{ProviderOpts: map[string]string{"group": "a", "groups": "b, c"}},
+			want:  []string{"b", "c", "a"},
+		},
+		{
+			name:  "deprecated-config-alongside-groups-duplicated",
+			input: &config.Auth{ProviderOpts: map[string]string{"group": "a", "groups": "a, c"}},
+			want:  []string{"a", "c"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, providedAuthGroups(tt.input))
+		})
+	}
 }

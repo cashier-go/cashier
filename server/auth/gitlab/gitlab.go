@@ -142,13 +142,12 @@ func New(c *config.Auth) (*Config, error) {
 			Endpoint: oauth2.Endpoint{
 				AuthURL:  siteURL + "oauth/authorize",
 				TokenURL: siteURL + "oauth/token",
-				//AuthStyle: 1,  // default is 0 to autodetect
 			},
 			Scopes: []string{
 				"read_api",
 			},
 		},
-		groups:    sliceOfGroups(c.ProviderOpts["groups"]),
+		groups:    providedAuthGroups(c),
 		whitelist: uw,
 		allusers:  allUsers,
 		apiurl:    siteURL + "api/v4/",
@@ -194,17 +193,16 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		// https://gitlab.com/gitlab-org/gitlab-foss/-/issues/29296#:~:text=You%27ll%20need%20to%20encode%20the%20full%20path%20to%20the%20group
 		isMember := c.checkGroupMembership(token, u.ID, url.QueryEscape(group))
 		if !isMember && idx == len(c.groups)-1 {
-			log.Printf("user '%s' is not member of group '%s'", u.Username, group)
-			c.logMsg(errors.New("Auth failure (not in allowed group)"))
+			c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is not member of group '%s')", u.Username, group)))
 			return false
 		}
 
 		if isMember {
-			log.Printf("user '%s' is a member of group '%s'", u.Username, group)
+			c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is a member of group '%s')", u.Username, group)))
 			break
 		}
 
-		log.Printf("user '%s' is not a member of group '%s'", u.Username, group)
+		c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is not a member of group '%s')", u.Username, group)))
 	}
 
 	metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
@@ -242,12 +240,24 @@ func (c *Config) Username(token *oauth2.Token) string {
 	return u.Username
 }
 
-// sliceOfGroups returns a list of groups that were passed to this function as a comma separated string
-func sliceOfGroups(groups string) []string {
-	spaceTrimmed := strings.TrimSpace(groups)
-	if spaceTrimmed != "" {
-		return strings.Split(groups, ",")
+// providedAuthGroups returns a list of groups from `groups` config in Auth provider options
+func providedAuthGroups(c *config.Auth) []string {
+	groups := c.ProviderOpts["groups"]
+	sliced := strings.Split(groups, ",")
+	for i := range sliced {
+		sliced[i] = strings.TrimSpace(sliced[i])
 	}
 
-	return []string{}
+	// check if deprecated `group` config is also specified, add that group to the list as well
+	if group, ok := c.ProviderOpts["group"]; ok && !strings.Contains(groups, group) {
+
+		// `groups` config not provided
+		if groups == "" {
+			return []string{group}
+		}
+
+		sliced = append(sliced, group)
+	}
+
+	return sliced
 }
