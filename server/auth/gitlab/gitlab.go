@@ -198,7 +198,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		}
 
 		if isMember {
-			c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is a member of group '%s')", u.Username, group)))
+			c.logMsg(errors.New(fmt.Sprintf("Auth Success (user '%s' is a member of group '%s')", u.Username, group)))
 			break
 		}
 
