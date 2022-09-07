@@ -105,6 +105,11 @@ func Test_providedAuthGroups(t *testing.T) {
 		want  []string
 	}{
 		{
+			name:  "no-group-config",
+			input: &config.Auth{ProviderOpts: map[string]string{}},
+			want:  []string{},
+		},
+		{
 			name:  "no-spaces",
 			input: &config.Auth{ProviderOpts: map[string]string{"groups": "a,b,c"}},
 			want:  []string{"a", "b", "c"},

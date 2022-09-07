@@ -242,20 +242,18 @@ func (c *Config) Username(token *oauth2.Token) string {
 
 // providedAuthGroups returns a list of groups from `groups` config in Auth provider options
 func providedAuthGroups(c *config.Auth) []string {
-	groups := c.ProviderOpts["groups"]
-	sliced := strings.Split(groups, ",")
-	for i := range sliced {
-		sliced[i] = strings.TrimSpace(sliced[i])
+	sliced := make([]string, 0)
+
+	groups, ok := c.ProviderOpts["groups"]
+	if ok {
+		sliced = strings.Split(groups, ",")
+		for i := range sliced {
+			sliced[i] = strings.TrimSpace(sliced[i])
+		}
 	}
 
 	// check if deprecated `group` config is also specified, add that group to the list as well
 	if group, ok := c.ProviderOpts["group"]; ok && !strings.Contains(groups, group) {
-
-		// `groups` config not provided
-		if groups == "" {
-			return []string{group}
-		}
-
 		sliced = append(sliced, group)
 	}
 
