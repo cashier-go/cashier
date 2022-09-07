@@ -6,6 +6,7 @@ import (
 
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/config"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ var (
 	oauthCallbackURL  = "url"
 	allusers          = ""
 	siteurl           = "https://exampleorg/"
-	group             = "exampleorg"
+	groups            = "devops,cashier"
 )
 
 func TestNew(t *testing.T) {
@@ -64,13 +65,13 @@ func TestGoodAllUsers(t *testing.T) {
 }
 
 func TestNewEmptyGroupList(t *testing.T) {
-	group = ""
+	groups = ""
 	a := assert.New(t)
 
 	_, err := newGitlab()
-	a.EqualError(err, "gitlab_opts group and the users whitelist must not be both empty if allusers isn't true")
+	a.EqualError(err, "gitlab_opts groups and the users whitelist must not be both empty if allusers isn't true")
 
-	group = "exampleorg"
+	groups = "exampleorg"
 }
 
 func TestStartSession(t *testing.T) {
@@ -89,10 +90,59 @@ func newGitlab() (auth.Provider, error) {
 		OauthClientSecret: oauthClientSecret,
 		OauthCallbackURL:  oauthCallbackURL,
 		ProviderOpts: map[string]string{
-			"group":    group,
+			"groups":   groups,
 			"siteurl":  siteurl,
 			"allusers": allusers,
 		},
 	}
 	return New(c)
+}
+
+func Test_providedAuthGroups(t *testing.T) {
+	tests := []struct {
+		name  string
+		input *config.Auth
+		want  []string
+	}{
+		{
+			name:  "no-group-config",
+			input: &config.Auth{ProviderOpts: map[string]string{}},
+			want:  []string{},
+		},
+		{
+			name:  "no-spaces",
+			input: &config.Auth{ProviderOpts: map[string]string{"groups": "a,b,c"}},
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			name:  "spaces-at-edges",
+			input: &config.Auth{ProviderOpts: map[string]string{"groups": " a,b,c "}},
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			name:  "random-spaces",
+			input: &config.Auth{ProviderOpts: map[string]string{"groups": " a,  b  ,   c "}},
+			want:  []string{"a", "b", "c"},
+		},
+		{
+			name:  "deprecated-config-only",
+			input: &config.Auth{ProviderOpts: map[string]string{"group": "a"}},
+			want:  []string{"a"},
+		},
+		{
+			name:  "deprecated-config-alongside-groups",
+			input: &config.Auth{ProviderOpts: map[string]string{"group": "a", "groups": "b, c"}},
+			want:  []string{"b", "c", "a"},
+		},
+		{
+			name:  "deprecated-config-alongside-groups-duplicated",
+			input: &config.Auth{ProviderOpts: map[string]string{"group": "a", "groups": "a, c"}},
+			want:  []string{"a", "c"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, providedAuthGroups(tt.input))
+		})
+	}
 }

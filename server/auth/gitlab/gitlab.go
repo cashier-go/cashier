@@ -8,7 +8,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/metrics"
@@ -24,7 +26,7 @@ const (
 // Gitlab account.
 type Config struct {
 	config    *oauth2.Config
-	group     string
+	groups    []string
 	whitelist map[string]bool
 	allusers  bool
 	apiurl    string
@@ -64,7 +66,7 @@ func (c *Config) getURL(token *oauth2.Token, url string) (*bytes.Buffer, error) 
 	client := c.newClient(token)
 	resp, err := client.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get groups: %s", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 	var body bytes.Buffer
@@ -81,7 +83,7 @@ func (c *Config) getUser(token *oauth2.Token) *serviceUser {
 	url := c.apiurl + "user"
 	body, err := c.getURL(token, url)
 	if err != nil {
-		c.logMsg(err)
+		c.logMsg(fmt.Errorf("Failed to get user: %w", err))
 		return nil
 	}
 	var user serviceUser
@@ -97,7 +99,7 @@ func (c *Config) checkGroupMembership(token *oauth2.Token, uid int, group string
 	url := fmt.Sprintf("%sgroups/%s/members/%d", c.apiurl, group, uid)
 	body, err := c.getURL(token, url)
 	if err != nil {
-		c.logMsg(err)
+		c.logMsg(fmt.Errorf("Failed to fetch group memberships: %w", err))
 		return false
 	}
 	var m serviceGroupMember
@@ -116,8 +118,8 @@ func New(c *config.Auth) (*Config, error) {
 		uw[u] = true
 	}
 	allUsers, _ := strconv.ParseBool(c.ProviderOpts["allusers"])
-	if !allUsers && c.ProviderOpts["group"] == "" && len(uw) == 0 {
-		return nil, errors.New("gitlab_opts group and the users whitelist must not be both empty if allusers isn't true")
+	if !allUsers && c.ProviderOpts["groups"] == "" && len(uw) == 0 {
+		return nil, errors.New("gitlab_opts groups and the users whitelist must not be both empty if allusers isn't true")
 	}
 	siteURL := "https://gitlab.com/"
 	if c.ProviderOpts["siteurl"] != "" {
@@ -131,7 +133,6 @@ func New(c *config.Auth) (*Config, error) {
 		}
 	}
 	// TODO: Should make sure siteURL is just the host bit.
-	oauth2.RegisterBrokenAuthHeaderProvider(siteURL)
 
 	return &Config{
 		config: &oauth2.Config{
@@ -143,10 +144,10 @@ func New(c *config.Auth) (*Config, error) {
 				TokenURL: siteURL + "oauth/token",
 			},
 			Scopes: []string{
-				"api",
+				"read_api",
 			},
 		},
-		group:     c.ProviderOpts["group"],
+		groups:    providedAuthGroups(c),
 		whitelist: uw,
 		allusers:  allUsers,
 		apiurl:    siteURL + "api/v4/",
@@ -172,23 +173,38 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	}
 	u := c.getUser(token)
 	if u == nil {
+		c.logMsg(errors.New("Auth fail (unable to fetch user information)"))
 		return false
 	}
 	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
 		c.logMsg(errors.New("Auth fail (not in whitelist)"))
 		return false
 	}
-	if c.group == "" {
+	if len(c.groups) == 0 {
 		// There's no group and token is valid.  Can only reach
 		// here if user whitelist is set and user is in whitelist.
 		c.logMsg(errors.New("Auth success (no groups specified in server config)"))
 		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
-	if !c.checkGroupMembership(token, u.ID, c.group) {
-		c.logMsg(errors.New("Auth failure (not in allowed group)"))
-		return false
+
+	for idx, group := range c.groups {
+		// url.QueryEscape is necessary when we aren't using the group IDs and we are checking a subgroup:
+		// https://gitlab.com/gitlab-org/gitlab-foss/-/issues/29296#:~:text=You%27ll%20need%20to%20encode%20the%20full%20path%20to%20the%20group
+		isMember := c.checkGroupMembership(token, u.ID, url.QueryEscape(group))
+		if !isMember && idx == len(c.groups)-1 {
+			c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is not member of group '%s')", u.Username, group)))
+			return false
+		}
+
+		if isMember {
+			c.logMsg(errors.New(fmt.Sprintf("Auth Success (user '%s' is a member of group '%s')", u.Username, group)))
+			break
+		}
+
+		c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is not a member of group '%s')", u.Username, group)))
 	}
+
 	metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 	c.logMsg(errors.New("Auth success (in allowed group)"))
 	return true
@@ -222,4 +238,24 @@ func (c *Config) Username(token *oauth2.Token) string {
 		return ""
 	}
 	return u.Username
+}
+
+// providedAuthGroups returns a list of groups from `groups` config in Auth provider options
+func providedAuthGroups(c *config.Auth) []string {
+	sliced := make([]string, 0)
+
+	groups, ok := c.ProviderOpts["groups"]
+	if ok {
+		sliced = strings.Split(groups, ",")
+		for i := range sliced {
+			sliced[i] = strings.TrimSpace(sliced[i])
+		}
+	}
+
+	// check if deprecated `group` config is also specified, add that group to the list as well
+	if group, ok := c.ProviderOpts["group"]; ok && !strings.Contains(groups, group) {
+		sliced = append(sliced, group)
+	}
+
+	return sliced
 }
