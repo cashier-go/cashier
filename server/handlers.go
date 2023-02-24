@@ -20,7 +20,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (a *app) sign(w http.ResponseWriter, r *http.Request) {
+func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 	var t string
 	if ah := r.Header.Get("Authorization"); ah != "" {
 		if len(ah) > 6 && strings.ToUpper(ah[0:7]) == "BEARER " {
@@ -77,7 +77,7 @@ func (a *app) sign(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) auth(w http.ResponseWriter, r *http.Request) {
+func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.EscapedPath() {
 	case "/auth/login":
 		buf := make([]byte, 32)
@@ -122,7 +122,7 @@ func (a *app) auth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) index(w http.ResponseWriter, r *http.Request) {
+func (a *application) index(w http.ResponseWriter, r *http.Request) {
 	tok := a.getAuthToken(r)
 	page := struct {
 		Token string
@@ -132,7 +132,7 @@ func (a *app) index(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, page)
 }
 
-func (a *app) revoked(w http.ResponseWriter, r *http.Request) {
+func (a *application) revoked(w http.ResponseWriter, r *http.Request) {
 	revoked, err := a.certstore.GetRevoked()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -149,7 +149,7 @@ func (a *app) revoked(w http.ResponseWriter, r *http.Request) {
 	w.Write(rl)
 }
 
-func (a *app) getAllCerts(w http.ResponseWriter, r *http.Request) {
+func (a *application) getAllCerts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-CSRF-Token", csrf.Token(r))
 	tmpl := template.Must(template.New("certs.html").Parse(templates.Certs))
 	tmpl.Execute(w, map[string]interface{}{
@@ -157,7 +157,7 @@ func (a *app) getAllCerts(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *app) getCertsJSON(w http.ResponseWriter, r *http.Request) {
+func (a *application) getCertsJSON(w http.ResponseWriter, r *http.Request) {
 	includeExpired, _ := strconv.ParseBool(r.URL.Query().Get("all"))
 	certs, err := a.certstore.List(includeExpired)
 	if err != nil {
@@ -172,7 +172,7 @@ func (a *app) getCertsJSON(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) revoke(w http.ResponseWriter, r *http.Request) {
+func (a *application) revoke(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if err := a.certstore.Revoke(r.Form["cert_id"]); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

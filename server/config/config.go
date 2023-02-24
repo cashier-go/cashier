@@ -38,6 +38,7 @@ type Server struct {
 	HTTPLogFile           string   `hcl:"http_logfile"`
 	Database              Database `hcl:"database"`
 	RequireReason         bool     `hcl:"require_reason"`
+	ShutdownTimeout       string   `hcl:"shutdown_timeout"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.

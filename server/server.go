@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"embed"
 	"encoding/base64"
@@ -53,7 +54,7 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 }
 
 // Run the server.
-func Run(conf *config.Config) {
+func Run(ctx context.Context, conf *config.Config) *http.Server {
 	var err error
 
 	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
@@ -123,7 +124,7 @@ func Run(conf *config.Config) {
 		log.Fatal(err)
 	}
 
-	ctx := &app{
+	app := &application{
 		cookiestore:   sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
 		requireReason: conf.Server.RequireReason,
 		keysigner:     keysigner,
@@ -132,7 +133,7 @@ func Run(conf *config.Config) {
 		config:        conf.Server,
 		router:        mux.NewRouter(),
 	}
-	ctx.cookiestore.Options = &sessions.Options{
+	app.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,
 		Path:     "/",
 		Secure:   conf.Server.UseTLS,
@@ -147,11 +148,8 @@ func Run(conf *config.Config) {
 		}
 	}
 
-	ctx.routes()
-	ctx.router.Use(mwVersion)
-	ctx.router.Use(handlers.CompressHandler)
-	ctx.router.Use(handlers.RecoveryHandler())
-	r := handlers.LoggingHandler(logfile, ctx.router)
+	app.setupRoutes()
+	r := handlers.LoggingHandler(logfile, app.router)
 	s := &http.Server{
 		Handler:      r,
 		ReadTimeout:  20 * time.Second,
@@ -160,7 +158,8 @@ func Run(conf *config.Config) {
 	}
 
 	log.Printf("Starting server on %s", laddr)
-	s.Serve(l)
+	go s.Serve(l)
+	return s
 }
 
 // mwVersion is middleware to add a X-Cashier-Version header to the response.
@@ -191,8 +190,8 @@ func encodeString(s string) string {
 //go:embed static
 var static embed.FS
 
-// app contains local context - cookiestore, authsession etc.
-type app struct {
+// application contains local context - cookiestore, authsession etc.
+type application struct {
 	cookiestore   *sessions.CookieStore
 	authprovider  auth.Provider
 	certstore     store.CertStorer
@@ -202,7 +201,7 @@ type app struct {
 	requireReason bool
 }
 
-func (a *app) routes() {
+func (a *application) setupRoutes() {
 	// login required
 	csrfHandler := csrf.Protect([]byte(a.config.CSRFSecret), csrf.Secure(a.config.UseTLS))
 	a.router.Methods("GET").Path("/").Handler(a.authed(http.HandlerFunc(a.index)))
@@ -224,21 +223,26 @@ func (a *app) routes() {
 
 	// static files
 	a.router.PathPrefix("/static/").Handler(http.FileServer(http.FS(static)))
+
+	// middlewares
+	a.router.Use(mwVersion)
+	a.router.Use(handlers.CompressHandler)
+	a.router.Use(handlers.RecoveryHandler())
 }
 
-func (a *app) getAuthToken(r *http.Request) *oauth2.Token {
+func (a *application) getAuthToken(r *http.Request) *oauth2.Token {
 	token := &oauth2.Token{}
 	marshalled := a.getSessionVariable(r, "token")
 	json.Unmarshal([]byte(marshalled), token)
 	return token
 }
 
-func (a *app) setAuthToken(w http.ResponseWriter, r *http.Request, token *oauth2.Token) {
+func (a *application) setAuthToken(w http.ResponseWriter, r *http.Request, token *oauth2.Token) {
 	v, _ := json.Marshal(token)
 	a.setSessionVariable(w, r, "token", string(v))
 }
 
-func (a *app) getSessionVariable(r *http.Request, key string) string {
+func (a *application) getSessionVariable(r *http.Request, key string) string {
 	session, _ := a.cookiestore.Get(r, "session")
 	v, ok := session.Values[key].(string)
 	if !ok {
@@ -247,13 +251,13 @@ func (a *app) getSessionVariable(r *http.Request, key string) string {
 	return v
 }
 
-func (a *app) setSessionVariable(w http.ResponseWriter, r *http.Request, key, value string) {
+func (a *application) setSessionVariable(w http.ResponseWriter, r *http.Request, key, value string) {
 	session, _ := a.cookiestore.Get(r, "session")
 	session.Values[key] = value
 	session.Save(r, w)
 }
 
-func (a *app) authed(next http.Handler) http.Handler {
+func (a *application) authed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t := a.getAuthToken(r)
 		if !t.Valid() || !a.authprovider.Valid(t) {

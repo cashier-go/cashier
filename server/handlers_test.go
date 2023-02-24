@@ -46,7 +46,7 @@ func init() {
 		router:       mux.NewRouter(),
 		config:       &config.Server{CSRFSecret: "0123456789abcdef"},
 	}
-	a.routes()
+	a.setupRoutes()
 }
 
 func TestLoginHandler(t *testing.T) {

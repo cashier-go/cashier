@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server"
@@ -29,6 +33,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	ctx := context.Background()
+	gracePeriod, err := time.ParseDuration(conf.Server.ShutdownTimeout)
+	if err != nil {
+		log.Printf("Unable to parse ShutdownTimeout value %s: %v", conf.Server.ShutdownTimeout, err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, gracePeriod)
+	defer cancel()
+
 	// Register well-known filesystems.
 	if conf.AWS == nil {
 		conf.AWS = &config.AWS{}
@@ -40,6 +55,8 @@ func main() {
 	})
 	vaultfs.Register(conf.Vault)
 
-	// Start the server
-	server.Run(conf)
+	s := server.Run(ctx, conf)
+	<-sig
+	log.Print("shutting down...")
+	s.Shutdown(ctx)
 }
