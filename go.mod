@@ -10,8 +10,8 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/hcl v1.0.0
 	github.com/hashicorp/vault/api v1.9.0
-	github.com/homemade/scl v0.0.0-20170314142303-7ac234959fe8
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/mikesmitty/edkey v0.0.0-20170222072505-3356ea4e686a
@@ -64,7 +64,6 @@ require (
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.7 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

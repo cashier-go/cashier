@@ -1,14 +1,15 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/homemade/scl"
+	"github.com/hashicorp/hcl"
 	"github.com/nsheridan/cashier/server/helpers/vault"
-	"github.com/pkg/errors"
 )
 
 // Config holds the final server configuration.
@@ -21,7 +22,14 @@ type Config struct {
 }
 
 // Database holds database configuration.
-type Database map[string]string
+type Database struct {
+	Type     string `hcl:"type"`
+	DBName   string `hcl:"dbname"`
+	Address  string `hcl:"address"`
+	Username string `hcl:"username"`
+	Password string `hcl:"password"`
+	Filename string `hcl:"filename"`
+}
 
 // Server holds the configuration specific to the web server and sessions.
 type Server struct {
@@ -112,9 +120,9 @@ func setFromVault(c *Config) error {
 	}
 	v, err := vault.NewClient(c.Vault.Address, c.Vault.Token)
 	if err != nil {
-		return errors.Wrap(err, "vault error")
+		return fmt.Errorf("vault error: %w", err)
 	}
-	var errs error
+	var errs *multierror.Error
 	get := func(value string) string {
 		if strings.HasPrefix(value, "/vault/") {
 			s, err := v.Read(value)
@@ -129,28 +137,30 @@ func setFromVault(c *Config) error {
 	c.Auth.OauthClientSecret = get(c.Auth.OauthClientSecret)
 	c.Server.CSRFSecret = get(c.Server.CSRFSecret)
 	c.Server.CookieSecret = get(c.Server.CookieSecret)
-	if len(c.Server.Database) != 0 {
-		c.Server.Database["password"] = get(c.Server.Database["password"])
-	}
+	c.Server.Database.Password = get(c.Server.Database.Password)
 	if c.AWS != nil {
 		c.AWS.AccessKey = get(c.AWS.AccessKey)
 		c.AWS.SecretKey = get(c.AWS.SecretKey)
 	}
-	return errors.Wrap(errs, "errors reading from vault")
+	return errs.ErrorOrNil()
 }
 
 // ReadConfig parses a hcl configuration file into a Config struct.
 func ReadConfig(f string) (*Config, error) {
 	config := &Config{}
-	if err := scl.DecodeFile(config, f); err != nil {
-		return nil, errors.Wrapf(err, "unable to load config from file %s", f)
+	bs, err := os.ReadFile(f)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read config from file %s: %w", f, err)
+	}
+	if err := hcl.Unmarshal(bs, config); err != nil {
+		return nil, fmt.Errorf("error parsing config: %v", err)
 	}
 	if err := setFromVault(config); err != nil {
 		return nil, err
 	}
 	setFromEnvironment(config)
 	if err := verifyConfig(config); err != nil {
-		return nil, errors.Wrap(err, "unable to verify config")
+		return nil, fmt.Errorf("unabe to verify config: %w", err)
 	}
 	return config, nil
 }

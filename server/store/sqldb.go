@@ -36,20 +36,20 @@ type sqlStore struct {
 func newSQLStore(c config.Database) (*sqlStore, error) {
 	var driver string
 	var dsn string
-	switch c["type"] {
+	switch c.Type {
 	case "mysql":
 		driver = "mysql"
-		address := c["address"]
+		address := c.Address
 		_, _, err := net.SplitHostPort(address)
 		if err != nil {
 			address = address + ":3306"
 		}
 		m := mysql.NewConfig()
-		m.User = c["username"]
-		m.Passwd = c["password"]
+		m.User = c.Username
+		m.Passwd = c.Password
 		m.Addr = address
 		m.Net = "tcp"
-		m.DBName = c["dbname"]
+		m.DBName = c.DBName
 		if m.DBName == "" {
 			m.DBName = "certs" // Legacy database name
 		}
@@ -57,7 +57,7 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 		dsn = m.FormatDSN()
 	case "sqlite":
 		driver = "sqlite3"
-		dsn = c["filename"]
+		dsn = c.Filename
 	}
 
 	conn, err := sqlx.Connect(driver, dsn)

@@ -12,13 +12,13 @@ import (
 
 // New returns a new configured database.
 func New(c config.Database) (CertStorer, error) {
-	switch c["type"] {
+	switch c.Type {
 	case "mysql", "sqlite":
 		return newSQLStore(c)
 	case "mem":
 		return newMemoryStore(), nil
 	}
-	return nil, fmt.Errorf("unable to create store with driver %s", c["type"])
+	return nil, fmt.Errorf("unable to create store with driver %s", c.Type)
 }
 
 // CertStorer records issued certs in a persistent store for audit and

@@ -26,7 +26,7 @@ import (
 	"github.com/stripe/krl"
 )
 
-var a *app
+var a *application
 
 func init() {
 	f, _ := ioutil.TempFile(os.TempDir(), "signing_key_")
@@ -37,8 +37,8 @@ func init() {
 		SigningKey: f.Name(),
 		MaxAge:     "4h",
 	})
-	certstore, _ := store.New(map[string]string{"type": "mem"})
-	a = &app{
+	certstore, _ := store.New(config.Database{Type: "mem"})
+	a = &application{
 		cookiestore:  sessions.NewCookieStore([]byte("secret")),
 		authprovider: testprovider.New(),
 		keysigner:    keysigner,
