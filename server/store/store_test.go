@@ -4,12 +4,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"testing"
 	"time"
 
+	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/testdata"
 	"github.com/stretchr/testify/assert"
 
@@ -109,19 +109,22 @@ func TestMemoryStore(t *testing.T) {
 }
 
 func TestMySQLStore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short mode, skipping test")
+	}
 	if os.Getenv("MYSQL_TEST") == "" {
 		t.Skip("No MYSQL_TEST environment variable")
 	}
 	u, _ := user.Current()
-	sqlConfig := map[string]string{
-		"type":     "mysql",
-		"password": os.Getenv("MYSQL_TEST_PASS"),
-		"address":  os.Getenv("MYSQL_TEST_HOST"),
+	sqlConfig := config.Database{
+		Type:     "mysql",
+		Password: os.Getenv("MYSQL_TEST_PASS"),
+		Address:  os.Getenv("MYSQL_TEST_HOST"),
 	}
 	if testUser, ok := os.LookupEnv("MYSQL_TEST_USER"); ok {
-		sqlConfig["username"] = testUser
+		sqlConfig.Username = testUser
 	} else {
-		sqlConfig["username"] = u.Username
+		sqlConfig.Username = u.Username
 	}
 	db, err := newSQLStore(sqlConfig)
 	if err != nil {
@@ -131,13 +134,15 @@ func TestMySQLStore(t *testing.T) {
 }
 
 func TestSQLiteStore(t *testing.T) {
-	f, err := ioutil.TempFile("", "sqlite_test_db")
+	f, err := os.CreateTemp("", "sqlite_test_db")
 	if err != nil {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-	config := map[string]string{"type": "sqlite", "filename": f.Name()}
-	db, err := newSQLStore(config)
+	db, err := newSQLStore(config.Database{
+		Type:     "sqlite",
+		Filename: f.Name(),
+	})
 	if err != nil {
 		t.Error(err)
 	}

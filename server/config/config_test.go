@@ -18,7 +18,12 @@ var (
 			CookieSecret: "supersecret",
 			CSRFSecret:   "supersecret",
 			HTTPLogFile:  "cashierd.log",
-			Database:     Database{"type": "mysql", "username": "user", "password": "passwd", "address": "localhost:3306"},
+			Database: Database{
+				Type:     "mysql",
+				Username: "user",
+				Password: "passwd",
+				Address:  "localhost:3306",
+			},
 		},
 		Auth: &Auth{
 			OauthClientID:     "client_id",

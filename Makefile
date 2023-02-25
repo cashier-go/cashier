@@ -23,8 +23,7 @@ all: build
 
 .PHONY: test
 test:
-	go test -coverprofile=coverage.txt -covermode=count ./...
-	go build -race ./...
+	go test -race ./...
 
 .PHONY: lint
 lint: dep
@@ -65,7 +64,7 @@ migration:
 
 .PHONY: dep
 dep:
-	go get -u golang.org/x/lint/golint
+	go install golang.org/x/lint/golint@latest
 
 .PHONY: version
 version:

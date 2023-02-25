@@ -72,7 +72,7 @@ func (c *Config) getURL(token *oauth2.Token, url string) (*bytes.Buffer, error) 
 	var body bytes.Buffer
 	io.Copy(&body, resp.Body)
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Gitlab error(http: %d) getting %s: '%s'",
+		return nil, fmt.Errorf("gitlab error(http: %d) getting %s: '%s'",
 			resp.StatusCode, url, body.String())
 	}
 	return &body, nil
@@ -83,12 +83,12 @@ func (c *Config) getUser(token *oauth2.Token) *serviceUser {
 	url := c.apiurl + "user"
 	body, err := c.getURL(token, url)
 	if err != nil {
-		c.logMsg(fmt.Errorf("Failed to get user: %w", err))
+		c.logMsg(fmt.Errorf("failed to get user: %w", err))
 		return nil
 	}
 	var user serviceUser
 	if err := json.NewDecoder(body).Decode(&user); err != nil {
-		c.logMsg(fmt.Errorf("Failed to decode user (%s): %s", url, err))
+		c.logMsg(fmt.Errorf("failed to decode user (%s): %s", url, err))
 		return nil
 	}
 	return &user
@@ -99,12 +99,12 @@ func (c *Config) checkGroupMembership(token *oauth2.Token, uid int, group string
 	url := fmt.Sprintf("%sgroups/%s/members/%d", c.apiurl, group, uid)
 	body, err := c.getURL(token, url)
 	if err != nil {
-		c.logMsg(fmt.Errorf("Failed to fetch group memberships: %w", err))
+		c.logMsg(fmt.Errorf("failed to fetch group memberships: %w", err))
 		return false
 	}
 	var m serviceGroupMember
 	if err := json.NewDecoder(body).Decode(&m); err != nil {
-		c.logMsg(fmt.Errorf("Failed to parse groups (%s): %s", url, err))
+		c.logMsg(fmt.Errorf("failed to parse groups (%s): %s", url, err))
 		return false
 	}
 	return m.ID == uid
@@ -173,17 +173,17 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 	}
 	u := c.getUser(token)
 	if u == nil {
-		c.logMsg(errors.New("Auth fail (unable to fetch user information)"))
+		c.logMsg(errors.New("auth fail (unable to fetch user information)"))
 		return false
 	}
 	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
-		c.logMsg(errors.New("Auth fail (not in whitelist)"))
+		c.logMsg(errors.New("auth fail (not in whitelist)"))
 		return false
 	}
 	if len(c.groups) == 0 {
 		// There's no group and token is valid.  Can only reach
 		// here if user whitelist is set and user is in whitelist.
-		c.logMsg(errors.New("Auth success (no groups specified in server config)"))
+		c.logMsg(errors.New("auth success (no groups specified in server config)"))
 		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
@@ -193,20 +193,20 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		// https://gitlab.com/gitlab-org/gitlab-foss/-/issues/29296#:~:text=You%27ll%20need%20to%20encode%20the%20full%20path%20to%20the%20group
 		isMember := c.checkGroupMembership(token, u.ID, url.QueryEscape(group))
 		if !isMember && idx == len(c.groups)-1 {
-			c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is not member of group '%s')", u.Username, group)))
+			c.logMsg(fmt.Errorf("auth failure (user '%s' is not member of group '%s')", u.Username, group))
 			return false
 		}
 
 		if isMember {
-			c.logMsg(errors.New(fmt.Sprintf("Auth Success (user '%s' is a member of group '%s')", u.Username, group)))
+			c.logMsg(fmt.Errorf("auth Success (user '%s' is a member of group '%s')", u.Username, group))
 			break
 		}
 
-		c.logMsg(errors.New(fmt.Sprintf("Auth failure (user '%s' is not a member of group '%s')", u.Username, group)))
+		c.logMsg(fmt.Errorf("auth failure (user '%s' is not a member of group '%s')", u.Username, group))
 	}
 
 	metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
-	c.logMsg(errors.New("Auth success (in allowed group)"))
+	c.logMsg(errors.New("auth success (in allowed group)"))
 	return true
 }
 
