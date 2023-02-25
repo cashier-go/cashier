@@ -120,11 +120,10 @@ func TestMySQLStore(t *testing.T) {
 		Type:     "mysql",
 		Password: os.Getenv("MYSQL_TEST_PASS"),
 		Address:  os.Getenv("MYSQL_TEST_HOST"),
+		Username: u.Username,
 	}
 	if testUser, ok := os.LookupEnv("MYSQL_TEST_USER"); ok {
 		sqlConfig.Username = testUser
-	} else {
-		sqlConfig.Username = u.Username
 	}
 	db, err := newSQLStore(sqlConfig)
 	if err != nil {

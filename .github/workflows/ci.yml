@@ -3,9 +3,14 @@ name: Go package
 
 on: [push]
 
+env:
+  MYSQL_TEST: true
+  MYSQL_TEST_USER: 'dbuser'
+  MYSQL_TEST_PASS: 'dbpass'
+  MYSQL_TEST_HOST: '127.0.0.1:3306'
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -15,6 +20,16 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: start mysql
+        uses: shogo82148/actions-setup-mysql@v1
+        with:
+          mysql-version: ${{ matrix.mysql }}
+          user: ${{ env.MYSQL_TEST_USER }}
+          password: ${{ env.MYSQL_TEST_PASS }}
+      - name: create database
+        run: |
+          mysql --user 'root' --host '127.0.0.1' -e 'create database certs;'
+
       - name: Run tests
         run: |
           make test
@@ -22,4 +37,3 @@ jobs:
 
       - name: Build
         run: make
-
