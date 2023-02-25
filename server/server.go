@@ -170,7 +170,7 @@ func mwVersion(next http.Handler) http.Handler {
 	})
 }
 
-func encodeString(s string) string {
+func encodeToken(s string) string {
 	var buffer bytes.Buffer
 	chunkSize := 70
 	runes := []rune(base64.StdEncoding.EncodeToString([]byte(s)))
@@ -183,7 +183,6 @@ func encodeString(s string) string {
 		buffer.WriteString(string(runes[i:end]))
 		buffer.WriteString("\n")
 	}
-	buffer.WriteString(".\n")
 	return buffer.String()
 }
 
@@ -261,7 +260,7 @@ func (a *application) authed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t := a.getAuthToken(r)
 		if !t.Valid() || !a.authprovider.Valid(t) {
-			a.setSessionVariable(w, r, "origin_url", r.URL.EscapedPath())
+			a.setSessionVariable(w, r, "origin_url", r.URL.RequestURI())
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return
 		}

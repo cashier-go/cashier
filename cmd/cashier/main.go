@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -36,7 +37,6 @@ func main() {
 		fmt.Printf("%s\n", lib.Version)
 		os.Exit(0)
 	}
-	log.SetPrefix("cashier: ")
 	log.SetFlags(0)
 	var err error
 
@@ -44,46 +44,76 @@ func main() {
 	if err != nil {
 		log.Printf("Configuration error: %v\n", err)
 	}
-	fmt.Println("Generating new key pair")
+	log.Println("Generating new key pair")
 	priv, pub, err := client.GenerateKey(client.KeyType(c.Keytype), client.KeySize(c.Keysize))
 	if err != nil {
 		log.Fatalln("Error generating key pair: ", err)
 	}
-	fmt.Printf("Your browser has been opened to visit %s\n", c.CA)
-	if err := browser.OpenURL(c.CA); err != nil {
-		fmt.Println("Error launching web browser. Go to the link in your web browser")
+
+	// local server to receive the token
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	srv := startServer(c.CA)
+	defer srv.stop(ctx)
+
+	url := fmt.Sprintf("%s?localserver=%s", c.CA, srv.url())
+
+	log.Println("Your browser has been opened to visit", url)
+	if err := browser.OpenURL(url); err != nil {
+		log.Println("Error launching web browser. Go to the link in your web browser")
 	}
 
-	fmt.Print("Enter token: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	var buffer bytes.Buffer
-	for scanner.Scan(); scanner.Text() != "."; scanner.Scan() {
-		buffer.WriteString(scanner.Text())
-	}
-	tokenBytes, err := base64.StdEncoding.DecodeString(buffer.String())
-	if err != nil {
-		log.Fatalln(err)
-	}
-	token := string(tokenBytes)
+	var encodedToken string
+	go func() {
+		fmt.Println("Enter token, followed by a '.' on a new line: ")
+		scanner := bufio.NewScanner(os.Stdin)
+		var buffer bytes.Buffer
+		for scanner.Scan(); scanner.Text() != "."; scanner.Scan() {
+			buffer.WriteString(scanner.Text())
+		}
+		encodedToken = buffer.String()
+		cancel()
+	}()
 
-	cert, err := client.Sign(pub, token, c)
+	select {
+	case encodedToken = <-srv.token:
+		// got a token on the http listener
+		log.Println("Token received")
+	case <-ctx.Done():
+		// got a pasted token
+	}
+
+	token, err := base64.StdEncoding.DecodeString(encodedToken)
 	if err != nil {
+		log.Fatalln("Error decoding token:", err)
+	}
+	log.Println("Sending keys for signing... ")
+
+	cert, err := client.Sign(pub, string(token), c)
+	if err != nil {
+		srv.respond(srvError)
 		log.Fatalln(err)
 	}
 	sock, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 	if err != nil {
+		srv.respond(srvError)
 		log.Fatalf("Error connecting to agent: %v\n", err)
 	}
 	defer sock.Close()
 	a := agent.NewClient(sock)
 	if err := client.InstallCert(a, cert, priv); err != nil {
+		srv.respond(srvError)
 		log.Fatalln(err)
 	}
+	// If we got this far then the creds are installed and ready to use.
+	log.Println("Credentials added to agent.")
+	srv.respond(srvOK)
+
 	if err := client.SavePublicFiles(c.PublicFilePrefix, cert, pub); err != nil {
 		log.Fatalln(err)
 	}
 	if err := client.SavePrivateFiles(c.PublicFilePrefix, cert, priv); err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("Credentials added.")
 }

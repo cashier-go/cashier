@@ -123,11 +123,15 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *application) index(w http.ResponseWriter, r *http.Request) {
+	localserver := r.FormValue("localserver")
 	tok := a.getAuthToken(r)
 	page := struct {
-		Token string
-	}{tok.AccessToken}
-	page.Token = encodeString(page.Token)
+		Token       string
+		Localserver string
+	}{
+		Token:       encodeToken(tok.AccessToken),
+		Localserver: localserver,
+	}
 	tmpl := template.Must(template.New("token.html").Parse(templates.Token))
 	tmpl.Execute(w, page)
 }
