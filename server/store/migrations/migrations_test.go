@@ -3,7 +3,6 @@ package migrations
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/user"
@@ -89,7 +88,7 @@ func runMigrations(t *testing.T, db *sql.DB, directory string) {
 // Test that all migration directories contain the same set of migrations files.
 func TestMigationDirectoryContents(t *testing.T) {
 	names := map[string][]string{}
-	contents, err := ioutil.ReadDir(".")
+	contents, err := os.ReadDir(".")
 	assert.NoError(t, err)
 	for _, i := range contents {
 		if i.IsDir() {

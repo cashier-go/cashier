@@ -3,7 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,7 +29,7 @@ import (
 var a *application
 
 func init() {
-	f, _ := ioutil.TempFile(os.TempDir(), "signing_key_")
+	f, _ := os.CreateTemp(os.TempDir(), "signing_key_")
 	defer os.Remove(f.Name())
 	f.Write(testdata.Priv)
 	f.Close()
@@ -154,7 +154,7 @@ func TestSignRevoke(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/revoked", nil)
 	resp = httptest.NewRecorder()
 	a.router.ServeHTTP(resp, req)
-	revoked, err := ioutil.ReadAll(resp.Body)
+	revoked, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

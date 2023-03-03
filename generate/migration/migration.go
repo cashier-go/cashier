@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -32,12 +33,15 @@ func main() {
 		flag.Usage()
 	}
 	name := fmt.Sprintf("%s_%s.sql", time.Now().UTC().Format(dateFormat), flag.Arg(0))
-	gitRoot, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	gitRoot, err := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
 		log.Fatal(err)
 	}
 	root := strings.TrimSpace(string(gitRoot))
-	ents, err := ioutil.ReadDir(path.Join(root, migrationsPath))
+	ents, err := os.ReadDir(path.Join(root, migrationsPath))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,7 +49,7 @@ func main() {
 		if e.IsDir() {
 			filename := path.Join(migrationsPath, e.Name(), name)
 			fmt.Printf("Wrote empty migration file: %s\n", filename)
-			if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
+			if err := os.WriteFile(filename, contents, 0644); err != nil {
 				log.Fatal(err)
 			}
 		}

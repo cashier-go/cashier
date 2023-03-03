@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/nsheridan/cashier/lib"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -28,20 +28,21 @@ var (
 
 // SavePublicFiles installs the public part of the cert and key.
 func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) error {
+	var errs error
 	if prefix == "" {
 		return nil
 	}
 	pubTxt := ssh.MarshalAuthorizedKey(pub)
 	certPubTxt := []byte(cert.Type() + " " + base64.StdEncoding.EncodeToString(cert.Marshal()))
 
-	_prefix := prefix + "/id_" + cert.KeyId
+	prefix = fmt.Sprintf("%s/id_%s", prefix, cert.KeyId)
+	pubkeyFile := fmt.Sprint(prefix, ".pub")
+	pubcertFile := fmt.Sprint(prefix, "-cert.pub")
 
-	if err := ioutil.WriteFile(_prefix+".pub", pubTxt, 0644); err != nil {
-		return err
-	}
-	err := ioutil.WriteFile(_prefix+"-cert.pub", certPubTxt, 0644)
-
-	return err
+	errs = multierror.Append(errs,
+		os.WriteFile(pubkeyFile, pubTxt, 0644),
+		os.WriteFile(pubcertFile, certPubTxt, 0644))
+	return errs
 }
 
 // SavePrivateFiles installs the private part of the key.
@@ -49,19 +50,19 @@ func SavePrivateFiles(prefix string, cert *ssh.Certificate, key Key) error {
 	if prefix == "" {
 		return nil
 	}
-	_prefix := prefix + "/id_" + cert.KeyId
+	prefix = fmt.Sprintf("%s/id_%s", prefix, cert.KeyId)
 	pemBlock, err := pemBlockForKey(key)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(_prefix, pem.EncodeToMemory(pemBlock), 0600)
+	err = os.WriteFile(prefix, pem.EncodeToMemory(pemBlock), 0600)
 	return err
 }
 
 // InstallCert adds the private key and signed certificate to the ssh agent.
 func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key) error {
 	t := time.Unix(int64(cert.ValidBefore), 0)
-	lifetime := t.Sub(time.Now()).Seconds()
+	lifetime := time.Until(t)
 	comment := fmt.Sprintf("%s [Expires %s]", cert.KeyId, t)
 	pubcert := agent.AddedKey{
 		PrivateKey:   key,
@@ -137,6 +138,7 @@ func promptForReason() (message string) {
 // Sign sends the public key to the CA to be signed.
 func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, error) {
 	var err error
+	var resp *lib.SignResponse
 	validity, err := time.ParseDuration(conf.Validity)
 	if err != nil {
 		return nil, err
@@ -146,7 +148,6 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 		ValidUntil: time.Now().Add(validity),
 		Version:    lib.Version,
 	}
-	resp := &lib.SignResponse{}
 	for {
 		resp, err = send(s, token, conf.CA, conf.ValidateTLSCertificate)
 		if err == nil {
