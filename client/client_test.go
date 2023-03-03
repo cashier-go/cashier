@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func (s *ClientSuite) TestSavePublicFiles_WriteKey() {
 	cert := c.(*ssh.Certificate)
 	s.NotNil(cert)
 	err := SavePublicFiles("test", cert, cert.Key)
-	s.Equal(err.Error(), "open test/id_key.pub: no such file or directory")
+	s.ErrorIs(err, os.ErrNotExist)
 }
 
 func (s *ClientSuite) TestSavePrivateFiles_MissingPrefix() {

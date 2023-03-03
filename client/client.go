@@ -28,7 +28,7 @@ var (
 
 // SavePublicFiles installs the public part of the cert and key.
 func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) error {
-	var errs error
+	var errs *multierror.Error
 	if prefix == "" {
 		return nil
 	}
@@ -42,7 +42,7 @@ func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) er
 	errs = multierror.Append(errs,
 		os.WriteFile(pubkeyFile, pubTxt, 0644),
 		os.WriteFile(pubcertFile, certPubTxt, 0644))
-	return errs
+	return errs.ErrorOrNil()
 }
 
 // SavePrivateFiles installs the private part of the key.
