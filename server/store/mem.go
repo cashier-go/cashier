@@ -36,7 +36,7 @@ func (ms *memoryStore) SetRecord(record *CertRecord) error {
 // List returns all recorded certs.
 // By default only active certs are returned.
 func (ms *memoryStore) List(includeExpired bool) ([]*CertRecord, error) {
-	var records []*CertRecord
+	records := make([]*CertRecord, 0, len(ms.certs))
 	ms.Lock()
 	defer ms.Unlock()
 
