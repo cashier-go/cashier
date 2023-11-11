@@ -9,12 +9,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// ClientCache is a cache for oauth2 http clients
 type ClientCache struct {
 	mu          sync.Mutex
 	clients     map[*oauth2.Token]*http.Client
 	stopJanitor chan struct{}
 }
 
+// New returns a new *ClientCache.
+// cleanupDuration specifies how often the cache will be checked for expired tokens.
+// The checker can be disabled by passing a cleanupDuration of `0`
 func New(cleanupDuration time.Duration) *ClientCache {
 	cache := &ClientCache{
 		clients:     make(map[*oauth2.Token]*http.Client),

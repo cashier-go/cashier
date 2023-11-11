@@ -60,13 +60,13 @@ func SavePrivateFiles(prefix string, cert *ssh.Certificate, key Key) error {
 }
 
 type comment struct {
-	keyId  string
+	keyID  string
 	expiry time.Time
 	ca     string
 }
 
 func (c comment) String() string {
-	return fmt.Sprintf("[id=%s expiry=%s issuer=%s]", c.keyId, c.expiry, c.ca)
+	return fmt.Sprintf("[id=%s expiry=%s issuer=%s]", c.keyID, c.expiry, c.ca)
 }
 
 // InstallCert adds the private key and signed certificate to the ssh agent.
