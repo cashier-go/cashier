@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,17 +33,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	ctx := context.Background()
-	gracePeriod, err := time.ParseDuration(conf.Server.ShutdownTimeout)
-	if err != nil {
-		log.Printf("Unable to parse ShutdownTimeout value %s: %v", conf.Server.ShutdownTimeout, err)
-	}
-	ctx, cancel := context.WithTimeout(ctx, gracePeriod)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
 
 	// Register well-known filesystems.
 	if conf.AWS == nil {
@@ -55,8 +47,28 @@ func main() {
 	})
 	vaultfs.Register(conf.Vault)
 
-	s := server.Run(ctx, conf)
-	<-sig
-	log.Print("shutting down...")
-	s.Shutdown(ctx)
+	gracePeriod, err := time.ParseDuration(conf.Server.ShutdownTimeout)
+	if err != nil {
+		log.Printf("Unable to parse ShutdownTimeout value %s: %v", conf.Server.ShutdownTimeout, err)
+	}
+
+	var s *http.Server
+	started := make(chan struct{}, 1)
+	go func() {
+		s = server.Run(conf)
+		close(started)
+	}()
+	<-started
+
+	// wait for a signal
+	<-ctx.Done()
+	stop()
+	log.Printf("shutting down in %d seconds\n", int64(gracePeriod.Seconds()))
+
+	ctx, cancel := context.WithTimeout(context.Background(), gracePeriod)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown: ", err)
+	}
 }

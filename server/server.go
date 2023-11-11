@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"embed"
 	"encoding/base64"
@@ -54,7 +53,7 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 }
 
 // Run the server.
-func Run(ctx context.Context, conf *config.Config) *http.Server {
+func Run(conf *config.Config) *http.Server {
 	var err error
 
 	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
