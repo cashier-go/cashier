@@ -60,7 +60,7 @@ func main() {
 	url := fmt.Sprintf("%s?localserver=%s", c.CA, srv.url())
 
 	log.Println("Your browser has been opened to visit", url)
-	if err := browser.OpenURL(url); err != nil {
+	if err = browser.OpenURL(url); err != nil {
 		log.Println("Error launching web browser. Go to the link in your web browser")
 	}
 
@@ -102,7 +102,7 @@ func main() {
 	}
 	defer sock.Close()
 	a := agent.NewClient(sock)
-	if err := client.InstallCert(a, cert, priv); err != nil {
+	if err = client.InstallCert(a, cert, priv, c.CA); err != nil {
 		srv.respond(srvError)
 		log.Fatalln(err)
 	}

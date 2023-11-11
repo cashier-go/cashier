@@ -65,7 +65,7 @@ func TestLoadCert(t *testing.T) {
 	}
 	c.SignCert(rand.Reader, signer)
 	a := agent.NewKeyring()
-	if err := InstallCert(a, c, key); err != nil {
+	if err = InstallCert(a, c, key, "sshca.example.com"); err != nil {
 		t.Error(err)
 	}
 	listedKeys, err := a.List()
@@ -79,9 +79,9 @@ func TestLoadCert(t *testing.T) {
 		t.Error("Certs not equal")
 	}
 	for _, k := range listedKeys {
-		exp := time.Unix(int64(c.ValidBefore), 0).String()
-		want := fmt.Sprintf("%s [Expires %s]", c.KeyId, exp)
-		if k.Comment != want {
+		exp := time.Unix(int64(c.ValidBefore), 0)
+		want := comment{c.KeyId, exp, "sshca.example.com"}
+		if k.Comment != want.String() {
 			t.Errorf("key comment:\nwanted:%s\ngot: %s", want, k.Comment)
 		}
 	}

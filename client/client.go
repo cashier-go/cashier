@@ -59,15 +59,29 @@ func SavePrivateFiles(prefix string, cert *ssh.Certificate, key Key) error {
 	return err
 }
 
+type comment struct {
+	keyId  string
+	expiry time.Time
+	ca     string
+}
+
+func (c comment) String() string {
+	return fmt.Sprintf("[id=%s expiry=%s issuer=%s]", c.keyId, c.expiry, c.ca)
+}
+
 // InstallCert adds the private key and signed certificate to the ssh agent.
-func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key) error {
+func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key, issuer string) error {
 	t := time.Unix(int64(cert.ValidBefore), 0)
-	lifetime := time.Until(t)
-	comment := fmt.Sprintf("%s [Expires %s]", cert.KeyId, t)
+	lifetime := time.Until(t).Seconds()
+	keycomment := comment{
+		cert.KeyId,
+		t,
+		issuer,
+	}
 	pubcert := agent.AddedKey{
 		PrivateKey:   key,
 		Certificate:  cert,
-		Comment:      comment,
+		Comment:      keycomment.String(),
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(pubcert); err != nil {
@@ -75,7 +89,7 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key) error {
 	}
 	privkey := agent.AddedKey{
 		PrivateKey:   key,
-		Comment:      comment,
+		Comment:      keycomment.String(),
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(privkey); err != nil {
