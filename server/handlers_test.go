@@ -63,7 +63,9 @@ func TestCallbackHandler(t *testing.T) {
 	req.Form = url.Values{"state": []string{"state"}, "code": []string{"abcdef"}}
 	resp := httptest.NewRecorder()
 	a.setSessionVariable(resp, req, "state", "state")
-	req.Header.Add("Cookie", resp.HeaderMap["Set-Cookie"][0])
+	for _, cookie := range resp.Result().Cookies() {
+		req.AddCookie(cookie)
+	}
 	a.router.ServeHTTP(resp, req)
 	if resp.Code != http.StatusFound && resp.Header().Get("Location") != "/" {
 		t.Errorf("Response: %d\nHeaders: %v", resp.Code, resp.Header())
@@ -78,7 +80,9 @@ func TestRootHandler(t *testing.T) {
 		Expiry:      time.Now().Add(1 * time.Hour),
 	}
 	a.setAuthToken(resp, req, tok)
-	req.Header.Add("Cookie", resp.HeaderMap["Set-Cookie"][0])
+	for _, cookie := range resp.Result().Cookies() {
+		req.AddCookie(cookie)
+	}
 	a.router.ServeHTTP(resp, req)
 	if resp.Code != http.StatusOK && !strings.Contains(resp.Body.String(), "XXX_TEST_TOKEN_STRING_XXX") {
 		t.Error("Unable to find token in response")

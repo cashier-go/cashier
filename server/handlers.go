@@ -125,6 +125,11 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 func (a *application) index(w http.ResponseWriter, r *http.Request) {
 	localserver := r.FormValue("localserver")
 	tok := a.getAuthToken(r)
+	if tok == nil {
+		w.WriteHeader(400)
+		fmt.Fprint(w, http.StatusText(400))
+		return
+	}
 	page := struct {
 		Token       string
 		Localserver string

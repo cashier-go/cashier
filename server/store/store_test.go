@@ -74,7 +74,7 @@ func testStore(t *testing.T, db CertStorer) {
 	cert.ValidBefore = uint64(time.Now().Add(1 * time.Hour).UTC().Unix())
 	cert.ValidAfter = uint64(time.Now().Add(-5 * time.Minute).UTC().Unix())
 	rec := MakeRecord(cert)
-	if err := db.SetRecord(rec); err != nil {
+	if err = db.SetRecord(rec); err != nil {
 		t.Error(err)
 	}
 
@@ -85,7 +85,7 @@ func testStore(t *testing.T, db CertStorer) {
 	if ret.KeyID != cert.KeyId {
 		t.Error("key mismatch")
 	}
-	if err := db.Revoke([]string{"key"}); err != nil {
+	if err = db.Revoke([]string{"key"}); err != nil {
 		t.Error(err)
 	}
 

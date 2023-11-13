@@ -42,7 +42,7 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 		address := c.Address
 		_, _, err := net.SplitHostPort(address)
 		if err != nil {
-			address = address + ":3306"
+			address += ":3306"
 		}
 		m := mysql.NewConfig()
 		m.User = c.Username
@@ -64,7 +64,7 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("sqlStore: could not get a connection: %v", err)
 	}
-	if err := autoMigrate(driver, conn); err != nil {
+	if err = autoMigrate(driver, conn); err != nil {
 		return nil, fmt.Errorf("sqlStore: could not update schema: %v", err)
 	}
 

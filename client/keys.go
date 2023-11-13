@@ -50,7 +50,7 @@ func pemBlockForKey(priv interface{}) (*pem.Block, error) {
 		b := edkey.MarshalED25519PrivateKey(*k)
 		return &pem.Block{Type: "OPENSSH PRIVATE KEY", Bytes: b}, nil
 	default:
-		return nil, fmt.Errorf("Unable to create PEM blck from key")
+		return nil, errors.New("unable to create PEM block from key")
 	}
 }
 
@@ -94,7 +94,7 @@ func generateECDSAKey(size int) (Key, error) {
 	case 521:
 		curve = elliptic.P521()
 	default:
-		return nil, fmt.Errorf("Unsupported ECDSA key size: %d. Valid sizes are '256', '384', '521'", size)
+		return nil, fmt.Errorf("unsupported ECDSA key size: %d. Valid sizes are '256', '384', '521'", size)
 	}
 	return ecdsa.GenerateKey(curve, rand.Reader)
 }

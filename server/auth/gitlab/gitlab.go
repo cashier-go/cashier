@@ -127,10 +127,8 @@ func New(c *config.Auth) (*Config, error) {
 		if siteURL[len(siteURL)-1] != '/' {
 			return nil, errors.New("gitlab_opts siteurl must end in /")
 		}
-	} else {
-		if allUsers {
-			return nil, errors.New("gitlab_opts if allusers is set, siteurl must be set")
-		}
+	} else if allUsers {
+		return nil, errors.New("gitlab_opts if allusers is set, siteurl must be set")
 	}
 	// TODO: Should make sure siteURL is just the host bit.
 

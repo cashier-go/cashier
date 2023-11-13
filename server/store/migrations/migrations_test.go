@@ -91,15 +91,16 @@ func TestMigationDirectoryContents(t *testing.T) {
 	contents, err := os.ReadDir(".")
 	assert.NoError(t, err)
 	for _, i := range contents {
-		if i.IsDir() {
-			dir := path.Join(i.Name(), "*.sql")
-			files, _ := filepath.Glob(dir)
-			trimmed := []string{}
-			for _, f := range files {
-				trimmed = append(trimmed, filepath.Base(f))
-			}
-			names[i.Name()] = trimmed
+		if !i.IsDir() {
+			continue
 		}
+		dir := path.Join(i.Name(), "*.sql")
+		files, _ := filepath.Glob(dir)
+		trimmed := []string{}
+		for _, f := range files {
+			trimmed = append(trimmed, filepath.Base(f))
+		}
+		names[i.Name()] = trimmed
 	}
 	// Use one entry from the `names` map as a reference for all the others.
 	first := names[reflect.ValueOf(names).MapKeys()[0].String()]
