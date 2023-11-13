@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,7 +43,7 @@ func startServer(ca string) localserver {
 		ca: ca,
 	}
 	http.HandleFunc(ls.path, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", ls.ca)
+		w.Header().Set("Access-Control-Allow-Origin", strings.TrimSuffix(ls.ca, "/"))
 		token := r.FormValue("token")
 		if token != "" {
 			ls.token <- r.FormValue("token")
