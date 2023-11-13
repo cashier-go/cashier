@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
@@ -103,7 +102,5 @@ func TestCacheItems(t *testing.T) {
 
 	cache.Destroy(token)
 	otherClient1 := cache.Get(context.TODO(), &oauth2.Config{}, token)
-	spew.Dump(client1)
-	spew.Dump(otherClient1)
 	assert.NotSame(t, client1, otherClient1)
 }
