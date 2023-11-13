@@ -4,6 +4,8 @@ SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*')
 VERSION_PKG := github.com/nsheridan/cashier/lib.Version
 VERSION := $(shell git describe --tags --always --dirty)
 
+GOTOOLCHAIN=local
+
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 CGO_ENABLED ?= $(shell go env CGO_ENABLED)
