@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	multierror "github.com/hashicorp/go-multierror"
 	"github.com/jmoiron/sqlx"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/pkg/errors"
@@ -103,10 +102,6 @@ func autoMigrate(driver string, conn *sqlx.DB) error {
 		Root:       "migrations/" + driver,
 	}
 	n, err := migrate.Exec(conn.DB, driver, srcs, migrate.Up)
-	if err != nil {
-		err = multierror.Append(err)
-		return err
-	}
 	log.Printf("Executed %d migrations", n)
 	if err != nil {
 		return fmt.Errorf("errors were found running migrations: %w", err)
