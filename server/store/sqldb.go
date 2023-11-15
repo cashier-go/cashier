@@ -109,7 +109,7 @@ func autoMigrate(driver string, conn *sqlx.DB) error {
 	}
 	log.Printf("Executed %d migrations", n)
 	if err != nil {
-		log.Fatalf("Errors were found running migrations: %v", err)
+		return fmt.Errorf("errors were found running migrations: %w", err)
 	}
 	return nil
 }
