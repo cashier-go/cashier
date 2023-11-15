@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -26,13 +25,19 @@ var (
 func main() {
 	flag.Parse()
 	if *version {
-		fmt.Printf("%s\n", lib.Version)
-		os.Exit(0)
+		fmt.Println(lib.Version)
+		return
 	}
 	conf, err := config.ReadConfig(*cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
+	if err := run(conf); err != nil {
+		log.Fatalln("Forced shutdown: ", err)
+	}
+}
+
+func run(conf *config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
@@ -69,6 +74,7 @@ func main() {
 	defer cancel()
 
 	if err := s.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown: ", err)
+		return fmt.Errorf("error when shutting down: %w", err)
 	}
+	return nil
 }
