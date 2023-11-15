@@ -112,7 +112,7 @@ func Run(conf *config.Config) (*Server, error) {
 	if conf.Server.User != "" {
 		log.Print("Dropping privileges...")
 		if err = drop.DropPrivileges(conf.Server.User); err != nil {
-			return nil, fmt.Errorf("unable to drop privileges to user %q: %w", conf.Server.User)
+			return nil, fmt.Errorf("unable to drop privileges to user %q: %w", conf.Server.User, err)
 		}
 	}
 
