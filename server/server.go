@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"embed"
 	"encoding/base64"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/csrf"
+	"github.com/sid77/drop"
 
 	"github.com/gorilla/handlers"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -38,7 +40,6 @@ import (
 	"github.com/nsheridan/cashier/server/metrics"
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/server/store"
-	"github.com/sid77/drop"
 )
 
 func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
@@ -53,38 +54,56 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	return tls.X509KeyPair(cert, key)
 }
 
+type Server struct {
+	httpServer *http.Server
+	logfile    *os.File
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.logfile.Close()
+	return s.httpServer.Shutdown(ctx)
+}
+
+func setupTLS(l net.Listener, conf *config.Server) (net.Listener, error) {
+	tlsConfig := &tls.Config{}
+	var err error
+	if conf.LetsEncryptServername != "" {
+		m := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(conf.LetsEncryptServername),
+		}
+		if conf.LetsEncryptCache != "" {
+			m.Cache = wkfscache.Cache(conf.LetsEncryptCache)
+		}
+		tlsConfig = m.TLSConfig()
+	} else {
+		if conf.TLSCert == "" || conf.TLSKey == "" {
+			return nil, fmt.Errorf("TLS cert or key not specified in config")
+		}
+		tlsConfig.Certificates = make([]tls.Certificate, 1)
+		tlsConfig.Certificates[0], err = loadCerts(conf.TLSCert, conf.TLSKey)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create TLS listener: %w", err)
+		}
+	}
+	return tls.NewListener(l, tlsConfig), nil
+}
+
 // Run the server.
-func Run(conf *config.Config) *http.Server {
+func Run(conf *config.Config) (*Server, error) {
 	var err error
 
 	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
 	l, err := net.Listen("tcp", laddr)
 	if err != nil {
-		log.Fatal(errors.Wrapf(err, "unable to listen on %s:%d", conf.Server.Addr, conf.Server.Port))
+		return nil, fmt.Errorf("unable to listen on %s:%d", conf.Server.Addr, conf.Server.Port)
 	}
 
-	tlsConfig := &tls.Config{}
 	if conf.Server.UseTLS {
-		if conf.Server.LetsEncryptServername != "" {
-			m := autocert.Manager{
-				Prompt:     autocert.AcceptTOS,
-				HostPolicy: autocert.HostWhitelist(conf.Server.LetsEncryptServername),
-			}
-			if conf.Server.LetsEncryptCache != "" {
-				m.Cache = wkfscache.Cache(conf.Server.LetsEncryptCache)
-			}
-			tlsConfig = m.TLSConfig()
-		} else {
-			if conf.Server.TLSCert == "" || conf.Server.TLSKey == "" {
-				log.Fatal("TLS cert or key not specified in config")
-			}
-			tlsConfig.Certificates = make([]tls.Certificate, 1)
-			tlsConfig.Certificates[0], err = loadCerts(conf.Server.TLSCert, conf.Server.TLSKey)
-			if err != nil {
-				log.Fatal(errors.Wrap(err, "unable to create TLS listener"))
-			}
+		l, err = setupTLS(l, conf.Server)
+		if err != nil {
+			return nil, fmt.Errorf("unable to configure TLS: %w", err)
 		}
-		l = tls.NewListener(l, tlsConfig)
 	}
 
 	// lock the current goroutine's thread to the current system thread before making UID/GID changes.
@@ -93,7 +112,7 @@ func Run(conf *config.Config) *http.Server {
 	if conf.Server.User != "" {
 		log.Print("Dropping privileges...")
 		if err = drop.DropPrivileges(conf.Server.User); err != nil {
-			log.Fatal(errors.Wrap(err, "unable to drop privileges"))
+			return nil, fmt.Errorf("unable to drop privileges to user %q: %w", conf.Server.User)
 		}
 	}
 
@@ -111,20 +130,20 @@ func Run(conf *config.Config) *http.Server {
 	case "microsoft":
 		authprovider, err = microsoft.New(conf.Auth)
 	default:
-		log.Fatalf("Unknown provider %s\n", conf.Auth.Provider)
+		return nil, fmt.Errorf("unknown provider %q", conf.Auth.Provider)
 	}
 	if err != nil {
-		log.Fatal(errors.Wrapf(err, "unable to use provider '%s'", conf.Auth.Provider))
+		return nil, fmt.Errorf("unable to configure provider %q: %w", conf.Auth.Provider, err)
 	}
 
 	keysigner, err := signer.New(conf.SSH)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("unable to configure signer: %w", err)
 	}
 
 	certstore, err := store.New(conf.Server.Database)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("unable to configure datastore: %w", err)
 	}
 
 	app := &application{
@@ -155,14 +174,17 @@ func Run(conf *config.Config) *http.Server {
 	r := handlers.LoggingHandler(logfile, app.router)
 	s := &http.Server{
 		Handler:      r,
-		ReadTimeout:  20 * time.Second,
-		WriteTimeout: 20 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
 
 	log.Printf("Starting server on %s", laddr)
 	go s.Serve(l)
-	return s
+	return &Server{
+		httpServer: s,
+		logfile:    logfile,
+	}, nil
 }
 
 // mwVersion is middleware to add a X-Cashier-Version header to the response.

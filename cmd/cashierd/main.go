@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
@@ -57,13 +56,10 @@ func run(conf *config.Config) error {
 		log.Printf("Unable to parse ShutdownTimeout value %s: %v", conf.Server.ShutdownTimeout, err)
 	}
 
-	var s *http.Server
-	started := make(chan struct{}, 1)
-	go func() {
-		s = server.Run(conf)
-		close(started)
-	}()
-	<-started
+	s, err := server.Run(conf)
+	if err != nil {
+		return fmt.Errorf("failed to start server: %w", err)
+	}
 
 	// wait for a signal
 	<-ctx.Done()
