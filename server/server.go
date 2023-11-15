@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/gorilla/csrf"
@@ -86,9 +87,12 @@ func Run(conf *config.Config) *http.Server {
 		l = tls.NewListener(l, tlsConfig)
 	}
 
+	// lock the current goroutine's thread to the current system thread before making UID/GID changes.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	if conf.Server.User != "" {
 		log.Print("Dropping privileges...")
-		if err := drop.DropPrivileges(conf.Server.User); err != nil {
+		if err = drop.DropPrivileges(conf.Server.User); err != nil {
 			log.Fatal(errors.Wrap(err, "unable to drop privileges"))
 		}
 	}
