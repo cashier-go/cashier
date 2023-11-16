@@ -54,11 +54,13 @@ func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	return tls.X509KeyPair(cert, key)
 }
 
+// Server is a convenience wrapper around a *httpServer
 type Server struct {
 	httpServer *http.Server
 	logfile    *os.File
 }
 
+// Shutdown the server and perform any cleanup
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.logfile.Close()
 	return s.httpServer.Shutdown(ctx)
