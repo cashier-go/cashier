@@ -1,7 +1,5 @@
 # Cashier
 
-[![Build Status](https://travis-ci.org/nsheridan/cashier.svg?branch=master)](https://travis-ci.org/nsheridan/cashier)
-
 - [Cashier](#cashier)
 	- [How it works](#how-it-works)
 - [Installing](#installing)
