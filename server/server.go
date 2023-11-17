@@ -30,6 +30,7 @@ import (
 	"golang.org/x/oauth2"
 
 	wkfscache "github.com/nsheridan/autocert-wkfs-cache"
+
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth"
 	"github.com/nsheridan/cashier/server/auth/github"
@@ -41,18 +42,6 @@ import (
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/server/store"
 )
-
-func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
-	key, err := wkfs.ReadFile(keyFile)
-	if err != nil {
-		return tls.Certificate{}, errors.Wrap(err, "error reading TLS private key")
-	}
-	cert, err := wkfs.ReadFile(certFile)
-	if err != nil {
-		return tls.Certificate{}, errors.Wrap(err, "error reading TLS certificate")
-	}
-	return tls.X509KeyPair(cert, key)
-}
 
 // Server is a convenience wrapper around a *httpServer
 type Server struct {
@@ -66,8 +55,19 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
+func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
+	key, err := wkfs.ReadFile(keyFile)
+	if err != nil {
+		return tls.Certificate{}, errors.Wrap(err, "error reading TLS private key")
+	}
+	cert, err := wkfs.ReadFile(certFile)
+	if err != nil {
+		return tls.Certificate{}, errors.Wrap(err, "error reading TLS certificate")
+	}
+	return tls.X509KeyPair(cert, key)
+}
+
 func setupTLS(l net.Listener, conf *config.Server) (net.Listener, error) {
-	tlsConfig := &tls.Config{}
 	var err error
 	if conf.LetsEncryptServername != "" {
 		m := autocert.Manager{
@@ -77,16 +77,16 @@ func setupTLS(l net.Listener, conf *config.Server) (net.Listener, error) {
 		if conf.LetsEncryptCache != "" {
 			m.Cache = wkfscache.Cache(conf.LetsEncryptCache)
 		}
-		tlsConfig = m.TLSConfig()
-	} else {
-		if conf.TLSCert == "" || conf.TLSKey == "" {
-			return nil, fmt.Errorf("TLS cert or key not specified in config")
-		}
-		tlsConfig.Certificates = make([]tls.Certificate, 1)
-		tlsConfig.Certificates[0], err = loadCerts(conf.TLSCert, conf.TLSKey)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create TLS listener: %w", err)
-		}
+		return tls.NewListener(l, m.TLSConfig()), nil
+	}
+	if conf.TLSCert == "" || conf.TLSKey == "" {
+		return nil, fmt.Errorf("TLS cert or key not specified in config")
+	}
+	tlsConfig := &tls.Config{}
+	tlsConfig.Certificates = make([]tls.Certificate, 1)
+	tlsConfig.Certificates[0], err = loadCerts(conf.TLSCert, conf.TLSKey)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create TLS listener: %w", err)
 	}
 	return tls.NewListener(l, tlsConfig), nil
 }
