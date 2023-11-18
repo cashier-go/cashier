@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -221,8 +222,8 @@ func (c *Config) StartSession(state string) string {
 }
 
 // Exchange authorizes the session and returns an access token.
-func (c *Config) Exchange(code string) (*oauth2.Token, error) {
-	t, err := c.config.Exchange(oauth2.NoContext, code)
+func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
+	t, err := c.config.Exchange(ctx, code)
 	if err == nil {
 		metrics.M.AuthExchange.WithLabelValues("gitlab").Inc()
 	}

@@ -13,11 +13,12 @@ import (
 	"strings"
 
 	"github.com/gorilla/csrf"
+	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
+
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/server/templates"
-	"github.com/pkg/errors"
-	"golang.org/x/oauth2"
 )
 
 func (a *application) sign(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +99,7 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 			originURL = "/"
 		}
 		code := r.FormValue("code")
-		token, err := a.authprovider.Exchange(code)
+		token, err := a.authprovider.Exchange(r.Context(), code)
 		if err != nil {
 			log.Printf("Error on /auth/callback: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

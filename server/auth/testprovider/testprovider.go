@@ -1,6 +1,7 @@
 package testprovider
 
 import (
+	"context"
 	"time"
 
 	"github.com/nsheridan/cashier/server/auth"
@@ -43,7 +44,7 @@ func (c *Config) StartSession(state string) string {
 }
 
 // Exchange authorizes the session and returns an access token.
-func (c *Config) Exchange(code string) (*oauth2.Token, error) {
+func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
 	return &oauth2.Token{
 		AccessToken: "token",
 		Expiry:      time.Now().Add(1 * time.Hour),
