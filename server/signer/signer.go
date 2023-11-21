@@ -10,6 +10,7 @@ import (
 	"go4.org/wkfs"
 	_ "go4.org/wkfs/gcs" // Register "/gcs/" as a wkfs.
 
+	"github.com/delicb/gstring"
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/store"
@@ -38,7 +39,8 @@ type KeySigner struct {
 func (s *KeySigner) setPermissions(cert *ssh.Certificate) {
 	cert.CriticalOptions = make(map[string]string)
 	cert.Extensions = make(map[string]string)
-	for _, perm := range s.permissions {
+	for _, p := range s.permissions {
+		perm := gstring.Sprintm(p, map[string]interface{}{"user": cert.ValidPrincipals[0]})
 		if strings.Contains(perm, "=") {
 			opt := strings.Split(perm, "=")
 			cert.CriticalOptions[strings.TrimSpace(opt[0])] = strings.TrimSpace(opt[1])
