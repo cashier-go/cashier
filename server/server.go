@@ -16,20 +16,16 @@ import (
 	"time"
 
 	"github.com/gorilla/csrf"
-	"github.com/sid77/drop"
-
 	"github.com/gorilla/handlers"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	wkfscache "github.com/nsheridan/autocert-wkfs-cache"
 	"github.com/pkg/errors"
-
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sid77/drop"
 	"go4.org/wkfs"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/oauth2"
-
-	wkfscache "github.com/nsheridan/autocert-wkfs-cache"
 
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth"
@@ -166,7 +162,7 @@ func Run(conf *config.Config) (*Server, error) {
 
 	logfile := os.Stderr
 	if conf.Server.HTTPLogFile != "" {
-		logfile, err = os.OpenFile(conf.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0640)
+		logfile, err = os.OpenFile(conf.Server.HTTPLogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0o640)
 		if err != nil {
 			log.Printf("error opening log: %v. logging to stdout", err)
 		}
