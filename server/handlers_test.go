@@ -17,13 +17,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/stripe/krl"
+
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/auth/testprovider"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/signer"
 	"github.com/nsheridan/cashier/server/store"
 	"github.com/nsheridan/cashier/testdata"
-	"github.com/stripe/krl"
 )
 
 var a *application
@@ -168,5 +169,43 @@ func TestSignRevoke(t *testing.T) {
 	}
 	if !rl.IsRevoked(cert) {
 		t.Fatalf("cert %s was not revoked", cert.KeyId)
+	}
+}
+
+func TestTokenFromRequest(t *testing.T) {
+	tests := []struct {
+		name string
+		req  *http.Request
+		want *oauth2.Token
+	}{
+		{
+			name: "authorization present",
+			req:  &http.Request{Header: http.Header{"Authorization": []string{"BEARER abcdef"}}},
+			want: &oauth2.Token{AccessToken: "abcdef"},
+		},
+		{
+			name: "authorization present, case-insensitive",
+			req:  &http.Request{Header: http.Header{"Authorization": []string{"bearer abcdef"}}},
+			want: &oauth2.Token{AccessToken: "abcdef"},
+		},
+		{
+			name: "authorization missing",
+			req:  &http.Request{},
+			want: &oauth2.Token{},
+		},
+		{
+			name: "authorization invalid",
+			req:  &http.Request{Header: http.Header{"Authorization": []string{"BERARE abcdef"}}},
+			want: &oauth2.Token{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			token := tokenFromRequest(test.req)
+			if token.AccessToken != test.want.AccessToken {
+				t.Fatalf("Expected token %q, got token %q", test.want.AccessToken, token.AccessToken)
+			}
+		})
 	}
 }

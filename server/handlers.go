@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -20,45 +21,55 @@ import (
 	"github.com/nsheridan/cashier/server/templates"
 )
 
+func tokenFromRequest(r *http.Request) *oauth2.Token {
+	token := &oauth2.Token{}
+	header := r.Header.Get("Authorization")
+	if strings.HasPrefix(strings.ToUpper(header), "BEARER ") {
+		t := strings.Split(header, " ")[1]
+		token.AccessToken = t
+	}
+	return token
+}
+
 func (a *application) sign(w http.ResponseWriter, r *http.Request) {
-	var t string
-	if ah := r.Header.Get("Authorization"); ah != "" {
-		if len(ah) > 6 && strings.ToUpper(ah[0:7]) == "BEARER " {
-			t = ah[7:]
-		}
+	var (
+		errNeedsReason  = errors.New("signing request needs a reason")
+		errUnauthorized = errors.New("unauthorized")
+		errSigningKey   = errors.New("error signing key")
+	)
+
+	fail := func(w http.ResponseWriter, code int, err error) {
+		w.WriteHeader(code)
+		json.NewEncoder(w).Encode(&lib.SignResponse{
+			Status:   "error",
+			Response: fmt.Sprintf("%s: %s", http.StatusText(code), err),
+		})
 	}
 
-	token := &oauth2.Token{
-		AccessToken: t,
-	}
+	token := tokenFromRequest(r)
 	if !a.authprovider.Valid(token) {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))
+		fail(w, http.StatusUnauthorized, errUnauthorized)
 		return
 	}
 
-	// Sign the pubkey and issue the cert.
-	req := &lib.SignRequest{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, http.StatusText(http.StatusBadRequest))
+	// Attempt to sign the pubkey and return a SignResponse.
+	req := lib.SignRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		fail(w, http.StatusBadRequest, err)
 		return
 	}
 
 	if a.requireReason && req.Message == "" {
 		w.Header().Add("X-Need-Reason", "required")
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprint(w, http.StatusText(http.StatusForbidden))
+		fail(w, http.StatusForbidden, errNeedsReason)
 		return
 	}
 
 	username := a.authprovider.Username(token)
 	a.authprovider.Revoke(token) // We don't need this anymore.
-	cert, err := a.keysigner.SignUserKey(req, username)
+	cert, err := a.keysigner.SignUserKey(&req, username)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error signing key: %v", err)
+		fail(w, http.StatusInternalServerError, fmt.Errorf("%w: %w", errSigningKey, err))
 		return
 	}
 
@@ -71,8 +82,7 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 		Status:   "ok",
 		Response: string(lib.GetPublicKey(cert)),
 	}); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error signing key: %v", err)
+		fail(w, http.StatusInternalServerError, fmt.Errorf("%w: %w", errSigningKey, err))
 		return
 	}
 }
