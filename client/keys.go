@@ -8,9 +8,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
@@ -127,8 +126,11 @@ func GenerateKey(options ...func(*options)) (Key, ssh.PublicKey, error) {
 		privkey, err = generateRSAKey(config.size)
 	}
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "unable to generate %s key-pair", config.keytype)
+		return nil, nil, fmt.Errorf("unable to generate %q key-pair: %w", config.keytype, err)
 	}
 	pubkey, err = ssh.NewPublicKey(privkey.Public())
-	return privkey, pubkey, errors.Wrap(err, "error parsing public key")
+	if err != nil {
+		return nil, nil, fmt.Errorf("error parsing public key: %w", err)
+	}
+	return privkey, pubkey, nil
 }

@@ -10,12 +10,16 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/pkg/errors"
 	migrate "github.com/rubenv/sql-migrate"
+
+	"github.com/nsheridan/cashier/server/config"
 )
 
 var _ CertStorer = (*sqlStore)(nil)
+
+func connError(err error) error {
+	return fmt.Errorf("unable to connect to database: %w", err)
+}
 
 //go:embed migrations
 var migrationFS embed.FS
@@ -61,10 +65,10 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 
 	conn, err := sqlx.Connect(driver, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("sqlStore: could not get a connection: %v", err)
+		return nil, fmt.Errorf("sqlStore: could not get a connection: %w", err)
 	}
 	if err = autoMigrate(driver, conn); err != nil {
-		return nil, fmt.Errorf("sqlStore: could not update schema: %v", err)
+		return nil, fmt.Errorf("sqlStore: could not update schema: %w", err)
 	}
 
 	db := &sqlStore{
@@ -72,19 +76,19 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 	}
 
 	if db.set, err = conn.Preparex("INSERT INTO issued_certs (key_id, principals, created_at, expires_at, raw_key, message) VALUES (?, ?, ?, ?, ?, ?)"); err != nil {
-		return nil, fmt.Errorf("sqlStore: prepare set: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare set: %w", err)
 	}
 	if db.get, err = conn.Preparex("SELECT * FROM issued_certs WHERE key_id = ?"); err != nil {
-		return nil, fmt.Errorf("sqlStore: prepare get: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare get: %w", err)
 	}
 	if db.listAll, err = conn.Preparex("SELECT * FROM issued_certs"); err != nil {
-		return nil, fmt.Errorf("sqlStore: prepare listAll: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare listAll: %w", err)
 	}
 	if db.listCurrent, err = conn.Preparex("SELECT * FROM issued_certs WHERE expires_at >= ?"); err != nil {
-		return nil, fmt.Errorf("sqlStore: prepare listCurrent: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare listCurrent: %w", err)
 	}
 	if db.revoked, err = conn.Preparex("SELECT * FROM issued_certs WHERE revoked = 1 AND ? <= expires_at"); err != nil {
-		return nil, fmt.Errorf("sqlStore: prepare revoked: %v", err)
+		return nil, fmt.Errorf("sqlStore: prepare revoked: %w", err)
 	}
 	return db, nil
 }
@@ -112,7 +116,7 @@ func autoMigrate(driver string, conn *sqlx.DB) error {
 // Get a single *CertRecord
 func (db *sqlStore) Get(id string) (*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
-		return nil, errors.Wrap(err, "unable to connect to database")
+		return nil, connError(err)
 	}
 	r := &CertRecord{}
 	return r, db.get.Get(r, id)
@@ -121,7 +125,7 @@ func (db *sqlStore) Get(id string) (*CertRecord, error) {
 // SetRecord records a *CertRecord
 func (db *sqlStore) SetRecord(rec *CertRecord) error {
 	if err := db.conn.Ping(); err != nil {
-		return errors.Wrap(err, "unable to connect to database")
+		return connError(err)
 	}
 	_, err := db.set.Exec(rec.KeyID, rec.Principals, rec.CreatedAt, rec.Expires, rec.Raw, rec.Message)
 	return err
@@ -131,7 +135,7 @@ func (db *sqlStore) SetRecord(rec *CertRecord) error {
 // By default only active certs are returned.
 func (db *sqlStore) List(includeExpired bool) ([]*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
-		return nil, errors.Wrap(err, "unable to connect to database")
+		return nil, connError(err)
 	}
 	recs := []*CertRecord{}
 	if includeExpired {
@@ -150,7 +154,7 @@ func (db *sqlStore) List(includeExpired bool) ([]*CertRecord, error) {
 func (db *sqlStore) Revoke(ids []string) error {
 	var err error
 	if err = db.conn.Ping(); err != nil {
-		return errors.Wrap(err, "unable to connect to database")
+		return connError(err)
 	}
 	q, args, err := sqlx.In("UPDATE issued_certs SET revoked = 1 WHERE key_id IN (?)", ids)
 	if err != nil {
@@ -164,7 +168,7 @@ func (db *sqlStore) Revoke(ids []string) error {
 // GetRevoked returns all revoked certs
 func (db *sqlStore) GetRevoked() ([]*CertRecord, error) {
 	if err := db.conn.Ping(); err != nil {
-		return nil, errors.Wrap(err, "unable to connect to database")
+		return nil, connError(err)
 	}
 	var recs []*CertRecord
 	if err := db.revoked.Select(&recs, time.Now().UTC()); err != nil {

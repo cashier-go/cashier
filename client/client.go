@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,15 +17,13 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/nsheridan/cashier/lib"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+
+	"github.com/nsheridan/cashier/lib"
 )
 
-var (
-	errNeedsReason = errors.New("reason required")
-)
+var errNeedsReason = errors.New("reason required")
 
 // SavePublicFiles installs the public part of the cert and key.
 func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) error {
@@ -40,8 +39,8 @@ func SavePublicFiles(prefix string, cert *ssh.Certificate, pub ssh.PublicKey) er
 	pubcertFile := fmt.Sprint(prefix, "-cert.pub")
 
 	errs = multierror.Append(errs,
-		os.WriteFile(pubkeyFile, pubTxt, 0644),
-		os.WriteFile(pubcertFile, certPubTxt, 0644))
+		os.WriteFile(pubkeyFile, pubTxt, 0o644),
+		os.WriteFile(pubcertFile, certPubTxt, 0o644))
 	return errs.ErrorOrNil()
 }
 
@@ -55,7 +54,7 @@ func SavePrivateFiles(prefix string, cert *ssh.Certificate, key Key) error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(prefix, pem.EncodeToMemory(pemBlock), 0600)
+	err = os.WriteFile(prefix, pem.EncodeToMemory(pemBlock), 0o600)
 	return err
 }
 
@@ -85,7 +84,7 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key, issuer string) e
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(pubcert); err != nil {
-		return errors.Wrap(err, "unable to add cert to ssh agent")
+		return fmt.Errorf("unable to add cert to ssh agent: %w", err)
 	}
 	privkey := agent.AddedKey{
 		PrivateKey:   key,
@@ -93,7 +92,7 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key, issuer string) e
 		LifetimeSecs: uint32(lifetime),
 	}
 	if err := a.Add(privkey); err != nil {
-		return errors.Wrap(err, "unable to add private key to ssh agent")
+		return fmt.Errorf("unable to add private key to ssh agent: %w", err)
 	}
 	return nil
 }
@@ -102,7 +101,7 @@ func InstallCert(a agent.Agent, cert *ssh.Certificate, key Key, issuer string) e
 func send(sr *lib.SignRequest, token, ca string, ValidateTLSCertificate bool) (*lib.SignResponse, error) {
 	s, err := json.Marshal(sr)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create sign request")
+		return nil, fmt.Errorf("unable to create sign request: %w", err)
 	}
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -112,7 +111,7 @@ func send(sr *lib.SignRequest, token, ca string, ValidateTLSCertificate bool) (*
 	}
 	u, err := url.Parse(ca)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse CA url")
+		return nil, fmt.Errorf("unable to parse CA url: %w", err)
 	}
 	u.Path = path.Join(u.Path, "/sign")
 	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(s))
@@ -135,7 +134,7 @@ func send(sr *lib.SignRequest, token, ca string, ValidateTLSCertificate bool) (*
 		return signResponse, fmt.Errorf("bad response from server: %s", resp.Status)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(signResponse); err != nil {
-		return nil, errors.Wrap(err, "unable to decode server response")
+		return nil, fmt.Errorf("unable to decode server response: %w", err)
 	}
 	return signResponse, nil
 }
@@ -167,11 +166,11 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 		if err == nil {
 			break
 		}
-		if err != nil && err == errNeedsReason {
+		if err != nil && errors.Is(err, errNeedsReason) {
 			s.Message = promptForReason()
 			continue
 		} else if err != nil {
-			return nil, errors.Wrap(err, "error sending request to CA")
+			return nil, fmt.Errorf("error sending request to CA: %w", err)
 		}
 	}
 	if resp.Status != "ok" {
@@ -179,7 +178,7 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 	}
 	k, _, _, _, err := ssh.ParseAuthorizedKey([]byte(resp.Response))
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse response")
+		return nil, fmt.Errorf("unable to parse response: %w", err)
 	}
 	cert, ok := k.(*ssh.Certificate)
 	if !ok {

@@ -20,7 +20,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	wkfscache "github.com/nsheridan/autocert-wkfs-cache"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sid77/drop"
 	"go4.org/wkfs"
@@ -54,11 +53,11 @@ func (s *Server) Shutdown(ctx context.Context) error {
 func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
 	key, err := wkfs.ReadFile(keyFile)
 	if err != nil {
-		return tls.Certificate{}, errors.Wrap(err, "error reading TLS private key")
+		return tls.Certificate{}, fmt.Errorf("error reading TLS private key: %w", err)
 	}
 	cert, err := wkfs.ReadFile(certFile)
 	if err != nil {
-		return tls.Certificate{}, errors.Wrap(err, "error reading TLS certificate")
+		return tls.Certificate{}, fmt.Errorf("error reading TLS certificate: %w", err)
 	}
 	return tls.X509KeyPair(cert, key)
 }

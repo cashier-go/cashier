@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/gorilla/csrf"
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
 	"github.com/nsheridan/cashier/lib"
@@ -59,7 +58,7 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 	cert, err := a.keysigner.SignUserKey(req, username)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error signing key")
+		fmt.Fprintf(w, "Error signing key: %v", err)
 		return
 	}
 
@@ -73,7 +72,7 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 		Response: string(lib.GetPublicKey(cert)),
 	}); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "Error signing key")
+		fmt.Fprintf(w, "Error signing key: %v", err)
 		return
 	}
 }
@@ -91,8 +90,8 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		if r.FormValue("state") != state {
 			log.Printf("Not authorized on /auth/callback")
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(http.StatusText(http.StatusUnauthorized)))
-			break
+			fmt.Fprintf(w, http.StatusText(http.StatusUnauthorized))
+			return
 		}
 		originURL := a.getSessionVariable(r, "origin_url")
 		if originURL == "" {
@@ -103,9 +102,8 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Error on /auth/callback: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
-			w.Write([]byte(err.Error()))
-			break
+			fmt.Fprintf(w, "%s\n%v", http.StatusText(http.StatusInternalServerError), err)
+			return
 		}
 		log.Printf("Token found on /auth/callback, redirecting to %s", originURL)
 		a.setAuthToken(w, r, token)
@@ -114,8 +112,8 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		if !a.authprovider.Valid(token) {
 			log.Printf("Not authorized")
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(http.StatusText(http.StatusUnauthorized)))
-			break
+			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))
+			return
 		}
 		http.Redirect(w, r, originURL, http.StatusFound)
 	default:
@@ -146,13 +144,13 @@ func (a *application) revoked(w http.ResponseWriter, r *http.Request) {
 	revoked, err := a.certstore.GetRevoked()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, errors.Wrap(err, "error retrieving revoked certs").Error())
+		fmt.Fprintf(w, "error retrieving revoked certs: %v", err)
 		return
 	}
 	rl, err := a.keysigner.GenerateRevocationList(revoked)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, errors.Wrap(err, "unable to generate KRL").Error())
+		fmt.Fprintf(w, "unable to generate KRL: %v", err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
@@ -186,7 +184,7 @@ func (a *application) revoke(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if err := a.certstore.Revoke(r.Form["cert_id"]); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Unable to revoke certs"))
+		fmt.Fprint(w, "Unable to revoke certs")
 	} else {
 		http.Redirect(w, r, "/admin/certs", http.StatusSeeOther)
 	}
