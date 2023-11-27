@@ -10,22 +10,21 @@ import (
 	"go4.org/wkfs"
 	_ "go4.org/wkfs/gcs" // Register "/gcs/" as a wkfs.
 
+	"github.com/stripe/krl"
+	"golang.org/x/crypto/ssh"
+
 	"github.com/nsheridan/cashier/lib"
 	"github.com/nsheridan/cashier/server/config"
 	"github.com/nsheridan/cashier/server/store"
-	"github.com/stripe/krl"
-	"golang.org/x/crypto/ssh"
 )
 
-var (
-	defaultPermissions = map[string]string{
-		"permit-X11-forwarding":   "",
-		"permit-agent-forwarding": "",
-		"permit-port-forwarding":  "",
-		"permit-pty":              "",
-		"permit-user-rc":          "",
-	}
-)
+var defaultPermissions = map[string]string{
+	"permit-X11-forwarding":   "",
+	"permit-agent-forwarding": "",
+	"permit-port-forwarding":  "",
+	"permit-pty":              "",
+	"permit-user-rc":          "",
+}
 
 // KeySigner does the work of signing a ssh public key with the CA key.
 type KeySigner struct {
@@ -98,15 +97,15 @@ func (s *KeySigner) GenerateRevocationList(certs []*store.CertRecord) ([]byte, e
 func New(conf *config.SSH) (*KeySigner, error) {
 	data, err := wkfs.ReadFile(conf.SigningKey)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read CA key %s: %v", conf.SigningKey, err)
+		return nil, fmt.Errorf("unable to read CA key %s: %w", conf.SigningKey, err)
 	}
 	key, err := ssh.ParsePrivateKey(data)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse CA key: %v", err)
+		return nil, fmt.Errorf("unable to parse CA key: %w", err)
 	}
 	validity, err := time.ParseDuration(conf.MaxAge)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing duration '%s': %v", conf.MaxAge, err)
+		return nil, fmt.Errorf("error parsing duration '%s': %w", conf.MaxAge, err)
 	}
 	return &KeySigner{
 		ca:          key,

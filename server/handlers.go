@@ -100,7 +100,7 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		if r.FormValue("state") != state {
 			log.Printf("Not authorized on /auth/callback")
 			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, http.StatusText(http.StatusUnauthorized))
+			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))
 			return
 		}
 		originURL := a.getSessionVariable(r, "origin_url")
