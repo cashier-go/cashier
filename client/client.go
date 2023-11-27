@@ -127,11 +127,8 @@ func send(sr *lib.SignRequest, token, ca string, ValidateTLSCertificate bool) (*
 	}
 	defer resp.Body.Close()
 	signResponse := &lib.SignResponse{}
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusForbidden && strings.HasPrefix(resp.Header.Get("X-Need-Reason"), "required") {
-			return signResponse, errNeedsReason
-		}
-		return signResponse, fmt.Errorf("bad response from server: %s", resp.Status)
+	if resp.StatusCode == http.StatusForbidden && strings.HasPrefix(resp.Header.Get("X-Need-Reason"), "required") {
+		return nil, errNeedsReason
 	}
 	if err := json.NewDecoder(resp.Body).Decode(signResponse); err != nil {
 		return nil, fmt.Errorf("unable to decode server response: %w", err)
