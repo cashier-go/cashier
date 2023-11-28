@@ -14,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	googleapi "google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -55,8 +56,8 @@ func New(c *config.Auth) (*Config, error) {
 }
 
 // A new oauth2 http client.
-func (c *Config) newClient(token *oauth2.Token) *http.Client {
-	return c.config.Client(oauth2.NoContext, token)
+func (c *Config) newClient(ctx context.Context, token *oauth2.Token) *http.Client {
+	return c.config.Client(ctx, token)
 }
 
 // Name returns the name of the provider.
@@ -66,13 +67,13 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
-	if len(c.whitelist) > 0 && !c.whitelist[c.Email(token)] {
+	if len(c.whitelist) > 0 && !c.whitelist[c.Email(ctx, token)] {
 		return false
 	}
 	if !token.Valid() {
 		return false
 	}
-	svc, err := googleapi.New(c.newClient(token))
+	svc, err := googleapi.NewService(ctx, option.WithHTTPClient(c.newClient(ctx, token)))
 	if err != nil {
 		return false
 	}
@@ -98,7 +99,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 
 // Revoke disables the access token.
 func (c *Config) Revoke(ctx context.Context, token *oauth2.Token) error {
-	h := c.newClient(token)
+	h := c.newClient(ctx, token)
 	_, err := h.Get(fmt.Sprintf(revokeURL, token.AccessToken))
 	return err
 }
@@ -118,8 +119,8 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 }
 
 // Email retrieves the email address of the user.
-func (c *Config) Email(token *oauth2.Token) string {
-	svc, err := googleapi.New(c.newClient(token))
+func (c *Config) Email(ctx context.Context, token *oauth2.Token) string {
+	svc, err := googleapi.NewService(ctx, option.WithHTTPClient(c.newClient(ctx, token)))
 	if err != nil {
 		return ""
 	}
@@ -132,5 +133,5 @@ func (c *Config) Email(token *oauth2.Token) string {
 
 // Username retrieves the username portion of the user's email address.
 func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
-	return strings.Split(c.Email(token), "@")[0]
+	return strings.Split(c.Email(ctx, token), "@")[0]
 }
