@@ -46,8 +46,9 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	ctx := r.Context()
 	token := tokenFromRequest(r)
-	if !a.authprovider.Valid(token) {
+	if !a.authprovider.Valid(ctx, token) {
 		fail(w, http.StatusUnauthorized, errUnauthorized)
 		return
 	}
@@ -65,8 +66,8 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := a.authprovider.Username(token)
-	a.authprovider.Revoke(token) // We don't need this anymore.
+	username := a.authprovider.Username(ctx, token)
+	a.authprovider.Revoke(ctx, token) // We don't need this anymore.
 	cert, err := a.keysigner.SignUserKey(&req, username)
 	if err != nil {
 		fail(w, http.StatusInternalServerError, fmt.Errorf("%w: %w", errSigningKey, err))
@@ -96,6 +97,7 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		a.setSessionVariable(w, r, "state", state)
 		http.Redirect(w, r, a.authprovider.StartSession(state), http.StatusFound)
 	case "/auth/callback":
+		ctx := r.Context()
 		state := a.getSessionVariable(r, "state")
 		if r.FormValue("state") != state {
 			log.Printf("Not authorized on /auth/callback")
@@ -119,7 +121,7 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		a.setAuthToken(w, r, token)
 
 		// if we don't check the token here, it gets into an auth loop
-		if !a.authprovider.Valid(token) {
+		if !a.authprovider.Valid(ctx, token) {
 			log.Printf("Not authorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))

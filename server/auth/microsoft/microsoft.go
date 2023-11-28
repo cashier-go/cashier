@@ -171,7 +171,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 }
 
 // Revoke disables the access token.
-func (c *Config) Revoke(token *oauth2.Token) error {
+func (c *Config) Revoke(ctx context.Context, token *oauth2.Token) error {
 	return nil
 }
 
@@ -197,6 +197,6 @@ func (c *Config) Email(token *oauth2.Token) string {
 }
 
 // Username retrieves the username portion of the user's email address.
-func (c *Config) Username(token *oauth2.Token) string {
+func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
 	return strings.Split(c.Email(token), "@")[0]
 }
