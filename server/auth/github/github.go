@@ -55,8 +55,8 @@ func New(c *config.Auth) (*Config, error) {
 }
 
 // A new oauth2 http client.
-func (c *Config) newClient(token *oauth2.Token) *http.Client {
-	return c.config.Client(oauth2.NoContext, token)
+func (c *Config) newClient(ctx context.Context, token *oauth2.Token) *http.Client {
+	return c.config.Client(ctx, token)
 }
 
 // Name returns the name of the provider.
@@ -78,7 +78,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 		metrics.M.AuthValid.WithLabelValues("github").Inc()
 		return true
 	}
-	client := githubapi.NewClient(c.newClient(token))
+	client := githubapi.NewClient(c.newClient(ctx, token))
 	member, _, err := client.Organizations.IsMember(ctx, c.organization, c.Username(ctx, token))
 	if err != nil {
 		return false
@@ -118,7 +118,7 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 
 // Username retrieves the username portion of the user's email address.
 func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
-	client := githubapi.NewClient(c.newClient(token))
+	client := githubapi.NewClient(c.newClient(ctx, token))
 	u, _, err := client.Users.Get(ctx, "")
 	if err != nil {
 		return ""
