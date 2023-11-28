@@ -66,7 +66,7 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
-	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
+	if len(c.whitelist) > 0 && !c.whitelist[c.Username(ctx, token)] {
 		return false
 	}
 	if !token.Valid() {
@@ -79,7 +79,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 		return true
 	}
 	client := githubapi.NewClient(c.newClient(token))
-	member, _, err := client.Organizations.IsMember(ctx, c.organization, c.Username(token))
+	member, _, err := client.Organizations.IsMember(ctx, c.organization, c.Username(ctx, token))
 	if err != nil {
 		return false
 	}
@@ -92,7 +92,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 // Revoke is a no-op revoke method. GitHub doesn't seem to allow token
 // revocation - tokens are indefinite and there are no refresh options etc.
 // Returns nil to satisfy the Provider interface.
-func (c *Config) Revoke(token *oauth2.Token) error {
+func (c *Config) Revoke(ctx context.Context, token *oauth2.Token) error {
 	return nil
 }
 
@@ -117,9 +117,9 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 }
 
 // Username retrieves the username portion of the user's email address.
-func (c *Config) Username(token *oauth2.Token) string {
+func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
 	client := githubapi.NewClient(c.newClient(token))
-	u, _, err := client.Users.Get(context.TODO(), "")
+	u, _, err := client.Users.Get(ctx, "")
 	if err != nil {
 		return ""
 	}

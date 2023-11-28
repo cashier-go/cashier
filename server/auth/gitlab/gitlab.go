@@ -175,7 +175,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 		c.logMsg(errors.New("auth fail (unable to fetch user information)"))
 		return false
 	}
-	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
+	if len(c.whitelist) > 0 && !c.whitelist[c.Username(ctx, token)] {
 		c.logMsg(errors.New("auth fail (not in whitelist)"))
 		return false
 	}
@@ -212,7 +212,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 // Revoke is a no-op revoke method. Gitlab doesn't allow token
 // revocation - tokens live for an hour.
 // Returns nil to satisfy the Provider interface.
-func (c *Config) Revoke(token *oauth2.Token) error {
+func (c *Config) Revoke(ctx context.Context, token *oauth2.Token) error {
 	return nil
 }
 
@@ -231,7 +231,7 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 }
 
 // Username retrieves the username of the Gitlab user.
-func (c *Config) Username(token *oauth2.Token) string {
+func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
 	u := c.getUser(token)
 	if u == nil {
 		return ""
