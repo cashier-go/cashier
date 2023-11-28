@@ -62,13 +62,13 @@ func New(c *config.Auth) (*Config, error) {
 }
 
 // A new oauth2 http client.
-func (c *Config) newClient(token *oauth2.Token) *http.Client {
-	return c.config.Client(oauth2.NoContext, token)
+func (c *Config) newClient(ctx context.Context, token *oauth2.Token) *http.Client {
+	return c.config.Client(ctx, token)
 }
 
 // Gets a response for an graph api call.
-func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[string]interface{} {
-	client := c.newClient(token)
+func (c *Config) getDocument(ctx context.Context, token *oauth2.Token, pathElements ...string) map[string]interface{} {
+	client := c.newClient(ctx, token)
 	url := "https://" + path.Join("graph.microsoft.com/v1.0", path.Join(pathElements...))
 	resp, err := client.Get(url)
 	if err != nil {
@@ -84,8 +84,8 @@ func (c *Config) getDocument(token *oauth2.Token, pathElements ...string) map[st
 
 // Get info from the "/me" endpoint of the Microsoft Graph API (MSG-API).
 // https://developer.microsoft.com/en-us/graph/docs/concepts/v1-overview
-func (c *Config) getMe(token *oauth2.Token, item string) string {
-	document := c.getDocument(token, "/me")
+func (c *Config) getMe(ctx context.Context, token *oauth2.Token, item string) string {
+	document := c.getDocument(ctx, token, "/me")
 	if value, ok := document[item].(string); ok {
 		return value
 	}
@@ -93,8 +93,8 @@ func (c *Config) getMe(token *oauth2.Token, item string) string {
 }
 
 // Check against verified domains from "/organization" endpoint of MSG-API.
-func (c *Config) verifyTenant(token *oauth2.Token) bool {
-	document := c.getDocument(token, "/organization")
+func (c *Config) verifyTenant(ctx context.Context, token *oauth2.Token) bool {
+	document := c.getDocument(ctx, token, "/organization")
 	// The domains for an organisation are in an array of structs under
 	// verifiedDomains, which is in a struct which is in turn an array
 	// of such structs under value in the document.  Which in json looks
@@ -128,8 +128,8 @@ func (c *Config) verifyTenant(token *oauth2.Token) bool {
 }
 
 // Check against groups from /users/{id}/memberOf endpoint of MSG-API.
-func (c *Config) verifyGroups(token *oauth2.Token) bool {
-	document := c.getDocument(token, "/users/me/memberOf")
+func (c *Config) verifyGroups(ctx context.Context, token *oauth2.Token) bool {
+	document := c.getDocument(ctx, token, "/users/me/memberOf")
 	var value []interface{}
 	var ok bool
 	if value, ok = document["value"].([]interface{}); !ok {
@@ -152,7 +152,7 @@ func (c *Config) Name() string {
 
 // Valid validates the oauth token.
 func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
-	if len(c.whitelist) > 0 && !c.whitelist[c.Email(token)] {
+	if len(c.whitelist) > 0 && !c.whitelist[c.Email(ctx, token)] {
 		return false
 	}
 	if !token.Valid() {
@@ -160,9 +160,9 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 	}
 	metrics.M.AuthValid.WithLabelValues("microsoft").Inc()
 	if c.tenant != "" {
-		if c.verifyTenant(token) {
+		if c.verifyTenant(ctx, token) {
 			if len(c.groups) > 0 {
-				return c.verifyGroups(token)
+				return c.verifyGroups(ctx, token)
 			}
 			return true
 		}
@@ -192,11 +192,11 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 }
 
 // Email retrieves the email address of the user.
-func (c *Config) Email(token *oauth2.Token) string {
-	return c.getMe(token, "mail")
+func (c *Config) Email(ctx context.Context, token *oauth2.Token) string {
+	return c.getMe(ctx, token, "mail")
 }
 
 // Username retrieves the username portion of the user's email address.
 func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
-	return strings.Split(c.Email(token), "@")[0]
+	return strings.Split(c.Email(ctx, token), "@")[0]
 }
