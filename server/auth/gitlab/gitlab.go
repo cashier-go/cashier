@@ -160,7 +160,7 @@ func (c *Config) Name() string {
 }
 
 // Valid validates the oauth token.
-func (c *Config) Valid(token *oauth2.Token) bool {
+func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 	if !token.Valid() {
 		log.Printf("Auth fail (oauth2 Valid failure)")
 		return false

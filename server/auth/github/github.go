@@ -65,7 +65,7 @@ func (c *Config) Name() string {
 }
 
 // Valid validates the oauth token.
-func (c *Config) Valid(token *oauth2.Token) bool {
+func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 	if len(c.whitelist) > 0 && !c.whitelist[c.Username(token)] {
 		return false
 	}
@@ -79,7 +79,7 @@ func (c *Config) Valid(token *oauth2.Token) bool {
 		return true
 	}
 	client := githubapi.NewClient(c.newClient(token))
-	member, _, err := client.Organizations.IsMember(context.TODO(), c.organization, c.Username(token))
+	member, _, err := client.Organizations.IsMember(ctx, c.organization, c.Username(token))
 	if err != nil {
 		return false
 	}

@@ -12,6 +12,6 @@ type Provider interface {
 	StartSession(string) string
 	Exchange(context.Context, string) (*oauth2.Token, error)
 	Username(*oauth2.Token) string
-	Valid(*oauth2.Token) bool
+	Valid(context.Context, *oauth2.Token) bool
 	Revoke(*oauth2.Token) error
 }
