@@ -59,13 +59,17 @@ func (c *Config) logMsg(message error) {
 }
 
 // A new oauth2 http client.
-func (c *Config) newClient(token *oauth2.Token) *http.Client {
-	return c.config.Client(oauth2.NoContext, token)
+func (c *Config) newClient(ctx context.Context, token *oauth2.Token) *http.Client {
+	return c.config.Client(ctx, token)
 }
 
-func (c *Config) getURL(token *oauth2.Token, url string) (*bytes.Buffer, error) {
-	client := c.newClient(token)
-	resp, err := client.Get(url)
+func (c *Config) getURL(ctx context.Context, token *oauth2.Token, url string) (*bytes.Buffer, error) {
+	client := c.newClient(ctx, token)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +84,9 @@ func (c *Config) getURL(token *oauth2.Token, url string) (*bytes.Buffer, error) 
 }
 
 // Gets info on the current user.
-func (c *Config) getUser(token *oauth2.Token) *serviceUser {
+func (c *Config) getUser(ctx context.Context, token *oauth2.Token) *serviceUser {
 	url := c.apiurl + "user"
-	body, err := c.getURL(token, url)
+	body, err := c.getURL(ctx, token, url)
 	if err != nil {
 		c.logMsg(fmt.Errorf("failed to get user: %w", err))
 		return nil
@@ -96,9 +100,9 @@ func (c *Config) getUser(token *oauth2.Token) *serviceUser {
 }
 
 // Gets current user group membership info.
-func (c *Config) checkGroupMembership(token *oauth2.Token, uid int, group string) bool {
+func (c *Config) checkGroupMembership(ctx context.Context, token *oauth2.Token, uid int, group string) bool {
 	url := fmt.Sprintf("%sgroups/%s/members/%d", c.apiurl, group, uid)
-	body, err := c.getURL(token, url)
+	body, err := c.getURL(ctx, token, url)
 	if err != nil {
 		c.logMsg(fmt.Errorf("failed to fetch group memberships: %w", err))
 		return false
@@ -170,7 +174,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 		metrics.M.AuthValid.WithLabelValues("gitlab").Inc()
 		return true
 	}
-	u := c.getUser(token)
+	u := c.getUser(ctx, token)
 	if u == nil {
 		c.logMsg(errors.New("auth fail (unable to fetch user information)"))
 		return false
@@ -190,7 +194,7 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 	for idx, group := range c.groups {
 		// url.QueryEscape is necessary when we aren't using the group IDs and we are checking a subgroup:
 		// https://gitlab.com/gitlab-org/gitlab-foss/-/issues/29296#:~:text=You%27ll%20need%20to%20encode%20the%20full%20path%20to%20the%20group
-		isMember := c.checkGroupMembership(token, u.ID, url.QueryEscape(group))
+		isMember := c.checkGroupMembership(ctx, token, u.ID, url.QueryEscape(group))
 		if !isMember && idx == len(c.groups)-1 {
 			c.logMsg(fmt.Errorf("auth failure (user '%s' is not member of group '%s')", u.Username, group))
 			return false
@@ -232,7 +236,7 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 
 // Username retrieves the username of the Gitlab user.
 func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
-	u := c.getUser(token)
+	u := c.getUser(ctx, token)
 	if u == nil {
 		return ""
 	}
