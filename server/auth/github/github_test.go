@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nsheridan/cashier/server/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/nsheridan/cashier/server/config"
 )
 
 var (
