@@ -39,7 +39,8 @@ jobs:
         run: make
 
   docker_image:
-    if: success() && github.ref == 'refs/heads/master'
+    needs: build
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
