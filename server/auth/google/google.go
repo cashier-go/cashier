@@ -99,9 +99,18 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 
 // Revoke disables the access token.
 func (c *Config) Revoke(ctx context.Context, token *oauth2.Token) error {
-	h := c.newClient(ctx, token)
-	_, err := h.Get(fmt.Sprintf(revokeURL, token.AccessToken))
-	return err
+	client := c.newClient(ctx, token)
+	u := fmt.Sprintf(revokeURL, token.AccessToken)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
 }
 
 // StartSession retrieves an authentication endpoint from Google.
