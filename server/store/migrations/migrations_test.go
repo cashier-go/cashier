@@ -1,9 +1,9 @@
 package migrations
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/user"
 	"path"

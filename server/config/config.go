@@ -153,7 +153,7 @@ func ReadConfig(f string) (*Config, error) {
 		return nil, fmt.Errorf("unable to read config from file %s: %w", f, err)
 	}
 	if err := hcl.Unmarshal(bs, config); err != nil {
-		return nil, fmt.Errorf("error parsing config: %v", err)
+		return nil, fmt.Errorf("error parsing config: %w", err)
 	}
 	if err := setFromVault(config); err != nil {
 		return nil, err

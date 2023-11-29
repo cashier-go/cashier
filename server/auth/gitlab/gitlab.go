@@ -77,7 +77,7 @@ func (c *Config) getURL(ctx context.Context, token *oauth2.Token, url string) (*
 	var body bytes.Buffer
 	io.Copy(&body, resp.Body)
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("gitlab error(http: %d) getting %s: '%s'",
+		return nil, fmt.Errorf("gitlab error(http: %d) getting %s: %q",
 			resp.StatusCode, url, body.String())
 	}
 	return &body, nil
@@ -93,7 +93,7 @@ func (c *Config) getUser(ctx context.Context, token *oauth2.Token) *serviceUser 
 	}
 	var user serviceUser
 	if err := json.NewDecoder(body).Decode(&user); err != nil {
-		c.logMsg(fmt.Errorf("failed to decode user (%s): %s", url, err))
+		c.logMsg(fmt.Errorf("failed to decode user (%s): %w", url, err))
 		return nil
 	}
 	return &user
@@ -109,7 +109,7 @@ func (c *Config) checkGroupMembership(ctx context.Context, token *oauth2.Token, 
 	}
 	var m serviceGroupMember
 	if err := json.NewDecoder(body).Decode(&m); err != nil {
-		c.logMsg(fmt.Errorf("failed to parse groups (%s): %s", url, err))
+		c.logMsg(fmt.Errorf("failed to parse groups (%s): %w", url, err))
 		return false
 	}
 	return m.ID == uid
@@ -196,16 +196,16 @@ func (c *Config) Valid(ctx context.Context, token *oauth2.Token) bool {
 		// https://gitlab.com/gitlab-org/gitlab-foss/-/issues/29296#:~:text=You%27ll%20need%20to%20encode%20the%20full%20path%20to%20the%20group
 		isMember := c.checkGroupMembership(ctx, token, u.ID, url.QueryEscape(group))
 		if !isMember && idx == len(c.groups)-1 {
-			c.logMsg(fmt.Errorf("auth failure (user '%s' is not member of group '%s')", u.Username, group))
+			c.logMsg(fmt.Errorf("auth failure (user %q is not member of group %q)", u.Username, group))
 			return false
 		}
 
 		if isMember {
-			c.logMsg(fmt.Errorf("auth Success (user '%s' is a member of group '%s')", u.Username, group))
+			c.logMsg(fmt.Errorf("auth Success (user %q is a member of group %q)", u.Username, group))
 			break
 		}
 
-		c.logMsg(fmt.Errorf("auth failure (user '%s' is not a member of group '%s')", u.Username, group))
+		c.logMsg(fmt.Errorf("auth failure (user %q is not a member of group %q)", u.Username, group))
 	}
 
 	metrics.M.AuthValid.WithLabelValues("gitlab").Inc()

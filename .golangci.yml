@@ -1,0 +1,30 @@
+linters-settings:
+  govet:
+    check-shadowing: true
+  revive:
+    rules:
+      - name: unused-parameter
+        severity: warning
+        disabled: true
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - errorlint
+    - gofmt
+    - gosimple
+    - govet
+    - ineffassign
+    - revive
+    - staticcheck
+    - unused
+
+run:
+  timeout: 5m
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - bodyclose

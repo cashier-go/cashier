@@ -105,7 +105,7 @@ func New(conf *config.SSH) (*KeySigner, error) {
 	}
 	validity, err := time.ParseDuration(conf.MaxAge)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing duration '%s': %w", conf.MaxAge, err)
+		return nil, fmt.Errorf("error parsing duration %q: %w", conf.MaxAge, err)
 	}
 	return &KeySigner{
 		ca:          key,
