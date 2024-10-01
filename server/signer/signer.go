@@ -13,9 +13,9 @@ import (
 	"github.com/stripe/krl"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/store"
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/server/store"
 )
 
 var defaultPermissions = map[string]string{

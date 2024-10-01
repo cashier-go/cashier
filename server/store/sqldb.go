@@ -12,7 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
 
-	"github.com/nsheridan/cashier/server/config"
+	"github.com/cashier-go/cashier/server/config"
 )
 
 var _ CertStorer = (*sqlStore)(nil)

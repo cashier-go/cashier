@@ -1,4 +1,4 @@
-module github.com/nsheridan/cashier
+module github.com/cashier-go/cashier
 
 go 1.21
 

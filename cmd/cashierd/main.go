@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server"
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/wkfs/vaultfs"
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/server"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/server/wkfs/vaultfs"
 	"github.com/nsheridan/wkfs/s3"
 )
 

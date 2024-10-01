@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/nsheridan/cashier/server/auth"
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/metrics"
+	"github.com/cashier-go/cashier/server/auth"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/server/metrics"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/microsoft"

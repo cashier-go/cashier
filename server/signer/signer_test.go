@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/store"
-	"github.com/nsheridan/cashier/testdata"
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/server/store"
+	"github.com/cashier-go/cashier/testdata"
 	"github.com/stripe/krl"
 
 	"golang.org/x/crypto/ssh"

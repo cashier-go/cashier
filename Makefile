@@ -1,7 +1,7 @@
 CASHIER_CMD := ./cmd/cashier
 CASHIERD_CMD := ./cmd/cashierd
 SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*')
-VERSION_PKG := github.com/nsheridan/cashier/lib.Version
+VERSION_PKG := github.com/cashier-go/cashier/lib.Version
 VERSION := $(shell git describe --tags --always --dirty)
 
 GOTOOLCHAIN=local

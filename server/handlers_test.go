@@ -19,12 +19,12 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/stripe/krl"
 
-	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/auth/testprovider"
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/signer"
-	"github.com/nsheridan/cashier/server/store"
-	"github.com/nsheridan/cashier/testdata"
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/server/auth/testprovider"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/server/signer"
+	"github.com/cashier-go/cashier/server/store"
+	"github.com/cashier-go/cashier/testdata"
 )
 
 var a *application

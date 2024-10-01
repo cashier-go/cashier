@@ -58,7 +58,7 @@ The client receives the certificate and loads it and the private key into the ss
 The user can now ssh to the production machine, and continue to ssh to any machine that trusts the CA signing key until the certificate is revoked or expires or is removed from the agent.
 
 # Installing
-Stable versions can be obtained from [the release page](https://github.com/nsheridan/cashier/releases). Releases contain both static and dynamically linked executables. Statically linked executables do not have sqlite support.
+Stable versions can be obtained from [the release page](https://github.com/cashier-go/cashier/releases). Releases contain both static and dynamically linked executables. Statically linked executables do not have sqlite support.
 
 Note that installing using standard Go tools is possible, but the master branch should be considered unstable.
 
@@ -67,9 +67,9 @@ The server requires a configuration file ([sample config](example-server.conf)).
 See [the configuration section](#configuration) for more detail.
 
 ## Docker
-A [docker image is available](https://hub.docker.com/r/nsheridan/cashier). Example usage:
+A [docker image is available](https://hub.docker.com/r/cashier-go/cashier). Example usage:
 ```
-docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier nsheridan/cashier
+docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier cashier-go/cashier
 ```
 
 # Requirements

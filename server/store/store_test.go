@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/testdata"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/testdata"
 	"github.com/stretchr/testify/assert"
 
 	"golang.org/x/crypto/ssh"

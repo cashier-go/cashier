@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nsheridan/cashier/server/config"
+	"github.com/cashier-go/cashier/server/config"
 )
 
 var (

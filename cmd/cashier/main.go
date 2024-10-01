@@ -13,8 +13,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/nsheridan/cashier/client"
-	"github.com/nsheridan/cashier/lib"
+	"github.com/cashier-go/cashier/client"
+	"github.com/cashier-go/cashier/lib"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/agent"

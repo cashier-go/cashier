@@ -20,7 +20,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 
-	"github.com/nsheridan/cashier/lib"
+	"github.com/cashier-go/cashier/lib"
 )
 
 var errNeedsReason = errors.New("reason required")

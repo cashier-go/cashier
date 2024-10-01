@@ -16,9 +16,9 @@ import (
 	"github.com/gorilla/csrf"
 	"golang.org/x/oauth2"
 
-	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/store"
-	"github.com/nsheridan/cashier/server/templates"
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/server/store"
+	"github.com/cashier-go/cashier/server/templates"
 )
 
 func tokenFromRequest(r *http.Request) *oauth2.Token {

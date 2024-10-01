@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/nsheridan/cashier/server/auth"
+	"github.com/cashier-go/cashier/server/auth"
 
 	"golang.org/x/oauth2"
 )

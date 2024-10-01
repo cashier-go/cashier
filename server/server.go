@@ -26,16 +26,16 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/oauth2"
 
-	"github.com/nsheridan/cashier/lib"
-	"github.com/nsheridan/cashier/server/auth"
-	"github.com/nsheridan/cashier/server/auth/github"
-	"github.com/nsheridan/cashier/server/auth/gitlab"
-	"github.com/nsheridan/cashier/server/auth/google"
-	"github.com/nsheridan/cashier/server/auth/microsoft"
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/metrics"
-	"github.com/nsheridan/cashier/server/signer"
-	"github.com/nsheridan/cashier/server/store"
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/server/auth"
+	"github.com/cashier-go/cashier/server/auth/github"
+	"github.com/cashier-go/cashier/server/auth/gitlab"
+	"github.com/cashier-go/cashier/server/auth/google"
+	"github.com/cashier-go/cashier/server/auth/microsoft"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/server/metrics"
+	"github.com/cashier-go/cashier/server/signer"
+	"github.com/cashier-go/cashier/server/store"
 )
 
 // Server is a convenience wrapper around a *httpServer

@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nsheridan/cashier/server/config"
-	"github.com/nsheridan/cashier/server/metrics"
+	"github.com/cashier-go/cashier/server/config"
+	"github.com/cashier-go/cashier/server/metrics"
 
 	"golang.org/x/oauth2"
 )
