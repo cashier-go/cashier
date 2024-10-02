@@ -21,7 +21,7 @@ require (
 	github.com/nsheridan/wkfs v0.0.0-20170113005747-e871f010de47
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/prometheus/client_golang v1.18.0
-	github.com/rubenv/sql-migrate v1.6.1
+	github.com/rubenv/sql-migrate v1.7.0
 	github.com/sid77/drop v0.0.0-20171115104544-48930369f4db
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
