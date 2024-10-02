@@ -1,6 +1,7 @@
 module github.com/cashier-go/cashier
 
 go 1.21
+toolchain go1.23.2
 
 require (
 	github.com/go-sql-driver/mysql v1.8.1
@@ -9,7 +10,7 @@ require (
 	github.com/gorilla/csrf v1.7.2
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
-	github.com/gorilla/sessions v1.2.2
+	github.com/gorilla/sessions v1.4.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/hcl v1.0.0
 	github.com/hashicorp/vault/api v1.15.0
