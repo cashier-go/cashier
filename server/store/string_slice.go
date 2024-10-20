@@ -24,7 +24,6 @@ func (s StringSlice) Value() (driver.Value, error) {
 // off the wire and storing the result in the StringSlice.
 func (s *StringSlice) Scan(value interface{}) error {
 	if value == nil {
-		s = &StringSlice{}
 		return nil
 	}
 	var err error

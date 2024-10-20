@@ -79,12 +79,6 @@ func (ms *memoryStore) Close() error {
 	return nil
 }
 
-func (ms *memoryStore) clear() {
-	for k := range ms.certs {
-		delete(ms.certs, k)
-	}
-}
-
 // newMemoryStore returns an in-memory CertStorer.
 func newMemoryStore() *memoryStore {
 	return &memoryStore{
