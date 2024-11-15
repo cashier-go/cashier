@@ -11,7 +11,9 @@ GOARCH ?= $(shell go env GOARCH)
 CGO_ENABLED ?= $(shell go env CGO_ENABLED)
 
 ifeq ($(GOOS), linux)
-LINKER_FLAGS ?= -linkmode external -w -extldflags -static
+  ifeq ($(CGO_ENABLED), 1)
+    LINKER_FLAGS ?= -linkmode external -w -extldflags -static
+  endif
 endif
 
 DOCKER_ARCHS := amd64 arm64 arm
@@ -25,7 +27,8 @@ all: build
 
 .PHONY: test
 test:
-	go test -race ./...
+	# CGO is required to use the race detector
+	CGO_ENABLED=1 go test -race ./...
 
 .PHONY: lint
 lint: dep

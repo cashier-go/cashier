@@ -3,11 +3,11 @@ package store
 import (
 	"embed"
 	"fmt"
-	"io/fs"
 	"log"
 	"net"
 	"time"
 
+	_ "github.com/glebarez/go-sqlite/compat" // required to register sqlite drivers
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -94,10 +94,6 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 }
 
 func autoMigrate(driver string, conn *sqlx.DB) error {
-	fs.WalkDir(migrationFS, ".", func(path string, d fs.DirEntry, err error) error {
-		fmt.Println(path)
-		return nil
-	})
 	log.Print("Executing any pending schema migrations")
 	var err error
 	migrate.SetTable("schema_migrations")

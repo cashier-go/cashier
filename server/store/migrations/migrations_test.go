@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"testing"
 
+	_ "github.com/glebarez/go-sqlite/compat"
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/mattn/go-sqlite3"
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
