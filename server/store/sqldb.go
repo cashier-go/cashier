@@ -7,12 +7,12 @@ import (
 	"net"
 	"time"
 
-	_ "github.com/glebarez/go-sqlite/compat" // required to register sqlite drivers
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
 
 	"github.com/cashier-go/cashier/server/config"
+	_ "github.com/cashier-go/cashier/server/store/sqlite3" // required to register the sqlite3 driver
 )
 
 var _ CertStorer = (*sqlStore)(nil)

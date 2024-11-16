@@ -11,11 +11,12 @@ import (
 	"reflect"
 	"testing"
 
-	_ "github.com/glebarez/go-sqlite/compat"
 	"github.com/go-sql-driver/mysql"
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/cashier-go/cashier/server/store/sqlite3" // required to register the sqlite3 driver
 )
 
 func TestSQLiteMigrations(t *testing.T) {
