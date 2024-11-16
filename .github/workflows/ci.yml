@@ -4,6 +4,7 @@ name: Go package
 on: [push]
 
 env:
+  CGO_ENABLED: 0
   MYSQL_TEST: true
   MYSQL_TEST_USER: 'dbuser'
   MYSQL_TEST_PASS: 'dbpass'
@@ -23,7 +24,6 @@ jobs:
       - name: start mysql
         uses: shogo82148/actions-setup-mysql@6ab6fe9e7aaea1bb6057a1603872c3a6f644f7a3 # v1.38.1
         with:
-          mysql-version: ${{ matrix.mysql }}
           user: ${{ env.MYSQL_TEST_USER }}
           password: ${{ env.MYSQL_TEST_PASS }}
       - name: create database

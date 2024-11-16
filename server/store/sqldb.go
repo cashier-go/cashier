@@ -3,7 +3,6 @@ package store
 import (
 	"embed"
 	"fmt"
-	"io/fs"
 	"log"
 	"net"
 	"time"
@@ -13,6 +12,7 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 
 	"github.com/cashier-go/cashier/server/config"
+	_ "github.com/cashier-go/cashier/server/store/sqlite3" // required to register the sqlite3 driver
 )
 
 var _ CertStorer = (*sqlStore)(nil)
@@ -94,10 +94,6 @@ func newSQLStore(c config.Database) (*sqlStore, error) {
 }
 
 func autoMigrate(driver string, conn *sqlx.DB) error {
-	fs.WalkDir(migrationFS, ".", func(path string, d fs.DirEntry, err error) error {
-		fmt.Println(path)
-		return nil
-	})
 	log.Print("Executing any pending schema migrations")
 	var err error
 	migrate.SetTable("schema_migrations")

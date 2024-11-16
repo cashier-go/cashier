@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cashier-go/cashier/server/helpers/vault"
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/hcl"
-	"github.com/cashier-go/cashier/server/helpers/vault"
 )
 
 // Config holds the final server configuration.
