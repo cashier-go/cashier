@@ -12,6 +12,10 @@ on:
 permissions:  # added using https://github.com/step-security/secure-repo
   contents: read
 
+env:
+  CGO_ENABLED: 0
+  GOTOOLCHAIN: local
+
 jobs:
   golangci:
     permissions:
@@ -26,11 +30,11 @@ jobs:
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
-      - name: Install snmp_exporter/generator dependencies
-        run: sudo apt-get update && sudo apt-get -y install libsnmp-dev
-        if: github.repository == 'prometheus/snmp_exporter'
+      # Force a build and see if it speeds up the linter.
+      - name: Build
+        run: make build
       - name: Lint
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           args: --verbose
-          version: v1.60.2
+          version: v1.62.2

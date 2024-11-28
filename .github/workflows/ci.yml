@@ -5,6 +5,7 @@ on: [push]
 
 env:
   CGO_ENABLED: 0
+  GOTOOLCHAIN: local
   MYSQL_TEST: true
   MYSQL_TEST_USER: 'dbuser'
   MYSQL_TEST_PASS: 'dbpass'
