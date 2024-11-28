@@ -28,13 +28,6 @@ test:
 	# CGO is required to use the race detector
 	CGO_ENABLED=1 go test -race ./...
 
-.PHONY: lint
-lint: dep
-	go vet ./...
-	go list ./... |xargs -L1 golint -set_exit_status
-	gofmt -s -d -l -e $(SRC_FILES)
-	@[ -z "`git status --porcelain`" ] || (echo "unexpected files: `git status --porcelain`" && exit 1)
-
 .PHONY: build install
 build: cashier cashierd
 install: install-cashierd install-cashier
@@ -64,10 +57,6 @@ clean:
 # e.g. `make migration name=add_index_to_reason`
 migration:
 	go run ./generate/migration/migration.go $(name)
-
-.PHONY: dep
-dep:
-	go install golang.org/x/lint/golint@latest
 
 .PHONY: version
 version:

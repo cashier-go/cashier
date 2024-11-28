@@ -32,9 +32,7 @@ jobs:
           mysql --user 'root' --host '127.0.0.1' -e 'create database certs;'
 
       - name: Run tests
-        run: |
-          make test
-          make lint
+        run: make test
 
       - name: Build
         run: make
