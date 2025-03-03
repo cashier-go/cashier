@@ -1,6 +1,3 @@
-CASHIER_CMD := ./cmd/cashier
-CASHIERD_CMD := ./cmd/cashierd
-SRC_FILES = $(shell find * -type f -name '*.go' -not -path 'vendor/*')
 VERSION_PKG := github.com/cashier-go/cashier/lib.Version
 VERSION := $(shell git describe --tags --always --dirty)
 
@@ -13,12 +10,6 @@ ifeq ($(GOOS), linux)
     LINKER_FLAGS ?= -linkmode external -w -extldflags -static
   endif
 endif
-
-DOCKER_ARCHS := amd64 arm64 arm
-BUILD_DOCKER_ARCHS = $(addprefix docker-,$(DOCKER_ARCHS))
-TAG_DOCKER_ARCHS = $(addprefix docker-tag-latest-,$(DOCKER_ARCHS))
-
-DOCKER_IMAGE_TAG ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
 
 .PHONY: all
 all: build
@@ -37,16 +28,6 @@ install: install-cashierd install-cashier
 
 install-%:
 	CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS) go install -ldflags="-X $(VERSION_PKG)=$(VERSION) $(LINKER_FLAGS)" ./cmd/$*
-
-.PHONY: docker-all-images $(BUILD_DOCKER_ARCHS)
-docker-all-images: $(BUILD_DOCKER_ARCHS)
-$(BUILD_DOCKER_ARCHS): docker-%:
-	docker build --platform linux/$* -t linux-$*:$(DOCKER_IMAGE_TAG) .
-
-.PHONY: docker-tag-all-latest $(TAG_DOCKER_ARCHS)
-docker-tag-all-latest: $(TAG_DOCKER_ARCHS)
-$(TAG_DOCKER_ARCHS): docker-tag-latest-%:
-	docker tag "linux-$*:$(DOCKER_IMAGE_TAG)" "linux-$*:latest"
 
 .PHONY: clean
 clean:
