@@ -28,7 +28,7 @@ require (
 	github.com/stripe/krl v0.0.0-20220202203423-9dc12b164150
 	go4.org v0.0.0-20230225012048-214862532bf5
 	golang.org/x/crypto v0.35.0
-	golang.org/x/oauth2 v0.27.0
+	golang.org/x/oauth2 v0.28.0
 	google.golang.org/api v0.223.0
 	modernc.org/sqlite v1.36.0
 )
