@@ -3,7 +3,7 @@ module github.com/cashier-go/cashier
 go 1.23.6
 
 require (
-	github.com/go-sql-driver/mysql v1.8.1
+	github.com/go-sql-driver/mysql v1.9.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/csrf v1.7.2
