@@ -30,7 +30,7 @@ require (
 	golang.org/x/crypto v0.36.0
 	golang.org/x/oauth2 v0.28.0
 	google.golang.org/api v0.227.0
-	modernc.org/sqlite v1.36.0
+	modernc.org/sqlite v1.36.1
 )
 
 require (
