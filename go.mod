@@ -1,6 +1,7 @@
 module github.com/cashier-go/cashier
 
 go 1.23.6
+toolchain go1.24.1
 
 require (
 	github.com/go-sql-driver/mysql v1.9.1
@@ -30,7 +31,7 @@ require (
 	golang.org/x/crypto v0.36.0
 	golang.org/x/oauth2 v0.28.0
 	google.golang.org/api v0.227.0
-	modernc.org/sqlite v1.36.0
+	modernc.org/sqlite v1.36.3
 )
 
 require (
