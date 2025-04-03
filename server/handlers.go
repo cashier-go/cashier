@@ -91,9 +91,12 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.EscapedPath() {
 	case "/auth/login":
-		buf := make([]byte, 32)
-		io.ReadFull(rand.Reader, buf)
-		state := hex.EncodeToString(buf)
+		state := r.URL.Query().Get("state")
+		if state == "" {
+			buf := make([]byte, 32)
+			io.ReadFull(rand.Reader, buf)
+			state = hex.EncodeToString(buf)
+		}
 		a.setSessionVariable(w, r, "state", state)
 		http.Redirect(w, r, a.authprovider.StartSession(state), http.StatusFound)
 	case "/auth/callback":
@@ -126,6 +129,9 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))
 			return
+		}
+		if a.config.UseSSHServer {
+			a.authCallbackManager.HandleCallback(state, token)
 		}
 		http.Redirect(w, r, originURL, http.StatusFound)
 	default:

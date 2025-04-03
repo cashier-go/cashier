@@ -40,13 +40,15 @@ import (
 
 // Server is a convenience wrapper around a *httpServer
 type Server struct {
-	httpServer *http.Server
-	logfile    *os.File
+	httpServer  *http.Server
+	logfile     *os.File
+	application *application
 }
 
 // Shutdown the server and perform any cleanup
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.logfile.Close()
+	s.application.authCallbackManager.Shutdown()
 	return s.httpServer.Shutdown(ctx)
 }
 
@@ -90,14 +92,14 @@ func setupTLS(l net.Listener, conf *config.Server) (net.Listener, error) {
 func Run(conf *config.Config) (*Server, error) {
 	var err error
 
-	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
-	l, err := net.Listen("tcp", laddr)
+	httpServerListenAddress := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
+	httpServerListener, err := net.Listen("tcp", httpServerListenAddress)
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on %s:%d", conf.Server.Addr, conf.Server.Port)
 	}
 
 	if conf.Server.UseTLS {
-		l, err = setupTLS(l, conf.Server)
+		httpServerListener, err = setupTLS(httpServerListener, conf.Server)
 		if err != nil {
 			return nil, fmt.Errorf("unable to configure TLS: %w", err)
 		}
@@ -144,14 +146,16 @@ func Run(conf *config.Config) (*Server, error) {
 	}
 
 	app := &application{
-		cookiestore:   sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
-		requireReason: conf.Server.RequireReason,
-		keysigner:     keysigner,
-		certstore:     certstore,
-		authprovider:  authprovider,
-		config:        conf.Server,
-		router:        mux.NewRouter(),
+		cookiestore:         sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
+		requireReason:       conf.Server.RequireReason,
+		keysigner:           keysigner,
+		certstore:           certstore,
+		authprovider:        authprovider,
+		config:              conf.Server,
+		router:              mux.NewRouter(),
+		authCallbackManager: NewAuthcallbackManager(10 * time.Minute),
 	}
+
 	app.cookiestore.Options = &sessions.Options{
 		MaxAge:   900,
 		Path:     "/",
@@ -169,18 +173,41 @@ func Run(conf *config.Config) (*Server, error) {
 
 	app.setupRoutes()
 	r := handlers.LoggingHandler(logfile, app.router)
-	s := &http.Server{
+	httpServer := &http.Server{
 		Handler:      r,
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
 
-	log.Printf("Starting server on %s", laddr)
-	go s.Serve(l)
+	log.Printf("Starting HTTP server on %s", httpServerListenAddress)
+	go httpServer.Serve(httpServerListener)
+
+	if conf.Server.UseSSHServer {
+		// Read the SSH host key
+		hostKey, err := wkfs.ReadFile(conf.SSH.SigningKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read SSH host key: %w", err)
+		}
+
+		sshServer, err := newSSHServer(app, hostKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create SSH server: %w", err)
+		}
+
+		sshAddress := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.SSHPort)
+		log.Printf("Starting SSH server on %s", sshAddress)
+		go func() {
+			if err := sshServer.ListenAndServe(sshAddress); err != nil {
+				log.Printf("SSH server error: %v", err)
+			}
+		}()
+	}
+
 	return &Server{
-		httpServer: s,
-		logfile:    logfile,
+		httpServer:  httpServer,
+		logfile:     logfile,
+		application: app,
 	}, nil
 }
 
@@ -213,13 +240,14 @@ var static embed.FS
 
 // application contains local context - cookiestore, authsession etc.
 type application struct {
-	cookiestore   *sessions.CookieStore
-	authprovider  auth.Provider
-	certstore     store.CertStorer
-	keysigner     *signer.KeySigner
-	router        *mux.Router
-	config        *config.Server
-	requireReason bool
+	cookiestore         *sessions.CookieStore
+	authprovider        auth.Provider
+	certstore           store.CertStorer
+	keysigner           *signer.KeySigner
+	router              *mux.Router
+	config              *config.Server
+	requireReason       bool
+	authCallbackManager *AuthCallbackManager
 }
 
 func (a *application) setupRoutes() {
