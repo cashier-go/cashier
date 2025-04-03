@@ -43,7 +43,7 @@ See also the `CERTIFICATES` [section](http://man.openbsd.org/OpenBSD-current/man
 ## How it works
 The user wishes to ssh to a production machine.
 
-They run a command which opens the CA site (e.g. https://sshca.exampleorg.com) in a browser and they login.
+They run a command which opens the CA site (e.g. https://sshca.example.com) in a browser and they login.
 
 The CA displays a token which the user copies.
 
