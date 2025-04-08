@@ -19,7 +19,7 @@ require (
 	github.com/nsheridan/autocert-wkfs-cache v0.0.0-20170410203600-573c67f16542
 	github.com/nsheridan/wkfs v0.0.0-20170113005747-e871f010de47
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
-	github.com/prometheus/client_golang v1.21.1
+	github.com/prometheus/client_golang v1.22.0
 	github.com/rubenv/sql-migrate v1.7.1
 	github.com/sid77/drop v0.0.0-20171115104544-48930369f4db
 	github.com/spf13/pflag v1.0.6
@@ -76,7 +76,6 @@ require (
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
