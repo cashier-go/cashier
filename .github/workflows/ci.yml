@@ -23,7 +23,7 @@ jobs:
           go-version-file: go.mod
 
       - name: start mysql
-        uses: shogo82148/actions-setup-mysql@7bb56b6ec54579fca90e6ff5c35f8816d0ceedb5 # v1.42.0
+        uses: shogo82148/actions-setup-mysql@587f26ff70f29f15f59c32b4d6b3ebcf84e66b58 # v1.43.0
         with:
           user: ${{ env.MYSQL_TEST_USER }}
           password: ${{ env.MYSQL_TEST_PASS }}
