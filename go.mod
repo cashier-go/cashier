@@ -6,7 +6,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.1
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/csrf v1.7.2
+	github.com/gorilla/csrf v1.7.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/sessions v1.4.0
