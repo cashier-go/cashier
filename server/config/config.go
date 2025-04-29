@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -40,6 +41,7 @@ type Server struct {
 	LetsEncryptCache      string   `hcl:"letsencrypt_cachedir"`
 	Addr                  string   `hcl:"address"`
 	Port                  int      `hcl:"port"`
+	PublicURLBase         string   `hcl:"public_url_base"`
 	User                  string   `hcl:"user"`
 	CookieSecret          string   `hcl:"cookie_secret"`
 	CSRFSecret            string   `hcl:"csrf_secret"`
@@ -47,6 +49,9 @@ type Server struct {
 	Database              Database `hcl:"database"`
 	RequireReason         bool     `hcl:"require_reason"`
 	ShutdownTimeout       string   `hcl:"shutdown_timeout"`
+	SSHPort               int      `hcl:"ssh_server_port"`
+	UseSSHServer          bool     `hcl:"ssh_server_enable"`
+	SSHServerKey          string   `hcl:"ssh_server_key"`
 }
 
 // Auth holds the configuration specific to the OAuth provider.
@@ -145,6 +150,17 @@ func setFromVault(c *Config) error {
 	return errs.ErrorOrNil()
 }
 
+func getOutboundIP() (net.IP, error) {
+	// Don't actually connect, just resolve endpoints
+	conn, err := net.Dial("udp", "192.0.2.0:80")
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP, nil
+}
+
 // ReadConfig parses a hcl configuration file into a Config struct.
 func ReadConfig(f string) (*Config, error) {
 	config := &Config{}
@@ -161,6 +177,23 @@ func ReadConfig(f string) (*Config, error) {
 	setFromEnvironment(config)
 	if err := verifyConfig(config); err != nil {
 		return nil, fmt.Errorf("unabe to verify config: %w", err)
+	}
+	if config.Server.PublicURLBase == "" {
+		if config.Server.UseTLS {
+			config.Server.PublicURLBase = "https://"
+		} else {
+			config.Server.PublicURLBase = "http://"
+		}
+		if config.Server.Addr == "0.0.0.0" {
+			outboundIP, err := getOutboundIP()
+			if err != nil {
+				return nil, err
+			}
+			config.Server.PublicURLBase = config.Server.PublicURLBase + outboundIP.String()
+		} else {
+			config.Server.PublicURLBase = config.Server.PublicURLBase + config.Server.Addr
+		}
+		config.Server.PublicURLBase = config.Server.PublicURLBase + ":" + fmt.Sprintf("%d", config.Server.Port)
 	}
 	return config, nil
 }
