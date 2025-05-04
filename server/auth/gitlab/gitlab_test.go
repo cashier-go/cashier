@@ -15,7 +15,7 @@ var (
 	oauthClientSecret = "secret"
 	oauthCallbackURL  = "url"
 	allusers          = ""
-	siteurl           = "https://exampleorg/"
+	siteurl           = "https://example.com/"
 	groups            = "devops,cashier"
 )
 
@@ -30,13 +30,13 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewBrokenSiteURL(t *testing.T) {
-	siteurl = "https://exampleorg"
+	siteurl = "https://example.com"
 	a := assert.New(t)
 
 	_, err := newGitlab()
 	a.EqualError(err, "gitlab_opts siteurl must end in /")
 
-	siteurl = "https://exampleorg/"
+	siteurl = "https://example.com/"
 }
 
 func TestBadAllUsers(t *testing.T) {
@@ -48,7 +48,7 @@ func TestBadAllUsers(t *testing.T) {
 	a.EqualError(err, "gitlab_opts if allusers is set, siteurl must be set")
 
 	allusers = ""
-	siteurl = "https://exampleorg/"
+	siteurl = "https://example.com/"
 }
 
 func TestGoodAllUsers(t *testing.T) {
@@ -57,7 +57,7 @@ func TestGoodAllUsers(t *testing.T) {
 
 	p, _ := newGitlab()
 	s := p.StartSession("test_state")
-	a.Contains(s, "exampleorg/oauth/authorize")
+	a.Contains(s, "example.com/oauth/authorize")
 	a.Contains(s, "state=test_state")
 	a.Contains(s, fmt.Sprintf("client_id=%s", oauthClientID))
 
@@ -79,7 +79,7 @@ func TestStartSession(t *testing.T) {
 
 	p, _ := newGitlab()
 	s := p.StartSession("test_state")
-	a.Contains(s, "exampleorg/oauth/authorize")
+	a.Contains(s, "example.com/oauth/authorize")
 	a.Contains(s, "state=test_state")
 	a.Contains(s, fmt.Sprintf("client_id=%s", oauthClientID))
 }
