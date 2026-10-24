@@ -56,15 +56,16 @@ func (s *KeySigner) SignUserKey(req *lib.SignRequest, username string) (*ssh.Cer
 	if err != nil {
 		return nil, err
 	}
-	expires := time.Now().UTC().Add(s.validity)
-	if req.ValidUntil.After(expires) {
+	now := time.Now().UTC()
+	expires := now.Add(s.validity)
+	if !req.ValidUntil.After(now) || req.ValidUntil.After(expires) {
 		req.ValidUntil = expires
 	}
 	cert := &ssh.Certificate{
 		CertType:        ssh.UserCert,
 		Key:             pubkey,
-		KeyId:           fmt.Sprintf("%s_%d", username, time.Now().UTC().Unix()),
-		ValidAfter:      uint64(time.Now().UTC().Add(-5 * time.Minute).Unix()),
+		KeyId:           fmt.Sprintf("%s_%d", username, now.Unix()),
+		ValidAfter:      uint64(now.Add(-5 * time.Minute).Unix()),
 		ValidBefore:     uint64(req.ValidUntil.Unix()),
 		ValidPrincipals: []string{username},
 	}
