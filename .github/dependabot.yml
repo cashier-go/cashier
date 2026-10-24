@@ -3,9 +3,16 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
-
+      interval: "monthly"
+    groups:
+      github:
+        patterns:
+          - "actions/*"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+    groups:
+      golang.org-x:
+        patterns:
+          - "golang.org/x/*"
