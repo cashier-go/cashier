@@ -99,7 +99,7 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 	case "/auth/callback":
 		ctx := r.Context()
 		state := a.getSessionVariable(r, "state")
-		if r.FormValue("state") != state {
+		if state == "" || r.FormValue("state") != state {
 			log.Printf("Not authorized on /auth/callback")
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))

@@ -60,16 +60,35 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestCallbackHandler(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/auth/callback", nil)
-	req.Form = url.Values{"state": []string{"state"}, "code": []string{"abcdef"}}
-	resp := httptest.NewRecorder()
-	a.setSessionVariable(resp, req, "state", "state")
-	for _, cookie := range resp.Result().Cookies() {
-		req.AddCookie(cookie)
+	tests := []struct {
+		name     string
+		state    string
+		expected int
+	}{
+		{
+			name:     "valid",
+			state:    "state",
+			expected: http.StatusFound,
+		},
+		{
+			name:     "missing state",
+			expected: http.StatusUnauthorized,
+		},
 	}
-	a.router.ServeHTTP(resp, req)
-	if resp.Code != http.StatusFound && resp.Header().Get("Location") != "/" {
-		t.Errorf("Response: %d\nHeaders: %v", resp.Code, resp.Header())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/auth/callback", nil)
+			req.Form = url.Values{"state": []string{test.state}, "code": []string{"code"}}
+			resp := httptest.NewRecorder()
+			a.setSessionVariable(resp, req, "state", test.state)
+			for _, cookie := range resp.Result().Cookies() {
+				req.AddCookie(cookie)
+			}
+			a.router.ServeHTTP(resp, req)
+			if resp.Code != test.expected {
+				t.Errorf("got response %d, expected %d", resp.Code, test.expected)
+			}
+		})
 	}
 }
 

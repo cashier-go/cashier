@@ -106,3 +106,42 @@ func TestPermissions(t *testing.T) {
 		t.Errorf("Wrong options: wanted: %v got :%v", cert.CriticalOptions, want.options)
 	}
 }
+
+func TestCertValidity(t *testing.T) {
+	tests := []struct {
+		name       string
+		validUntil time.Time
+	}{
+		{
+			"unset",
+			time.Time{},
+		},
+		{
+			"in the past",
+			time.Now().Add(-1 * time.Hour),
+		},
+		{
+			"beyond max validity",
+			time.Now().Add(24 * time.Hour),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			r := &lib.SignRequest{
+				Key:        string(testdata.Pub),
+				ValidUntil: test.validUntil,
+			}
+			cert, err := signer.SignUserKey(r, "gopher1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			max := uint64(time.Now().UTC().Add(signer.validity).Unix())
+			if cert.ValidBefore > max {
+				t.Errorf("cert valid until %d, which is beyond the maximum of %d", cert.ValidBefore, max)
+			}
+			if cert.ValidBefore < max-60 {
+				t.Errorf("expected cert to be clamped to the maximum validity, got %d want ~%d", cert.ValidBefore, max)
+			}
+		})
+	}
+}

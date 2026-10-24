@@ -24,7 +24,7 @@ func setDefaults() {
 	viper.BindPFlag("key_size", pflag.Lookup("key_size"))
 	viper.BindPFlag("validity", pflag.Lookup("validity"))
 	viper.BindPFlag("key_file_prefix", pflag.Lookup("key_file_prefix"))
-	viper.SetDefault("validateTLSCertificate", true)
+	viper.SetDefault("validate_tls_certificate", true)
 }
 
 // ReadConfig reads the client configuration from a file into a Config struct.
