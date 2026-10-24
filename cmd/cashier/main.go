@@ -43,7 +43,7 @@ func main() {
 
 	c, err := client.ReadConfig(*cfg)
 	if err != nil {
-		log.Printf("Configuration error: %v\n", err)
+		log.Fatalf("Configuration error: %v\n", err)
 	}
 	log.Println("Generating new key pair")
 	priv, pub, err := client.GenerateKey(client.KeyType(c.Keytype), client.KeySize(c.Keysize))
