@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/user"
+	"slices"
 	"testing"
 	"time"
 
@@ -83,7 +84,10 @@ func testStore(t *testing.T, db CertStorer) {
 		t.Error(err)
 	}
 	if ret.KeyID != cert.KeyId {
-		t.Error("key mismatch")
+		t.Errorf("key mismatch: want %s, got %s", cert.KeyId, ret.KeyID)
+	}
+	if !slices.Equal(ret.Principals, cert.ValidPrincipals) {
+		t.Errorf("principal mismatch: want %s, got %s", cert.ValidPrincipals, ret.Principals)
 	}
 	if err = db.Revoke([]string{"key"}); err != nil {
 		t.Error(err)
