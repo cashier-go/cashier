@@ -162,12 +162,13 @@ func Sign(pub ssh.PublicKey, token string, conf *Config) (*ssh.Certificate, erro
 		resp, err = send(s, token, conf.CA, conf.ValidateTLSCertificate)
 		if err == nil {
 			break
-		}
-		if err != nil && errors.Is(err, errNeedsReason) {
-			s.Message = promptForReason()
-			continue
-		} else if err != nil {
-			return nil, fmt.Errorf("error sending request to CA: %w", err)
+		} else {
+			if errors.Is(err, errNeedsReason) {
+				s.Message = promptForReason()
+				continue
+			} else {
+				return nil, fmt.Errorf("error sending request to CA: %w", err)
+			}
 		}
 	}
 	if resp.Status != "ok" {

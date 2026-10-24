@@ -116,7 +116,7 @@ func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, erro
 	return t, nil
 }
 
-// Username retrieves the username portion of the user's email address.
+// Username retrieves the GitHub username
 func (c *Config) Username(ctx context.Context, token *oauth2.Token) string {
 	client := githubapi.NewClient(c.newClient(ctx, token))
 	u, _, err := client.Users.Get(ctx, "")

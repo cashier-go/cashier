@@ -90,14 +90,14 @@ func setupTLS(l net.Listener, conf *config.Server) (net.Listener, error) {
 func Run(conf *config.Config) (*Server, error) {
 	var err error
 
-	laddr := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
-	l, err := net.Listen("tcp", laddr)
+	httpServerListenAddress := fmt.Sprintf("%s:%d", conf.Server.Addr, conf.Server.Port)
+	httpServerListener, err := net.Listen("tcp", httpServerListenAddress)
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on %s:%d", conf.Server.Addr, conf.Server.Port)
 	}
 
 	if conf.Server.UseTLS {
-		l, err = setupTLS(l, conf.Server)
+		httpServerListener, err = setupTLS(httpServerListener, conf.Server)
 		if err != nil {
 			return nil, fmt.Errorf("unable to configure TLS: %w", err)
 		}
@@ -168,18 +168,18 @@ func Run(conf *config.Config) (*Server, error) {
 	}
 
 	app.setupRoutes()
-	r := handlers.LoggingHandler(logfile, app.router)
-	s := &http.Server{
-		Handler:      r,
+	httpServerLoggingHandler := handlers.LoggingHandler(logfile, app.router)
+	httpServer := &http.Server{
+		Handler:      httpServerLoggingHandler,
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
 
-	log.Printf("Starting server on %s", laddr)
-	go s.Serve(l)
+	log.Printf("Starting HTTP server on %s", httpServerListenAddress)
+	go httpServer.Serve(httpServerListener)
 	return &Server{
-		httpServer: s,
+		httpServer: httpServer,
 		logfile:    logfile,
 	}, nil
 }
