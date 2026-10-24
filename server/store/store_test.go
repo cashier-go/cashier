@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ssh"
+
 	"github.com/cashier-go/cashier/server/config"
 	"github.com/cashier-go/cashier/testdata"
-	"github.com/stretchr/testify/assert"
-
-	"golang.org/x/crypto/ssh"
 )
 
 func TestParseCertificate(t *testing.T) {

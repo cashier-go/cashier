@@ -4,8 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cashier-go/cashier/testdata"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/cashier-go/cashier/testdata"
 )
 
 func TestGetPublicKey(t *testing.T) {

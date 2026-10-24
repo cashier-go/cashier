@@ -7,9 +7,10 @@ import (
 	"path"
 	"time"
 
+	"go4.org/wkfs"
+
 	"github.com/cashier-go/cashier/server/config"
 	"github.com/cashier-go/cashier/server/helpers/vault"
-	"go4.org/wkfs"
 )
 
 // Register the /vault/ filesystem as a well-known filesystem.
