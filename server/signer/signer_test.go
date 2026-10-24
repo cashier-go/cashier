@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stripe/krl"
+	"golang.org/x/crypto/ssh"
+
 	"github.com/cashier-go/cashier/lib"
 	"github.com/cashier-go/cashier/server/store"
 	"github.com/cashier-go/cashier/testdata"
-	"github.com/stripe/krl"
-
-	"golang.org/x/crypto/ssh"
 )
 
 var (

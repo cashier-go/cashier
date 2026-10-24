@@ -13,11 +13,12 @@ import (
 	"path"
 	"time"
 
-	"github.com/cashier-go/cashier/client"
-	"github.com/cashier-go/cashier/lib"
 	"github.com/pkg/browser"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/agent"
+
+	"github.com/cashier-go/cashier/client"
+	"github.com/cashier-go/cashier/lib"
 )
 
 var (

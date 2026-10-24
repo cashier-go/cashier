@@ -13,17 +13,13 @@ linters:
       - linters:
           - errcheck
         path: _test.go
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
 formatters:
   enable:
     - gofmt
     - goimports
   exclusions:
     generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/cashier-go/cashier

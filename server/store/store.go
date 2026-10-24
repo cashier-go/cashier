@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/crypto/ssh"
+
 	"github.com/cashier-go/cashier/lib"
 	"github.com/cashier-go/cashier/server/config"
-	"golang.org/x/crypto/ssh"
 )
 
 // New returns a new configured database.

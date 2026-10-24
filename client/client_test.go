@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cashier-go/cashier/lib"
-	"github.com/cashier-go/cashier/testdata"
 	"github.com/stretchr/testify/suite"
-
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+
+	"github.com/cashier-go/cashier/lib"
+	"github.com/cashier-go/cashier/testdata"
 )
 
 type ClientSuite struct {
