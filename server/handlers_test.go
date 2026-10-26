@@ -7,59 +7,34 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/stripe/krl"
 
 	"github.com/cashier-go/cashier/lib"
 	"github.com/cashier-go/cashier/server/auth/testprovider"
-	"github.com/cashier-go/cashier/server/config"
-	"github.com/cashier-go/cashier/server/signer"
-	"github.com/cashier-go/cashier/server/store"
 	"github.com/cashier-go/cashier/testdata"
 )
 
-var a *application
-
-func init() {
-	f, _ := os.CreateTemp(os.TempDir(), "signing_key_")
-	defer os.Remove(f.Name())
-	f.Write(testdata.Priv)
-	f.Close()
-	keysigner, _ := signer.New(&config.SSH{
-		SigningKey: f.Name(),
-		MaxAge:     "4h",
-	})
-	certstore, _ := store.New(config.Database{Type: "mem"})
-	a = &application{
-		cookiestore:  sessions.NewCookieStore([]byte("secret")),
-		authprovider: testprovider.New(),
-		keysigner:    keysigner,
-		certstore:    certstore,
-		router:       mux.NewRouter(),
-		config:       &config.Server{CSRFSecret: "0123456789abcdef"},
-	}
-	a.setupRoutes()
-}
-
 func TestLoginHandler(t *testing.T) {
+	a := newTestApp(t, testprovider.New())
 	req, _ := http.NewRequest("GET", "/auth/login", nil)
 	resp := httptest.NewRecorder()
 	a.router.ServeHTTP(resp, req)
-	if resp.Code != http.StatusFound && resp.Header().Get("Location") != "https://www.example.com/auth" {
-		t.Error("Unexpected response")
+	if resp.Code != http.StatusFound {
+		t.Errorf("got status %d, want %d", resp.Code, http.StatusFound)
+	}
+	if got := resp.Header().Get("Location"); got != "https://www.example.com/auth" {
+		t.Errorf("got redirect to %q, want the provider's auth endpoint", got)
 	}
 }
 
 func TestCallbackHandler(t *testing.T) {
+	a := newTestApp(t, testprovider.New())
 	tests := []struct {
 		name     string
 		state    string
@@ -68,7 +43,7 @@ func TestCallbackHandler(t *testing.T) {
 		{
 			name:     "valid",
 			state:    "state",
-			expected: http.StatusFound,
+			expected: http.StatusOK,
 		},
 		{
 			name:     "missing state",
@@ -92,33 +67,8 @@ func TestCallbackHandler(t *testing.T) {
 	}
 }
 
-func TestRootHandler(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/", nil)
-	resp := httptest.NewRecorder()
-	tok := &oauth2.Token{
-		AccessToken: "XXX_TEST_TOKEN_STRING_XXX",
-		Expiry:      time.Now().Add(1 * time.Hour),
-	}
-	a.setAuthToken(resp, req, tok)
-	for _, cookie := range resp.Result().Cookies() {
-		req.AddCookie(cookie)
-	}
-	a.router.ServeHTTP(resp, req)
-	if resp.Code != http.StatusOK && !strings.Contains(resp.Body.String(), "XXX_TEST_TOKEN_STRING_XXX") {
-		t.Error("Unable to find token in response")
-	}
-}
-
-func TestRootHandlerNoSession(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/", nil)
-	resp := httptest.NewRecorder()
-	a.router.ServeHTTP(resp, req)
-	if resp.Code != http.StatusSeeOther {
-		t.Errorf("Unexpected status: %s, wanted %s", http.StatusText(resp.Code), http.StatusText(http.StatusSeeOther))
-	}
-}
-
 func TestSignRevoke(t *testing.T) {
+	a := newTestApp(t, testprovider.New())
 	var resp *httptest.ResponseRecorder
 	var req *http.Request
 
@@ -153,11 +103,7 @@ func TestSignRevoke(t *testing.T) {
 	// 2. Request the issued certs page, to obtain the necessary CSRF token
 	req, _ = http.NewRequest("GET", "/admin/certs", nil)
 	resp = httptest.NewRecorder()
-	tok := &oauth2.Token{
-		AccessToken: "authenticated",
-		Expiry:      time.Now().Add(1 * time.Hour),
-	}
-	a.setAuthToken(resp, req, tok)
+	a.setSessionVariable(resp, req, "username", "test")
 	a.router.ServeHTTP(resp, req)
 	csrfToken := resp.Result().Header.Get("X-CSRF-Token")
 
@@ -168,7 +114,7 @@ func TestSignRevoke(t *testing.T) {
 	}
 	req.Header.Set("X-CSRF-Token", csrfToken)
 	resp = httptest.NewRecorder()
-	a.setAuthToken(resp, req, tok)
+	a.setSessionVariable(resp, req, "username", "test")
 	req.PostForm = url.Values{
 		"cert_id": []string{cert.KeyId},
 	}

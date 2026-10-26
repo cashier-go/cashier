@@ -10,6 +10,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,6 +22,10 @@ import (
 	"github.com/cashier-go/cashier/server/store"
 	"github.com/cashier-go/cashier/server/templates"
 )
+
+// localserverRe matches what the cashier client advertises as its local server.
+// See cmd/cashier/localserver.go.
+var localserverRe = regexp.MustCompile(`^[0-9]{1,5}(/[A-Za-z0-9-]+)?$`)
 
 func tokenFromRequest(r *http.Request) *oauth2.Token {
 	token := &oauth2.Token{}
@@ -60,7 +66,7 @@ func (a *application) sign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.requireReason && req.Message == "" {
+	if a.config.RequireReason && req.Message == "" {
 		w.Header().Add("X-Need-Reason", "required")
 		fail(w, http.StatusForbidden, errNeedsReason)
 		return
@@ -94,7 +100,13 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		buf := make([]byte, 32)
 		io.ReadFull(rand.Reader, buf)
 		state := hex.EncodeToString(buf)
-		a.setSessionVariable(w, r, "state", state)
+		// Without the state cookie the callback cannot succeed, so fail early.
+		if err := a.setSessionVariable(w, r, "state", state); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, http.StatusText(http.StatusInternalServerError))
+			return
+		}
 		http.Redirect(w, r, a.authprovider.StartSession(state), http.StatusFound)
 	case "/auth/callback":
 		ctx := r.Context()
@@ -105,6 +117,9 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))
 			return
 		}
+		if err := a.deleteSessionVariable(w, r, "state"); err != nil {
+			log.Print(err)
+		}
 		originURL := a.getSessionVariable(r, "origin_url")
 		if originURL == "" {
 			originURL = "/"
@@ -113,13 +128,10 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 		token, err := a.authprovider.Exchange(r.Context(), code)
 		if err != nil {
 			log.Printf("Error on /auth/callback: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "%s\n%v", http.StatusText(http.StatusInternalServerError), err)
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, templates.Retry)
 			return
 		}
-		log.Printf("Token found on /auth/callback, redirecting to %s", originURL)
-		a.setAuthToken(w, r, token)
-
 		// if we don't check the token here, it gets into an auth loop
 		if !a.authprovider.Valid(ctx, token) {
 			log.Printf("Not authorized")
@@ -127,6 +139,32 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, http.StatusText(http.StatusUnauthorized))
 			return
 		}
+
+		username := a.authprovider.Username(ctx, token)
+		if username == "" {
+			log.Print("No username returned by the auth provider")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, http.StatusText(http.StatusInternalServerError))
+			return
+		}
+		if err := a.setSessionVariable(w, r, "username", username); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, http.StatusText(http.StatusInternalServerError))
+			return
+		}
+
+		origin, err := url.Parse(originURL)
+		if err != nil {
+			log.Printf("Unparseable origin %q: %v", originURL, err)
+			origin = &url.URL{Path: "/"}
+		}
+		if origin.Path == "/" {
+			log.Print("Token found on /auth/callback, returning the token page")
+			a.renderToken(w, token, origin.Query().Get("localserver"))
+			return
+		}
+		log.Printf("Token found on /auth/callback, redirecting to %s", originURL)
 		http.Redirect(w, r, originURL, http.StatusFound)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
@@ -134,22 +172,34 @@ func (a *application) auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *application) index(w http.ResponseWriter, r *http.Request) {
-	localserver := r.FormValue("localserver")
-	tok := a.getAuthToken(r)
-	if tok == nil {
-		w.WriteHeader(400)
-		fmt.Fprint(w, http.StatusText(400))
+	if err := a.setSessionVariable(w, r, "origin_url", r.URL.RequestURI()); err != nil {
+		log.Print(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, http.StatusText(http.StatusInternalServerError))
 		return
+	}
+	http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+}
+
+// renderToken displays the token for the user to copy, and for the client's local server to collect.
+func (a *application) renderToken(w http.ResponseWriter, token *oauth2.Token, localserver string) {
+	if !localserverRe.MatchString(localserver) {
+		if localserver != "" {
+			log.Printf("Ignoring malformed localserver value %q", localserver)
+		}
+		localserver = ""
 	}
 	page := struct {
 		Token       string
 		Localserver string
 	}{
-		Token:       encodeToken(tok.AccessToken),
+		Token:       encodeToken(token.AccessToken),
 		Localserver: localserver,
 	}
 	tmpl := template.Must(template.New("token.html").Parse(templates.Token))
-	tmpl.Execute(w, page)
+	if err := tmpl.Execute(w, page); err != nil {
+		log.Printf("Error rendering token page: %v", err)
+	}
 }
 
 func (a *application) revoked(w http.ResponseWriter, r *http.Request) {
@@ -194,7 +244,9 @@ func (a *application) getCertsJSON(w http.ResponseWriter, r *http.Request) {
 
 func (a *application) revoke(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	if err := a.certstore.Revoke(r.Form["cert_id"]); err != nil {
+	certIDs := r.Form["cert_id"]
+	log.Printf("Revoking certs %v on behalf of %s", certIDs, a.getSessionVariable(r, "username"))
+	if err := a.certstore.Revoke(certIDs); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Unable to revoke certs")
 	} else {
