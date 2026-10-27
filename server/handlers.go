@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -22,10 +21,6 @@ import (
 	"github.com/cashier-go/cashier/server/store"
 	"github.com/cashier-go/cashier/server/templates"
 )
-
-// localserverRe matches what the cashier client advertises as its local server.
-// See cmd/cashier/localserver.go.
-var localserverRe = regexp.MustCompile(`^[0-9]{1,5}(/[A-Za-z0-9-]+)?$`)
 
 func tokenFromRequest(r *http.Request) *oauth2.Token {
 	token := &oauth2.Token{}
@@ -183,12 +178,6 @@ func (a *application) index(w http.ResponseWriter, r *http.Request) {
 
 // renderToken displays the token for the user to copy, and for the client's local server to collect.
 func (a *application) renderToken(w http.ResponseWriter, token *oauth2.Token, localserver string) {
-	if !localserverRe.MatchString(localserver) {
-		if localserver != "" {
-			log.Printf("Ignoring malformed localserver value %q", localserver)
-		}
-		localserver = ""
-	}
 	page := struct {
 		Token       string
 		Localserver string

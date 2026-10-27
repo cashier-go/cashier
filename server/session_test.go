@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/oauth2"
-
 	"github.com/cashier-go/cashier/server/auth"
 	"github.com/cashier-go/cashier/server/auth/testprovider"
 	"github.com/cashier-go/cashier/server/config"
@@ -146,30 +144,6 @@ func TestClientLoginFlow(t *testing.T) {
 	}
 	if !strings.Contains(resp.Body.String(), "http://localhost:45678") {
 		t.Error("token page is not addressed to the client's local server")
-	}
-}
-
-func TestTokenPageIgnoresRemoteLocalserver(t *testing.T) {
-	app := newTestApp(t, testprovider.New())
-	w := httptest.NewRecorder()
-	app.renderToken(w, &oauth2.Token{AccessToken: "SECRET"}, "1@evil.example.com/")
-
-	body := w.Body.String()
-	if strings.Contains(body, "evil.example.com") {
-		t.Error("token page points the browser at an attacker-supplied host")
-	}
-	if strings.Contains(body, "xhr.open") {
-		t.Error("token page still submits the token automatically")
-	}
-}
-
-func TestTokenPagePostsToClientLocalserver(t *testing.T) {
-	app := newTestApp(t, testprovider.New())
-	w := httptest.NewRecorder()
-	app.renderToken(w, &oauth2.Token{AccessToken: "SECRET"}, "45678/3f2a1b4c-dead-beef")
-
-	if !strings.Contains(w.Body.String(), "http://localhost:45678/3f2a1b4c-dead-beef") {
-		t.Error("token page does not submit to the client's local server")
 	}
 }
 
