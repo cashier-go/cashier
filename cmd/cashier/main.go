@@ -58,7 +58,7 @@ func main() {
 	srv := startServer(c.CA)
 	defer srv.stop(ctx)
 
-	url := fmt.Sprintf("%s?localserver=%s", c.CA, srv.url())
+	url := fmt.Sprintf("%s?localserver=%s", c.CA, srv.endpoint)
 
 	log.Println("Your browser has been opened to visit", url)
 	if err = browser.OpenURL(url); err != nil {

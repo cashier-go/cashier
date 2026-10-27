@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
 	"golang.org/x/oauth2"
 
@@ -183,7 +184,7 @@ func (a *application) renderToken(w http.ResponseWriter, token *oauth2.Token, lo
 		Localserver string
 	}{
 		Token:       encodeToken(token.AccessToken),
-		Localserver: localserver,
+		Localserver: parseLocalserver(localserver),
 	}
 	tmpl := template.Must(template.New("token.html").Parse(templates.Token))
 	if err := tmpl.Execute(w, page); err != nil {
@@ -241,4 +242,23 @@ func (a *application) revoke(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Redirect(w, r, "/admin/certs", http.StatusSeeOther)
 	}
+}
+
+// parse the client-supplied localserver parameter, expected to have the form
+// "<port>/<uuid>".
+// If the param can't be parsed an empty string is returned.
+func parseLocalserver(s string) string {
+	port, path, ok := strings.Cut(s, "/")
+	if !ok {
+		return ""
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil || p < 1 || p > 65535 {
+		return ""
+	}
+	u, err := uuid.Parse(path)
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%d/%s", p, u)
 }

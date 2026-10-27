@@ -8,6 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"golang.org/x/oauth2"
+
 	"github.com/cashier-go/cashier/server/auth"
 	"github.com/cashier-go/cashier/server/auth/testprovider"
 	"github.com/cashier-go/cashier/server/config"
@@ -123,7 +126,7 @@ func TestClientLoginFlow(t *testing.T) {
 		return resp
 	}
 
-	resp := do("/?localserver=45678")
+	resp := do("/?localserver=45678/" + uuid.NewString())
 	if resp.Code != http.StatusSeeOther {
 		t.Fatalf("/ returned %d, want %d", resp.Code, http.StatusSeeOther)
 	}
@@ -165,5 +168,19 @@ func TestCallbackStateIsClearedAfterUse(t *testing.T) {
 	app.router.ServeHTTP(replay, req)
 	if replay.Code != http.StatusUnauthorized {
 		t.Errorf("replayed callback returned %d, want %d", replay.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestTokenPageIgnoresMaliciousLocalserver(t *testing.T) {
+	app := newTestApp(t, testprovider.New())
+	w := httptest.NewRecorder()
+	app.renderToken(w, &oauth2.Token{AccessToken: "SECRET"}, "1@evil.example.com/")
+
+	body := w.Body.String()
+	if strings.Contains(body, "evil.example.com") {
+		t.Error("token page points the browser at an attacker-supplied host")
+	}
+	if strings.Contains(body, "xhr.open") {
+		t.Error("token page still submits the token automatically")
 	}
 }
