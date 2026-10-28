@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"embed"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -24,7 +23,6 @@ import (
 	"github.com/sid77/drop"
 	"go4.org/wkfs"
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/oauth2"
 
 	"github.com/cashier-go/cashier/lib"
 	"github.com/cashier-go/cashier/server/auth"
@@ -37,6 +35,8 @@ import (
 	"github.com/cashier-go/cashier/server/signer"
 	"github.com/cashier-go/cashier/server/store"
 )
+
+const sessionMaxAgeSeconds = 900 // 15m
 
 // Server is a convenience wrapper around a *httpServer
 type Server struct {
@@ -143,21 +143,7 @@ func Run(conf *config.Config) (*Server, error) {
 		return nil, fmt.Errorf("unable to configure datastore: %w", err)
 	}
 
-	app := &application{
-		cookiestore:   sessions.NewCookieStore([]byte(conf.Server.CookieSecret)),
-		requireReason: conf.Server.RequireReason,
-		keysigner:     keysigner,
-		certstore:     certstore,
-		authprovider:  authprovider,
-		config:        conf.Server,
-		router:        mux.NewRouter(),
-	}
-	app.cookiestore.Options = &sessions.Options{
-		MaxAge:   900,
-		Path:     "/",
-		Secure:   conf.Server.UseTLS,
-		HttpOnly: true,
-	}
+	app := newApplication(keysigner, authprovider, certstore, conf.Server)
 
 	logfile := os.Stderr
 	if conf.Server.HTTPLogFile != "" {
@@ -167,7 +153,6 @@ func Run(conf *config.Config) (*Server, error) {
 		}
 	}
 
-	app.setupRoutes()
 	httpServerLoggingHandler := handlers.LoggingHandler(logfile, app.router)
 	httpServer := &http.Server{
 		Handler:      httpServerLoggingHandler,
@@ -213,19 +198,38 @@ var static embed.FS
 
 // application contains local context - cookiestore, authsession etc.
 type application struct {
-	cookiestore   *sessions.CookieStore
-	authprovider  auth.Provider
-	certstore     store.CertStorer
-	keysigner     *signer.KeySigner
-	router        *mux.Router
-	config        *config.Server
-	requireReason bool
+	cookiestore  *sessions.CookieStore
+	authprovider auth.Provider
+	certstore    store.CertStorer
+	keysigner    *signer.KeySigner
+	router       *mux.Router
+	config       *config.Server
+}
+
+func newApplication(keysigner *signer.KeySigner, authprovider auth.Provider, certstore store.CertStorer, conf *config.Server) *application {
+	app := &application{
+		cookiestore:  sessions.NewCookieStore([]byte(conf.CookieSecret)),
+		keysigner:    keysigner,
+		certstore:    certstore,
+		authprovider: authprovider,
+		config:       conf,
+		router:       mux.NewRouter(),
+	}
+	app.cookiestore.Options = &sessions.Options{
+		Path:     "/",
+		Secure:   conf.UseTLS,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	app.cookiestore.MaxAge(sessionMaxAgeSeconds)
+	app.setupRoutes()
+	return app
 }
 
 func (a *application) setupRoutes() {
 	// login required
 	csrfHandler := csrf.Protect([]byte(a.config.CSRFSecret), csrf.Secure(a.config.UseTLS))
-	a.router.Methods("GET").Path("/").Handler(a.authed(http.HandlerFunc(a.index)))
+	a.router.Methods("GET").Path("/").HandlerFunc(a.index)
 	a.router.Methods("POST").Path("/admin/revoke").Handler(a.authed(csrfHandler(http.HandlerFunc(a.revoke))))
 	a.router.Methods("GET").Path("/admin/certs").Handler(a.authed(csrfHandler(http.HandlerFunc(a.getAllCerts))))
 	a.router.Methods("GET").Path("/admin/certs.json").Handler(a.authed(http.HandlerFunc(a.getCertsJSON)))
@@ -251,20 +255,12 @@ func (a *application) setupRoutes() {
 	a.router.Use(handlers.RecoveryHandler())
 }
 
-func (a *application) getAuthToken(r *http.Request) *oauth2.Token {
-	token := &oauth2.Token{}
-	marshalled := a.getSessionVariable(r, "token")
-	json.Unmarshal([]byte(marshalled), token)
-	return token
-}
-
-func (a *application) setAuthToken(w http.ResponseWriter, r *http.Request, token *oauth2.Token) {
-	v, _ := json.Marshal(token)
-	a.setSessionVariable(w, r, "token", string(v))
-}
-
 func (a *application) getSessionVariable(r *http.Request, key string) string {
-	session, _ := a.cookiestore.Get(r, "session")
+	// An error means an existing cookie could not be decoded, so this is a new session.
+	session, err := a.cookiestore.Get(r, "session")
+	if err != nil {
+		log.Printf("Error reading session: %v", err)
+	}
 	v, ok := session.Values[key].(string)
 	if !ok {
 		v = ""
@@ -272,18 +268,40 @@ func (a *application) getSessionVariable(r *http.Request, key string) string {
 	return v
 }
 
-func (a *application) setSessionVariable(w http.ResponseWriter, r *http.Request, key, value string) {
-	session, _ := a.cookiestore.Get(r, "session")
+func (a *application) setSessionVariable(w http.ResponseWriter, r *http.Request, key, value string) error {
+	session, err := a.cookiestore.Get(r, "session")
+	if err != nil {
+		log.Printf("Error reading session: %v", err)
+	}
+	// Older versions of Cashier kept the provider token here. A large enough
+	// token can push the cookie over securecookie's size limit and cause a
+	// redirect loop so drop any existing.
+	delete(session.Values, "token")
 	session.Values[key] = value
-	session.Save(r, w)
+	if err := session.Save(r, w); err != nil {
+		return fmt.Errorf("error saving session value %q: %w", key, err)
+	}
+	return nil
+}
+
+func (a *application) deleteSessionVariable(w http.ResponseWriter, r *http.Request, key string) error {
+	session, err := a.cookiestore.Get(r, "session")
+	if err != nil {
+		log.Printf("Error reading session: %v", err)
+	}
+	delete(session.Values, key)
+	if err := session.Save(r, w); err != nil {
+		return fmt.Errorf("error removing session value %q: %w", key, err)
+	}
+	return nil
 }
 
 func (a *application) authed(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t := a.getAuthToken(r)
-		ctx := r.Context()
-		if !t.Valid() || !a.authprovider.Valid(ctx, t) {
-			a.setSessionVariable(w, r, "origin_url", r.URL.RequestURI())
+		if a.getSessionVariable(r, "username") == "" {
+			if err := a.setSessionVariable(w, r, "origin_url", r.URL.RequestURI()); err != nil {
+				log.Print(err)
+			}
 			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 			return
 		}
