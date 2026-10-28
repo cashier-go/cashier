@@ -73,7 +73,7 @@ docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier cashier-go/
 ```
 
 # Requirements
-Go 1.23 or later
+Go 1.26 or later
 
 ## Server
 

@@ -40,8 +40,6 @@ func TestParseCertificate(t *testing.T) {
 }
 
 func testStore(t *testing.T, db CertStorer) {
-	defer db.Close()
-
 	r := &CertRecord{
 		KeyID:      "a",
 		Principals: []string{"b"},
@@ -109,6 +107,7 @@ func testStore(t *testing.T, db CertStorer) {
 
 func TestMemoryStore(t *testing.T) {
 	db := newMemoryStore()
+	t.Cleanup(func() { db.Close() })
 	testStore(t, db)
 }
 
@@ -131,8 +130,14 @@ func TestMySQLStore(t *testing.T) {
 	}
 	db, err := newSQLStore(sqlConfig)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		if _, err := db.conn.Exec("DELETE FROM issued_certs"); err != nil {
+			t.Error(err)
+		}
+		db.Close()
+	})
 	testStore(t, db)
 }
 
@@ -141,14 +146,15 @@ func TestSQLiteStore(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer os.Remove(f.Name())
+	t.Cleanup(func() { os.Remove(f.Name()) })
 	db, err := newSQLStore(config.Database{
 		Type:     "sqlite",
 		Filename: f.Name(),
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+	t.Cleanup(func() { db.Close() })
 	testStore(t, db)
 }
 
