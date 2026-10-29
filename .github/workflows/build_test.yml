@@ -1,0 +1,39 @@
+---
+name: Test
+
+on:
+  workflow_call:
+
+env:
+  CGO_ENABLED: 0
+  GOTOOLCHAIN: local
+  MYSQL_TEST: true
+  MYSQL_TEST_USER: 'dbuser'
+  MYSQL_TEST_PASS: 'dbpass'
+  MYSQL_TEST_HOST: '127.0.0.1:3306'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: start mysql
+        uses: shogo82148/actions-setup-mysql@64d04a653a0c02af310009d36ce74bec5f4dce4f # v1.55.0
+        with:
+          user: ${{ env.MYSQL_TEST_USER }}
+          password: ${{ env.MYSQL_TEST_PASS }}
+      - name: create database
+        run: |
+          mysql --user 'root' --host '127.0.0.1' -e 'create database certs;'
+
+      - name: Run tests
+        run: make test
+
+      - name: Build
+        run: make

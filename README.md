@@ -67,9 +67,9 @@ The server requires a configuration file ([sample config](example-server.conf)).
 See [the configuration section](#configuration) for more detail.
 
 ## Docker
-A [docker image is available](https://hub.docker.com/r/cashier-go/cashier). Example usage:
+A [docker image is available](https://ghcr.io/cashier-go/cashier). Example usage:
 ```
-docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier cashier-go/cashier
+docker run -it --rm -p 10000:10000 --name cashier -v ${PWD}:/cashier ghcr.io/cashier-go/cashier:<version>
 ```
 
 # Requirements

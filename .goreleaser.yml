@@ -1,0 +1,54 @@
+---
+version: 2
+
+project_name: cashier
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: cashier
+    main: ./cmd/cashier
+    binary: cashier
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - -X github.com/cashier-go/cashier/lib.Version={{ .Tag }}
+
+  - id: cashierd
+    main: ./cmd/cashierd
+    binary: cashierd
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - -X github.com/cashier-go/cashier/lib.Version={{ .Tag }}
+
+archives:
+  - formats: [tar.gz]
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - LICENSE.txt
+      - README.md
+      - example-client.conf
+      - example-server.conf
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - 'Merge pull request'
+
+release:
+  prerelease: auto
