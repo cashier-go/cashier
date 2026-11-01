@@ -22,7 +22,7 @@ require (
 	github.com/prometheus/client_golang v1.25.0
 	github.com/rubenv/sql-migrate v1.7.1
 	github.com/sid77/drop v0.0.0-20171115104544-48930369f4db
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	github.com/stripe/krl v0.0.0-20220202203423-9dc12b164150
 	go4.org v0.0.0-20230225012048-214862532bf5
