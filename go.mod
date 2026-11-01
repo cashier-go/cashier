@@ -20,7 +20,7 @@ require (
 	github.com/nsheridan/wkfs v0.0.0-20170113005747-e871f010de47
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/prometheus/client_golang v1.25.0
-	github.com/rubenv/sql-migrate v1.7.1
+	github.com/rubenv/sql-migrate v1.8.1
 	github.com/sid77/drop v0.0.0-20171115104544-48930369f4db
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.12.1
