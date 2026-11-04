@@ -24,7 +24,7 @@ func TestLoginHandler(t *testing.T) {
 	a := newTestApp(t, testprovider.New())
 	req, _ := http.NewRequest("GET", "/auth/login", nil)
 	resp := httptest.NewRecorder()
-	a.router.ServeHTTP(resp, req)
+	a.ServeHTTP(resp, req)
 	if resp.Code != http.StatusFound {
 		t.Errorf("got status %d, want %d", resp.Code, http.StatusFound)
 	}
@@ -59,7 +59,7 @@ func TestCallbackHandler(t *testing.T) {
 			for _, cookie := range resp.Result().Cookies() {
 				req.AddCookie(cookie)
 			}
-			a.router.ServeHTTP(resp, req)
+			a.ServeHTTP(resp, req)
 			if resp.Code != test.expected {
 				t.Errorf("got response %d, expected %d", resp.Code, test.expected)
 			}
@@ -80,7 +80,7 @@ func TestSignRevoke(t *testing.T) {
 	req, _ = http.NewRequest("POST", "/sign", bytes.NewReader(s))
 	resp = httptest.NewRecorder()
 	req.Header.Set("Authorization", "Bearer abcdef")
-	a.router.ServeHTTP(resp, req)
+	a.ServeHTTP(resp, req)
 	if resp.Code != http.StatusOK {
 		t.Fatal("Unexpected response")
 	}
@@ -104,7 +104,7 @@ func TestSignRevoke(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/admin/certs", nil)
 	resp = httptest.NewRecorder()
 	a.setSessionVariable(resp, req, "username", "test")
-	a.router.ServeHTTP(resp, req)
+	a.ServeHTTP(resp, req)
 	csrfToken := resp.Result().Header.Get("X-CSRF-Token")
 
 	// 3. Revoke the cert
@@ -118,12 +118,12 @@ func TestSignRevoke(t *testing.T) {
 	req.PostForm = url.Values{
 		"cert_id": []string{cert.KeyId},
 	}
-	a.router.ServeHTTP(resp, req)
+	a.ServeHTTP(resp, req)
 
 	// 4. Retrieve the KRL and verify that the cert is revoked
 	req, _ = http.NewRequest("GET", "/revoked", nil)
 	resp = httptest.NewRecorder()
-	a.router.ServeHTTP(resp, req)
+	a.ServeHTTP(resp, req)
 	revoked, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -172,5 +172,23 @@ func TestTokenFromRequest(t *testing.T) {
 				t.Fatalf("Expected token %q, got token %q", test.want.AccessToken, token.AccessToken)
 			}
 		})
+	}
+}
+
+func TestDrain(t *testing.T) {
+	server := Server{
+		app: newTestApp(t, testprovider.New()),
+	}
+	req := httptest.NewRequest(http.MethodGet, "/healthcheck", nil)
+	w := httptest.NewRecorder()
+	server.app.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status 200, got %d", w.Code)
+	}
+	server.Drain()
+	w = httptest.NewRecorder()
+	server.app.ServeHTTP(w, req)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("Expected status 503, got %d", w.Code)
 	}
 }

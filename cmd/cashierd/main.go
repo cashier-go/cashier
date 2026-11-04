@@ -52,11 +52,6 @@ func run(conf *config.Config) error {
 	})
 	vaultfs.Register(conf.Vault)
 
-	gracePeriod, err := time.ParseDuration(conf.Server.ShutdownTimeout)
-	if err != nil {
-		log.Printf("Unable to parse ShutdownTimeout value %s: %v", conf.Server.ShutdownTimeout, err)
-	}
-
 	s, err := server.Run(conf)
 	if err != nil {
 		return fmt.Errorf("failed to start server: %w", err)
@@ -65,12 +60,17 @@ func run(conf *config.Config) error {
 	// wait for a signal
 	<-ctx.Done()
 	stop()
-	log.Printf("shutting down in %d seconds\n", int64(gracePeriod.Seconds()))
+	drainDelay := conf.Server.DrainDelayDuration()
+	s.Drain()
+	log.Printf("reporting unhealthy and draining for %s before shutdown", drainDelay)
+	time.Sleep(drainDelay)
 
-	ctx, cancel := context.WithTimeout(context.Background(), gracePeriod)
+	shutdownTimeout := conf.Server.ShutdownTimeoutDuration()
+	log.Printf("shutting down, waiting up to %s for requests to complete", shutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	if err := s.Shutdown(ctx); err != nil {
+	if err := s.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("error when shutting down: %w", err)
 	}
 	return nil

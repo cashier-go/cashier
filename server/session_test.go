@@ -59,7 +59,7 @@ func testCallback(t *testing.T, app *application, originURL string) *httptest.Re
 		req.AddCookie(cookie)
 	}
 	resp := httptest.NewRecorder()
-	app.router.ServeHTTP(resp, req)
+	app.ServeHTTP(resp, req)
 	return resp
 }
 
@@ -80,7 +80,7 @@ func TestAuthedRequiresUsername(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "/admin/certs", nil)
 	resp := httptest.NewRecorder()
-	app.router.ServeHTTP(resp, req)
+	app.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		t.Errorf("unauthenticated request got status %d, want %d", resp.Code, http.StatusSeeOther)
 	}
@@ -94,7 +94,7 @@ func TestAuthedRequiresUsername(t *testing.T) {
 		req.AddCookie(c)
 	}
 	resp = httptest.NewRecorder()
-	app.router.ServeHTTP(resp, req)
+	app.ServeHTTP(resp, req)
 	if resp.Code != http.StatusOK {
 		t.Errorf("authenticated request got status %d, want %d", resp.Code, http.StatusOK)
 	}
@@ -121,7 +121,7 @@ func TestClientLoginFlow(t *testing.T) {
 			req.AddCookie(c)
 		}
 		resp := httptest.NewRecorder()
-		app.router.ServeHTTP(resp, req)
+		app.ServeHTTP(resp, req)
 		jar = resp.Result().Cookies()
 		return resp
 	}
@@ -165,7 +165,7 @@ func TestCallbackStateIsClearedAfterUse(t *testing.T) {
 		req.AddCookie(c)
 	}
 	replay := httptest.NewRecorder()
-	app.router.ServeHTTP(replay, req)
+	app.ServeHTTP(replay, req)
 	if replay.Code != http.StatusUnauthorized {
 		t.Errorf("replayed callback returned %d, want %d", replay.Code, http.StatusUnauthorized)
 	}

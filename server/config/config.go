@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/hcl"
@@ -48,6 +49,23 @@ type Server struct {
 	Database              Database `hcl:"database"`
 	RequireReason         bool     `hcl:"require_reason"`
 	ShutdownTimeout       string   `hcl:"shutdown_timeout"`
+	DrainDelay            string   `hcl:"drain_delay"`
+}
+
+// ShutdownTimeoutDuration returns the parsed shutdown_timeout.
+func (s *Server) ShutdownTimeoutDuration() time.Duration {
+	// Ignore the error here, verifyConfig() will have already caught invalid
+	// durations
+	d, _ := time.ParseDuration(s.ShutdownTimeout)
+	return d
+}
+
+// DrainDelayDuration returns the parsed drain_delay.
+func (s *Server) DrainDelayDuration() time.Duration {
+	// Ignore the error here, verifyConfig() will have already caught invalid
+	// durations
+	d, _ := time.ParseDuration(s.DrainDelay)
+	return d
 }
 
 // Auth holds the configuration specific to the OAuth provider.
@@ -82,6 +100,17 @@ type Vault struct {
 	Token   string `hcl:"token"`
 }
 
+func verifyDuration(name, value string) error {
+	if value == "" {
+		return nil
+	}
+	_, err := time.ParseDuration(value)
+	if err != nil {
+		return fmt.Errorf("invalid %s: %w", name, err)
+	}
+	return nil
+}
+
 func verifyConfig(c *Config) error {
 	var err error
 	if c.SSH == nil {
@@ -92,6 +121,13 @@ func verifyConfig(c *Config) error {
 	}
 	if c.Server == nil {
 		err = multierror.Append(err, errors.New("missing server config section"))
+	} else {
+		if durationErr := verifyDuration("shutdown_timeout", c.Server.ShutdownTimeout); durationErr != nil {
+			err = multierror.Append(err, fmt.Errorf("invalid shutdown_timeout: %w", durationErr))
+		}
+		if durationErr := verifyDuration("drain_delay", c.Server.DrainDelay); durationErr != nil {
+			err = multierror.Append(err, fmt.Errorf("invalid drain_delay: %w", durationErr))
+		}
 	}
 	return err
 }
@@ -161,7 +197,7 @@ func ReadConfig(f string) (*Config, error) {
 	}
 	setFromEnvironment(config)
 	if err := verifyConfig(config); err != nil {
-		return nil, fmt.Errorf("unabe to verify config: %w", err)
+		return nil, fmt.Errorf("unable to verify config: %w", err)
 	}
 	return config, nil
 }

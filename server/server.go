@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/csrf"
@@ -42,12 +43,21 @@ const sessionMaxAgeSeconds = 900 // 15m
 type Server struct {
 	httpServer *http.Server
 	logfile    *os.File
+	app        *application
+}
+
+// Drain connections and go unhealthy prior to stopping the server
+func (s *Server) Drain() {
+	s.app.draining.Store(true)
 }
 
 // Shutdown the server and perform any cleanup
 func (s *Server) Shutdown(ctx context.Context) error {
-	s.logfile.Close()
-	return s.httpServer.Shutdown(ctx)
+	err := s.httpServer.Shutdown(ctx)
+	if s.logfile != os.Stderr {
+		s.logfile.Close()
+	}
+	return err
 }
 
 func loadCerts(certFile, keyFile string) (tls.Certificate, error) {
@@ -153,7 +163,7 @@ func Run(conf *config.Config) (*Server, error) {
 		}
 	}
 
-	httpServerLoggingHandler := handlers.LoggingHandler(logfile, app.router)
+	httpServerLoggingHandler := handlers.LoggingHandler(logfile, app)
 	httpServer := &http.Server{
 		Handler:      httpServerLoggingHandler,
 		ReadTimeout:  60 * time.Second,
@@ -166,6 +176,7 @@ func Run(conf *config.Config) (*Server, error) {
 	return &Server{
 		httpServer: httpServer,
 		logfile:    logfile,
+		app:        app,
 	}, nil
 }
 
@@ -204,6 +215,7 @@ type application struct {
 	keysigner    *signer.KeySigner
 	router       *mux.Router
 	config       *config.Server
+	draining     atomic.Bool
 }
 
 func newApplication(keysigner *signer.KeySigner, authprovider auth.Provider, certstore store.CertStorer, conf *config.Server) *application {
@@ -226,6 +238,10 @@ func newApplication(keysigner *signer.KeySigner, authprovider auth.Provider, cer
 	return app
 }
 
+func (a *application) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	a.router.ServeHTTP(w, req)
+}
+
 func (a *application) setupRoutes() {
 	// login required
 	csrfHandler := csrf.Protect([]byte(a.config.CSRFSecret), csrf.Secure(a.config.UseTLS))
@@ -241,8 +257,13 @@ func (a *application) setupRoutes() {
 	a.router.Methods("POST").Path("/sign").HandlerFunc(a.sign)
 
 	a.router.Methods("GET").Path("/healthcheck").HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "ok")
+		if a.draining.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "shutting down")
+		} else {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintf(w, "ok")
+		}
 	})
 	a.router.Methods("GET").Path("/metrics").Handler(promhttp.Handler())
 

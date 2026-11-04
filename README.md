@@ -109,6 +109,8 @@ Exception to this: the `http_logfile` option **ONLY** writes to local files.
 - `csrf_secret`: string. Authentication key for CSRF protection. This can be a secret stored in a [vault](https://www.vaultproject.io/) using the form `/vault/path/key` e.g. `/vault/secret/cashier/csrf_secret`.
 - `http_logfile`: string. Path to the HTTP request log. Logs are written in the [Common Log Format](https://en.wikipedia.org/wiki/Common_Log_Format). The only valid destination for logs is a local file path.
 - `require_reason`: bool. Require the client to provide a reason when requesting a certificate. Defaults to `false`.
+- `shutdown_timeout`: string. A [duration](https://pkg.go.dev/time#ParseDuration) (e.g. `30s`, `1m`) the server waits on shutdown for in-flight requests to complete before closing connections. Set to `0s` to shutdown immediately without waiting for requests to complete. Defaults to `0s`.
+- `drain_delay`: string. A [duration](https://pkg.go.dev/time#ParseDuration) the server spends failing `/healthcheck` with a `503`, while still serving requests, before it begins shutting down, giving time for load balancers to take the backend out of rotation. Set to `0s` to shut down immediately. Defaults to `0s`.
 - `database`: See below.
 
 ### database
